@@ -26,6 +26,28 @@ const roleLabels: Record<LoginAccountHint["role"], string> = {
   wife: "아내",
 };
 
+const autoLoginKey = "couple-ledger:auto-login";
+const rememberedEmailKey = "couple-ledger:remembered-email";
+
+function initialAutoLogin() {
+  if (typeof window === "undefined") {
+    return true;
+  }
+
+  return window.localStorage.getItem(autoLoginKey) !== "false";
+}
+
+function initialEmail(fallback: string) {
+  if (typeof window === "undefined") {
+    return fallback;
+  }
+
+  const savedAutoLogin = window.localStorage.getItem(autoLoginKey) !== "false";
+  const savedEmail = window.localStorage.getItem(rememberedEmailKey);
+
+  return savedAutoLogin && savedEmail ? savedEmail : fallback;
+}
+
 export function LoginForm({
   accountHints,
   nextPath,
@@ -37,7 +59,20 @@ export function LoginForm({
     signInAction,
     initialState,
   );
-  const [email, setEmail] = useState(accountHints[0]?.email ?? "");
+  const [email, setEmail] = useState(() =>
+    initialEmail(accountHints[0]?.email ?? ""),
+  );
+  const [autoLogin, setAutoLogin] = useState(initialAutoLogin);
+
+  function rememberLoginPreference() {
+    window.localStorage.setItem(autoLoginKey, String(autoLogin));
+
+    if (autoLogin && email) {
+      window.localStorage.setItem(rememberedEmailKey, email);
+    } else {
+      window.localStorage.removeItem(rememberedEmailKey);
+    }
+  }
 
   return (
     <div className="grid gap-5">
@@ -68,7 +103,11 @@ export function LoginForm({
         </div>
       ) : null}
 
-      <form action={formAction} className="rounded-lg border bg-card p-5 shadow-sm">
+      <form
+        action={formAction}
+        className="rounded-lg border bg-card p-5 shadow-sm"
+        onSubmit={rememberLoginPreference}
+      >
         <input name="next" type="hidden" value={nextPath} />
         <div className="grid gap-4">
           <div className="space-y-2">
@@ -94,6 +133,18 @@ export function LoginForm({
               type="password"
             />
           </div>
+
+          <label className="flex items-center gap-3 rounded-md border bg-muted/20 px-3 py-3 text-sm">
+            <input
+              checked={autoLogin}
+              className="size-4 accent-primary"
+              name="auto_login"
+              onChange={(event) => setAutoLogin(event.target.checked)}
+              type="checkbox"
+              value="true"
+            />
+            <span className="font-medium">자동 로그인</span>
+          </label>
 
           {state.message ? (
             <div

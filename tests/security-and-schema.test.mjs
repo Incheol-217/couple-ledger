@@ -149,6 +149,8 @@ describe("Login and role access", () => {
   const quickAction = read("src/app/m/new/actions.ts");
   const settingsPage = read("src/app/settings/page.tsx");
   const appNav = read("src/components/app-nav.tsx");
+  const homePage = read("src/app/page.tsx");
+  const loginForm = read("src/app/login/login-form.tsx");
 
   it("protects initial account setup with a setup secret", () => {
     assert.match(setupRoute, /SETUP_SECRET/);
@@ -172,6 +174,20 @@ describe("Login and role access", () => {
     assert.match(settingsPage, /context\.isAdmin/);
     assert.match(settingsPage, /관리자만 접근할 수 있습니다/);
     assert.match(appNav, /canAccessSettings/);
+  });
+
+  it("sends first visits to login and signed-in visits to dashboard", () => {
+    assert.match(homePage, /redirect\("\/login"\)/);
+    assert.match(homePage, /redirect\("\/dashboard"\)/);
+  });
+
+  it("supports auto login without storing the password in app storage", () => {
+    assert.match(loginForm, /자동 로그인/);
+    assert.match(loginForm, /couple-ledger:auto-login/);
+    assert.match(loginForm, /couple-ledger:remembered-email/);
+    assert.match(loginForm, /localStorage\.setItem\(rememberedEmailKey, email\)/);
+    assert.match(loginForm, /autoComplete="current-password"/);
+    assert.doesNotMatch(loginForm, /localStorage\.setItem\([^)]*password/i);
   });
 });
 
