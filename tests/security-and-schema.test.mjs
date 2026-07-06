@@ -147,6 +147,7 @@ describe("iOS Shortcuts webhook security", () => {
 describe("UX guardrails", () => {
   const quickEntry = read("src/app/m/new/quick-transaction-client.tsx");
   const dashboard = read("src/app/dashboard/dashboard-client.tsx");
+  const settings = read("src/app/settings/settings-client.tsx");
 
   it("keeps mobile amount entry keypad-friendly and PWA-aware", () => {
     assert.match(quickEntry, /inputMode="numeric"/);
@@ -160,5 +161,14 @@ describe("UX guardrails", () => {
     assert.match(dashboard, /xl:grid-cols/);
     assert.match(dashboard, /<Table/);
     assert.match(dashboard, /<Tabs/);
+  });
+
+  it("keeps settings sections reachable through real tabs", () => {
+    assert.match(settings, /<Tabs/);
+    assert.match(settings, /<TabsList/);
+    assert.match(settings, /<TabsTrigger/);
+    assert.match(settings, /<TabsContent/);
+    assert.match(settings, /value="shortcuts"/);
+    assert.match(settings, /value="secrets"/);
   });
 });
