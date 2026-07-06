@@ -26,8 +26,8 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
   const context = await getCurrentUserContext();
 
   return (
-    <div className="min-h-svh bg-background">
-      <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur">
+    <div className="min-h-svh">
+      <header className="sticky top-0 z-40 border-b bg-background/70 backdrop-blur-xl">
         <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
           <Link className="flex items-center gap-2 font-semibold" href="/">
             <span className="grid size-8 place-items-center rounded-md bg-primary text-sm text-primary-foreground">
@@ -79,7 +79,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
 
       <main className="pb-20 md:pb-0">{children}</main>
 
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t bg-background md:hidden">
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/80 backdrop-blur-xl md:hidden">
         <AppNav canAccessSettings={context.isAdmin} compact />
       </div>
     </div>
