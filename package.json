@@ -1,0 +1,42 @@
+{
+  "name": "couple-budget",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "lint:fix": "eslint --fix",
+    "test": "node --test tests/*.test.mjs",
+    "typecheck": "tsc --noEmit --project tsconfig.typecheck.json"
+  },
+  "dependencies": {
+    "@radix-ui/react-slot": "latest",
+    "@supabase/ssr": "latest",
+    "@supabase/supabase-js": "latest",
+    "class-variance-authority": "latest",
+    "clsx": "latest",
+    "lucide-react": "latest",
+    "next": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "recharts": "latest",
+    "tailwind-merge": "latest",
+    "tw-animate-css": "latest"
+  },
+  "overrides": {
+    "postcss": "8.5.16"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "latest",
+    "@types/node": "latest",
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "eslint": "latest",
+    "eslint-config-next": "latest",
+    "postcss": "8.5.16",
+    "tailwindcss": "latest",
+    "typescript": "latest"
+  }
+}
