@@ -19,8 +19,17 @@ const navItems = [
   { href: "/settings", label: "설정", icon: Settings },
 ];
 
-export function AppNav({ compact = false }: { compact?: boolean }) {
+export function AppNav({
+  canAccessSettings = false,
+  compact = false,
+}: {
+  canAccessSettings?: boolean;
+  compact?: boolean;
+}) {
   const pathname = usePathname();
+  const visibleItems = navItems.filter(
+    (item) => item.href !== "/settings" || canAccessSettings,
+  );
 
   return (
     <nav
@@ -31,7 +40,7 @@ export function AppNav({ compact = false }: { compact?: boolean }) {
           : "gap-1 rounded-md border bg-card p-1 shadow-sm",
       )}
     >
-      {navItems.map((item) => {
+      {visibleItems.map((item) => {
         const Icon = item.icon;
         const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
 

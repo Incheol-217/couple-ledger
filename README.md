@@ -50,6 +50,17 @@ OPENAI_API_KEY=
 OPENAI_MODEL=gpt-4o-mini
 SHORTCUTS_WEBHOOK_SECRET=
 JOB_SECRET=
+SETUP_SECRET=
+HOUSEHOLD_NAME=우리집 공동 가계부
+HUSBAND_EMAIL=
+HUSBAND_PASSWORD=
+HUSBAND_NAME=남편
+WIFE_EMAIL=
+WIFE_PASSWORD=
+WIFE_NAME=아내
+ADMIN_EMAIL=
+ADMIN_PASSWORD=
+ADMIN_NAME=관리자
 ```
 
 지금 단계에서는 Supabase와 OpenAI 기능을 실제로 호출하지 않으므로, 화면 확인만 할 때는 비워둬도 됩니다.
@@ -58,9 +69,28 @@ JOB_SECRET=
 
 `OPENAI_MODEL`은 AI 소비 조언 생성에 사용할 모델입니다. 필요하면 운영 환경에서 다른 모델로 바꿀 수 있습니다.
 
+## 로그인 계정 만들기
+
+Vercel 환경변수에 `SETUP_SECRET`, 남편/아내/관리자 이메일과 비밀번호를 넣은 뒤 아래 주소를 한 번 호출하면 Supabase Auth 계정 3개와 household 멤버 연결이 만들어집니다.
+
+```bash
+curl -X POST https://YOUR_VERCEL_DOMAIN/api/setup/login-accounts \
+  -H "Authorization: Bearer $SETUP_SECRET" \
+  -H "Content-Type: application/json"
+```
+
+생성되는 역할은 아래와 같습니다.
+
+- 남편: `member`, `member_label=husband`
+- 아내: `member`, `member_label=wife`
+- 관리자: `owner`
+
+수입/지출을 저장하면 `transactions.user_id`에 현재 로그인한 사용자가 자동으로 들어갑니다. 설정 화면은 관리자 역할인 `owner`만 접근할 수 있습니다.
+
 ## 주요 경로
 
 - `/`
+- `/login`
 - `/dashboard`
 - `/m/new`
 - `/transactions`

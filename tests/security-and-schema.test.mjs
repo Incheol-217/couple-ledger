@@ -144,6 +144,37 @@ describe("iOS Shortcuts webhook security", () => {
   });
 });
 
+describe("Login and role access", () => {
+  const setupRoute = read("src/app/api/setup/login-accounts/route.ts");
+  const quickAction = read("src/app/m/new/actions.ts");
+  const settingsPage = read("src/app/settings/page.tsx");
+  const appNav = read("src/components/app-nav.tsx");
+
+  it("protects initial account setup with a setup secret", () => {
+    assert.match(setupRoute, /SETUP_SECRET/);
+    assert.match(setupRoute, /timingSafeEqual/);
+    assert.match(setupRoute, /auth\.admin\.createUser/);
+  });
+
+  it("creates husband, wife, and admin household members", () => {
+    assert.match(setupRoute, /memberLabel:\s*"husband"/);
+    assert.match(setupRoute, /memberLabel:\s*"wife"/);
+    assert.match(setupRoute, /role:\s*"owner"/);
+    assert.match(setupRoute, /role:\s*"member"/);
+  });
+
+  it("stores manual transactions under the signed-in user", () => {
+    assert.match(quickAction, /user_id:\s*user\.id/);
+    assert.match(quickAction, /source:\s*"manual"/);
+  });
+
+  it("keeps settings behind admin access", () => {
+    assert.match(settingsPage, /context\.isAdmin/);
+    assert.match(settingsPage, /관리자만 접근할 수 있습니다/);
+    assert.match(appNav, /canAccessSettings/);
+  });
+});
+
 describe("UX guardrails", () => {
   const quickEntry = read("src/app/m/new/quick-transaction-client.tsx");
   const dashboard = read("src/app/dashboard/dashboard-client.tsx");

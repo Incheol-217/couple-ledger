@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState, useTransition } from "react";
 import {
   ArrowRightLeft,
@@ -263,6 +264,9 @@ export function QuickTransactionClient({
         <p className="mt-2 text-sm leading-6 text-muted-foreground">
           거래는 household 멤버에게만 저장됩니다.
         </p>
+        <Button asChild className="mt-4">
+          <Link href="/login?next=/m/new">로그인</Link>
+        </Button>
       </div>
     );
   }
@@ -332,7 +336,9 @@ export function QuickTransactionClient({
       <section className="space-y-3">
         <div className="flex items-center justify-between gap-3">
           <p className="text-sm font-medium">거래 타입</p>
-          <Badge variant="secondary">{household.name}</Badge>
+          <Badge variant="secondary">
+            {household.name} · 로그인 사용자로 자동 기록
+          </Badge>
         </div>
         <div className="grid grid-cols-3 gap-2">
           {transactionTypes.map((transactionType) => (
