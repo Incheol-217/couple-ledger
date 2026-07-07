@@ -156,6 +156,7 @@ describe("Login and role access", () => {
     assert.match(setupRoute, /SETUP_SECRET/);
     assert.match(setupRoute, /timingSafeEqual/);
     assert.match(setupRoute, /auth\.admin\.createUser/);
+    assert.match(setupRoute, /auth\.admin\.updateUserById/);
   });
 
   it("creates husband, wife, and admin household members", () => {

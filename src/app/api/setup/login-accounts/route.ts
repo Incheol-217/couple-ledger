@@ -113,7 +113,26 @@ async function ensureUser(account: SetupAccount) {
   const existingUser = await findUserByEmail(account.email);
 
   if (existingUser) {
-    return existingUser;
+    const { data, error } = await admin.auth.admin.updateUserById(
+      existingUser.id,
+      {
+        email: account.email,
+        email_confirm: true,
+        password: account.password,
+        user_metadata: {
+          ...existingUser.user_metadata,
+          display_name: account.displayName,
+        },
+      },
+    );
+
+    if (error || !data.user) {
+      throw new Error(
+        error?.message ?? `${account.email} 계정을 갱신할 수 없습니다.`,
+      );
+    }
+
+    return data.user;
   }
 
   const { data, error } = await admin.auth.admin.createUser({
