@@ -1,11 +1,14 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { createNotificationEvent } from "@/lib/notifications/events";
 import { createClient } from "@/lib/supabase/server";
 import {
   billingCycles,
   recurringKinds,
+  recurringKindLabels,
   recurringStatuses,
+  recurringStatusLabels,
   type BillingCycle,
   type RecurringKind,
   type RecurringStatus,
@@ -264,8 +267,25 @@ export async function createRecurringItemAction(
       throw new Error(error.message);
     }
 
+    await createNotificationEvent(supabase, {
+      actorUserId: user.id,
+      body: `'${payload.name}' ${recurringKindLabels[payload.kind]} 항목이 추가되었습니다.`,
+      eventType: "recurring_created",
+      householdId,
+      metadata: {
+        account_id: accountId,
+        amount: payload.amount,
+        auto_create_transaction: payload.autoCreateTransaction,
+        billing_cycle: payload.billingCycle,
+        category_id: categoryId,
+        kind: payload.kind,
+      },
+      title: "반복비 설정 변경",
+    });
+
     revalidatePath("/recurring");
     revalidatePath("/dashboard");
+    revalidatePath("/", "layout");
     return { ok: true, message: "반복 항목을 추가했습니다." };
   } catch (error) {
     return {
@@ -287,7 +307,7 @@ export async function updateRecurringItemAction(
       throw new Error("수정할 항목을 찾을 수 없습니다.");
     }
 
-    const { supabase } = await assertCurrentMember(householdId);
+    const { supabase, user } = await assertCurrentMember(householdId);
     const payload = toPayload(formData);
     const accountId = await assertAccount(
       supabase,
@@ -330,8 +350,26 @@ export async function updateRecurringItemAction(
       throw new Error(error.message);
     }
 
+    await createNotificationEvent(supabase, {
+      actorUserId: user.id,
+      body: `'${payload.name}' ${recurringKindLabels[payload.kind]} 항목이 수정되었습니다.`,
+      eventType: "recurring_updated",
+      householdId,
+      metadata: {
+        account_id: accountId,
+        amount: payload.amount,
+        auto_create_transaction: payload.autoCreateTransaction,
+        billing_cycle: payload.billingCycle,
+        category_id: categoryId,
+        kind: payload.kind,
+        recurring_item_id: itemId,
+      },
+      title: "반복비 설정 변경",
+    });
+
     revalidatePath("/recurring");
     revalidatePath("/dashboard");
+    revalidatePath("/", "layout");
     return { ok: true, message: "반복 항목을 수정했습니다." };
   } catch (error) {
     return {
@@ -354,7 +392,18 @@ export async function updateRecurringStatusAction(
       throw new Error("상태를 변경할 항목을 찾을 수 없습니다.");
     }
 
-    const { supabase } = await assertCurrentMember(householdId);
+    const { supabase, user } = await assertCurrentMember(householdId);
+    const { data: item, error: itemError } = await supabase
+      .from("recurring_items")
+      .select("name, kind")
+      .eq("household_id", householdId)
+      .eq("id", itemId)
+      .maybeSingle();
+
+    if (itemError) {
+      throw new Error(itemError.message);
+    }
+
     const { error } = await supabase
       .from("recurring_items")
       .update({
@@ -368,8 +417,22 @@ export async function updateRecurringStatusAction(
       throw new Error(error.message);
     }
 
+    await createNotificationEvent(supabase, {
+      actorUserId: user.id,
+      body: `'${item?.name ?? "반복 항목"}' 상태가 ${recurringStatusLabels[status]}(으)로 변경되었습니다.`,
+      eventType: "recurring_status_changed",
+      householdId,
+      metadata: {
+        kind: item?.kind ?? null,
+        recurring_item_id: itemId,
+        status,
+      },
+      title: "반복비 설정 변경",
+    });
+
     revalidatePath("/recurring");
     revalidatePath("/dashboard");
+    revalidatePath("/", "layout");
     return {
       ok: true,
       message:

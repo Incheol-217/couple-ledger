@@ -5,6 +5,7 @@ import {
   expenseTypeFilters,
   periodFilters,
   type AccountFilter,
+  type DashboardAccountBalance,
   type AiAdviceLogRow,
   type DashboardBudgetRow,
   type DashboardDateRange,
@@ -36,6 +37,13 @@ type MembershipRow = {
         name: string;
       }[]
     | null;
+};
+
+type BalanceTransactionRow = {
+  account_id: string;
+  amount: number | string;
+  transfer_account_id: string | null;
+  type: "expense" | "income" | "transfer";
 };
 
 const TIME_ZONE = "Asia/Seoul";
@@ -314,6 +322,53 @@ function plannedOccurrencesForRange(
   return occurrences.sort((a, b) => a.due_date.localeCompare(b.due_date));
 }
 
+function buildAccountBalances(
+  balanceTransactions: BalanceTransactionRow[],
+): DashboardAccountBalance[] {
+  const balances = new Map<string, number>();
+
+  balanceTransactions.forEach((transaction) => {
+    const amount = Number(transaction.amount);
+
+    if (!Number.isFinite(amount)) {
+      return;
+    }
+
+    if (transaction.type === "income") {
+      balances.set(
+        transaction.account_id,
+        (balances.get(transaction.account_id) ?? 0) + amount,
+      );
+      return;
+    }
+
+    if (transaction.type === "expense") {
+      balances.set(
+        transaction.account_id,
+        (balances.get(transaction.account_id) ?? 0) - amount,
+      );
+      return;
+    }
+
+    balances.set(
+      transaction.account_id,
+      (balances.get(transaction.account_id) ?? 0) - amount,
+    );
+
+    if (transaction.transfer_account_id) {
+      balances.set(
+        transaction.transfer_account_id,
+        (balances.get(transaction.transfer_account_id) ?? 0) + amount,
+      );
+    }
+  });
+
+  return Array.from(balances.entries()).map(([accountId, balance]) => ({
+    account_id: accountId,
+    balance,
+  }));
+}
+
 async function getDashboardData(
   filters: DashboardFilters,
   dateRange: DashboardDateRange,
@@ -322,6 +377,7 @@ async function getDashboardData(
   if (!hasSupabaseEnv()) {
     return {
       accounts: [],
+      accountBalances: [],
       adviceLogs: [],
       budgets: [],
       categories: [],
@@ -345,6 +401,7 @@ async function getDashboardData(
   if (!user) {
     return {
       accounts: [],
+      accountBalances: [],
       adviceLogs: [],
       budgets: [],
       categories: [],
@@ -371,6 +428,7 @@ async function getDashboardData(
   if (membershipError) {
     return {
       accounts: [],
+      accountBalances: [],
       adviceLogs: [],
       budgets: [],
       categories: [],
@@ -392,6 +450,7 @@ async function getDashboardData(
   if (!household) {
     return {
       accounts: [],
+      accountBalances: [],
       adviceLogs: [],
       budgets: [],
       categories: [],
@@ -417,6 +476,7 @@ async function getDashboardData(
     budgetsResult,
     recurringResult,
     adviceResult,
+    balanceTransactionsResult,
   ] = await Promise.all([
     supabase
       .from("accounts")
@@ -440,7 +500,7 @@ async function getDashboardData(
     supabase
       .from("transactions")
       .select(
-        "id, household_id, account_id, category_id, recurring_item_id, type, source, amount, currency_code, transaction_date, occurred_at, merchant, memo, created_at",
+        "id, household_id, account_id, transfer_account_id, category_id, recurring_item_id, type, source, amount, currency_code, transaction_date, occurred_at, merchant, memo, created_at",
       )
       .eq("household_id", household.id)
       .gte("transaction_date", dateRange.start)
@@ -470,6 +530,10 @@ async function getDashboardData(
       .eq("household_id", household.id)
       .order("created_at", { ascending: false })
       .limit(3),
+    supabase
+      .from("transactions")
+      .select("account_id, transfer_account_id, type, amount")
+      .eq("household_id", household.id),
   ]);
 
   const recurringItems =
@@ -497,6 +561,9 @@ async function getDashboardData(
 
   return {
     accounts: (accountsResult.data ?? []) as unknown as AccountRow[],
+    accountBalances: buildAccountBalances(
+      (balanceTransactionsResult.data ?? []) as unknown as BalanceTransactionRow[],
+    ),
     adviceLogs: (adviceResult.data ?? []) as unknown as AiAdviceLogRow[],
     budgets: (budgetsResult.data ?? []) as unknown as DashboardBudgetRow[],
     categories: (categoriesResult.data ?? []) as unknown as CategoryRow[],
@@ -507,7 +574,8 @@ async function getDashboardData(
       transactionsResult.error?.message ??
       budgetsResult.error?.message ??
       recurringResult.error?.message ??
-      adviceResult.error?.message,
+      adviceResult.error?.message ??
+      balanceTransactionsResult.error?.message,
     filters,
     household,
     isConfigured: true,

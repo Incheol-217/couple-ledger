@@ -43,6 +43,8 @@ describe("Supabase schema and RLS", () => {
     "recurring_items",
     "ai_advice_logs",
     "import_jobs",
+    "notification_events",
+    "notification_reads",
   ];
 
   it("enables and forces RLS on household-owned tables", () => {
@@ -82,6 +84,15 @@ describe("Supabase schema and RLS", () => {
       migrations,
       /create unique index if not exists transactions_recurring_unique_due_idx\s+on public\.transactions\(recurring_item_id, transaction_date\)\s+where recurring_item_id is not null;/,
     );
+  });
+
+  it("keeps notification events household-scoped and read markers user-scoped", () => {
+    assert.match(migrations, /create table public\.notification_events/);
+    assert.match(migrations, /create table public\.notification_reads/);
+    assert.match(migrations, /public\.is_household_member\(household_id\)/);
+    assert.match(migrations, /actor_user_id = auth\.uid\(\)/);
+    assert.match(migrations, /user_id = auth\.uid\(\)/);
+    assert.match(migrations, /public\.is_household_member\(event\.household_id\)/);
   });
 });
 
@@ -153,6 +164,14 @@ describe("Login and role access", () => {
   const loginForm = read("src/app/login/login-form.tsx");
   const accountActions = read("src/app/accounts/actions.ts");
   const accountsClient = read("src/app/accounts/accounts-client.tsx");
+  const appShell = read("src/components/app-shell.tsx");
+  const notificationBell = read(
+    "src/components/notifications/notification-bell.tsx",
+  );
+  const notificationFeed = read("src/lib/notifications/feed.ts");
+  const notificationEvents = read("src/lib/notifications/events.ts");
+  const recurringActions = read("src/app/recurring/actions.ts");
+  const shortcutRoute = read("src/app/api/shortcuts/transactions/route.ts");
 
   it("protects initial account setup with a setup secret", () => {
     assert.match(setupRoute, /SETUP_SECRET/);
@@ -200,6 +219,28 @@ describe("Login and role access", () => {
     assert.match(loginForm, /autoComplete="current-password"/);
     assert.doesNotMatch(loginForm, /localStorage\.setItem\([^)]*password/i);
   });
+
+  it("shows household activity notifications without echoing the actor's own events", () => {
+    assert.match(appShell, /<NotificationBell/);
+    assert.match(appShell, /getNotificationFeed/);
+    assert.match(notificationBell, /unreadCount/);
+    assert.match(notificationBell, /markNotificationsReadAction/);
+    assert.match(notificationFeed, /\.neq\("actor_user_id", user\.id\)/);
+  });
+
+  it("records notifications for partner transactions and admin setting changes", () => {
+    assert.match(notificationEvents, /transaction_created/);
+    assert.match(quickAction, /createNotificationEvent/);
+    assert.match(quickAction, /eventType:\s*"transaction_created"/);
+    assert.match(shortcutRoute, /eventType:\s*"transaction_created"/);
+    assert.match(accountActions, /eventType:\s*"account_created"/);
+    assert.match(accountActions, /eventType:\s*"account_updated"/);
+    assert.match(accountActions, /eventType:\s*"account_deactivated"/);
+    assert.match(accountActions, /eventType:\s*"account_reordered"/);
+    assert.match(recurringActions, /eventType:\s*"recurring_created"/);
+    assert.match(recurringActions, /eventType:\s*"recurring_updated"/);
+    assert.match(recurringActions, /eventType:\s*"recurring_status_changed"/);
+  });
 });
 
 describe("UX guardrails", () => {
@@ -224,6 +265,8 @@ describe("UX guardrails", () => {
     assert.match(dashboard, /<Tabs/);
     assert.match(dashboard, /AI 소비 조언/);
     assert.match(dashboard, /makeFriendlyAdviceLine/);
+    assert.match(dashboard, /MainAccountBalanceCard/);
+    assert.match(dashboard, /생활비통장/);
   });
 
   it("provides printable household reports", () => {

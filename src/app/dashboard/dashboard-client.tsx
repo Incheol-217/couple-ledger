@@ -2,7 +2,13 @@
 
 import { useMemo } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Sparkles } from "lucide-react";
+import {
+  ArrowDownLeft,
+  ArrowUpRight,
+  Landmark,
+  Sparkles,
+  WalletCards,
+} from "lucide-react";
 import {
   Bar,
   BarChart,
@@ -46,6 +52,7 @@ import {
 import type {
   AccountFilter,
   AiAdviceLogRow,
+  DashboardAccountBalance,
   DashboardPageData,
   DashboardTransactionRow,
   ExpenseTypeFilter,
@@ -205,6 +212,69 @@ function accountName(accountsById: Map<string, AccountRow>, accountId: string) {
   return accountsById.get(accountId)?.name ?? "알 수 없는 계좌";
 }
 
+function normalizedAccountName(account: AccountRow) {
+  return account.name.replace(/\s+/g, "");
+}
+
+function findMainAccount(accounts: AccountRow[]) {
+  return (
+    accounts.find((account) => normalizedAccountName(account) === "생활비통장") ??
+    accounts.find((account) => normalizedAccountName(account).includes("생활비")) ??
+    accounts.find(
+      (account) => account.owner_type === "shared" && account.type === "bank",
+    ) ??
+    accounts.find((account) => account.type === "bank") ??
+    accounts[0] ??
+    null
+  );
+}
+
+function accountBalance(
+  accountBalances: DashboardAccountBalance[],
+  accountId: string,
+) {
+  return (
+    accountBalances.find((balance) => balance.account_id === accountId)
+      ?.balance ?? 0
+  );
+}
+
+function accountPeriodFlow(
+  transactions: DashboardTransactionRow[],
+  accountId: string,
+) {
+  return transactions.reduce(
+    (summary, transaction) => {
+      const amount = toAmount(transaction.amount);
+
+      if (transaction.type === "income" && transaction.account_id === accountId) {
+        summary.inflow += amount;
+        summary.transactionCount += 1;
+      }
+
+      if (transaction.type === "expense" && transaction.account_id === accountId) {
+        summary.outflow += amount;
+        summary.transactionCount += 1;
+      }
+
+      if (transaction.type === "transfer") {
+        if (transaction.account_id === accountId) {
+          summary.outflow += amount;
+          summary.transactionCount += 1;
+        }
+
+        if (transaction.transfer_account_id === accountId) {
+          summary.inflow += amount;
+          summary.transactionCount += 1;
+        }
+      }
+
+      return summary;
+    },
+    { inflow: 0, outflow: 0, transactionCount: 0 },
+  );
+}
+
 function recurringKindForTransaction(
   transaction: DashboardTransactionRow,
   recurringKindById: Map<string, PlannedRecurringOccurrence["kind"]>,
@@ -250,6 +320,97 @@ function EmptyState({ message }: { message: string }) {
     <div className="flex min-h-32 items-center justify-center rounded-md border border-dashed bg-muted/25 px-4 text-center text-sm text-muted-foreground">
       {message}
     </div>
+  );
+}
+
+function MainAccountBalanceCard({
+  account,
+  balance,
+  dateRangeLabel,
+  periodInflow,
+  periodOutflow,
+  scheduledOutflow,
+}: {
+  account: AccountRow | null;
+  balance: number;
+  dateRangeLabel: string;
+  periodInflow: number;
+  periodOutflow: number;
+  scheduledOutflow: number;
+}) {
+  if (!account) {
+    return <EmptyState message="메인 계좌로 표시할 계좌가 없습니다." />;
+  }
+
+  const netFlow = periodInflow - periodOutflow;
+
+  return (
+    <section className="overflow-hidden rounded-[2rem] bg-[#111214] p-4 text-white shadow-[0_24px_60px_rgba(18,18,18,0.22)] sm:p-5">
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="grid size-9 place-items-center rounded-full bg-primary text-secondary">
+              <Landmark className="size-5" aria-hidden="true" />
+            </span>
+            <div className="min-w-0">
+              <p className="truncate text-sm text-white/60">메인 계좌</p>
+              <h2 className="truncate text-xl font-semibold tracking-normal">
+                {account.name}
+              </h2>
+            </div>
+          </div>
+        </div>
+        <span className="rounded-full bg-primary px-3 py-1 text-xs font-bold text-secondary">
+          {ownerTypeLabels[account.owner_type]}
+        </span>
+      </div>
+
+      <div className="mt-5 rounded-[1.5rem] bg-white p-4 text-[#111214] shadow-[0_18px_45px_rgba(0,0,0,0.22)] sm:p-5">
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-sm text-muted-foreground">잔액</p>
+          <span className="rounded-full bg-primary px-3 py-1 text-xs font-bold text-secondary">
+            {netFlow >= 0 ? "+" : "-"}
+            {formatMoney(Math.abs(netFlow))}
+          </span>
+        </div>
+        <p className="mt-4 break-keep text-4xl font-semibold tracking-normal sm:text-5xl">
+          {formatMoney(balance)}
+        </p>
+        <p className="mt-2 text-xs text-muted-foreground">
+          기록 기준 잔액 · {dateRangeLabel}
+        </p>
+      </div>
+
+      <div className="mt-4 grid grid-cols-3 gap-2">
+        <div className="rounded-[1.25rem] bg-white/10 p-3">
+          <span className="grid size-9 place-items-center rounded-full bg-primary text-secondary">
+            <ArrowDownLeft className="size-4" aria-hidden="true" />
+          </span>
+          <p className="mt-3 text-xs text-white/55">입금</p>
+          <p className="mt-1 truncate text-sm font-semibold">
+            {formatMoney(periodInflow)}
+          </p>
+        </div>
+        <div className="rounded-[1.25rem] bg-white/10 p-3">
+          <span className="grid size-9 place-items-center rounded-full bg-white text-secondary">
+            <ArrowUpRight className="size-4" aria-hidden="true" />
+          </span>
+          <p className="mt-3 text-xs text-white/55">출금</p>
+          <p className="mt-1 truncate text-sm font-semibold">
+            {formatMoney(periodOutflow)}
+          </p>
+        </div>
+        <div className="rounded-[1.25rem] bg-white/10 p-3">
+          <span className="grid size-9 place-items-center rounded-full bg-white text-secondary">
+            <WalletCards className="size-4" aria-hidden="true" />
+          </span>
+          <p className="mt-3 text-xs text-white/55">예정</p>
+          <p className="mt-1 truncate text-sm font-semibold">
+            {formatMoney(scheduledOutflow)}
+          </p>
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -484,6 +645,7 @@ function AccountSummaryCards({
 export function DashboardClient(props: DashboardClientProps) {
   const {
     accounts,
+    accountBalances,
     adviceLogs,
     budgets,
     categories,
@@ -704,6 +866,20 @@ export function DashboardClient(props: DashboardClientProps) {
         .reduce((sum, occurrence) => sum + occurrence.amount, 0),
     };
   });
+  const mainAccount = findMainAccount(accounts);
+  const mainAccountFlow = mainAccount
+    ? accountPeriodFlow(transactions, mainAccount.id)
+    : { inflow: 0, outflow: 0, transactionCount: 0 };
+  const mainAccountScheduledOutflow = mainAccount
+    ? plannedOccurrences
+        .filter(
+          (occurrence) =>
+            occurrence.account_id === mainAccount.id &&
+            occurrence.due_date >= today &&
+            occurrence.due_date <= currentMonthEnd,
+        )
+        .reduce((sum, occurrence) => sum + occurrence.amount, 0)
+    : 0;
 
   const latestAdvice = adviceLogs[0];
   const generatedAdvice = (() => {
@@ -872,6 +1048,15 @@ export function DashboardClient(props: DashboardClientProps) {
           </div>
         </FilterSheet>
       </div>
+
+      <MainAccountBalanceCard
+        account={mainAccount}
+        balance={mainAccount ? accountBalance(accountBalances, mainAccount.id) : 0}
+        dateRangeLabel={dateRange.label}
+        periodInflow={mainAccountFlow.inflow}
+        periodOutflow={mainAccountFlow.outflow}
+        scheduledOutflow={mainAccountScheduledOutflow}
+      />
 
       <section className="grid gap-3 md:grid-cols-3 xl:grid-cols-6">
         {[

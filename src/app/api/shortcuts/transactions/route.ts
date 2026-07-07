@@ -1,7 +1,15 @@
 import { revalidatePath } from "next/cache";
 import { NextRequest, NextResponse } from "next/server";
 import { timingSafeEqual } from "node:crypto";
-import { transactionTypes, type TransactionType } from "@/app/m/new/types";
+import {
+  transactionTypeLabels,
+  transactionTypes,
+  type TransactionType,
+} from "@/app/m/new/types";
+import {
+  createNotificationEvent,
+  formatWonForNotification,
+} from "@/lib/notifications/events";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
@@ -376,9 +384,27 @@ export async function POST(request: NextRequest) {
       throw apiError(error.message, 500);
     }
 
+    await createNotificationEvent(supabase, {
+      actorUserId: userId,
+      body: `${transactionTypeLabels[type]} ${formatWonForNotification(amount)}이 Shortcuts로 기록되었습니다.`,
+      eventType: "transaction_created",
+      householdId,
+      metadata: {
+        account_id: accountId,
+        amount,
+        category_id: categoryId,
+        source: "shortcut",
+        transaction_id: transaction.id,
+        transfer_account_id: transferAccountId,
+        type,
+      },
+      title: "새 거래 기록",
+    });
+
     revalidatePath("/dashboard");
     revalidatePath("/m/new");
     revalidatePath("/transactions");
+    revalidatePath("/", "layout");
 
     return NextResponse.json({
       ok: true,

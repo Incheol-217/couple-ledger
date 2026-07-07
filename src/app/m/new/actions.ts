@@ -1,8 +1,16 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import {
+  createNotificationEvent,
+  formatWonForNotification,
+} from "@/lib/notifications/events";
 import { createClient } from "@/lib/supabase/server";
-import { transactionTypes, type TransactionType } from "./types";
+import {
+  transactionTypeLabels,
+  transactionTypes,
+  type TransactionType,
+} from "./types";
 
 export type QuickTransactionActionResult = {
   ok: boolean;
@@ -217,9 +225,26 @@ export async function createQuickTransactionAction(
       throw new Error(error.message);
     }
 
+    await createNotificationEvent(supabase, {
+      actorUserId: user.id,
+      body: `${transactionTypeLabels[type]} ${formatWonForNotification(amount)}이 기록되었습니다.`,
+      eventType: "transaction_created",
+      householdId,
+      metadata: {
+        account_id: confirmedAccountId,
+        amount,
+        category_id: confirmedCategoryId,
+        source: "manual",
+        transfer_account_id: confirmedTransferAccountId,
+        type,
+      },
+      title: "새 거래 기록",
+    });
+
     revalidatePath("/m/new");
     revalidatePath("/transactions");
     revalidatePath("/dashboard");
+    revalidatePath("/", "layout");
 
     return { ok: true, message: "거래를 저장했습니다." };
   } catch (error) {

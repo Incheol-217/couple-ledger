@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { createNotificationEvent } from "@/lib/notifications/events";
 import { createClient } from "@/lib/supabase/server";
 import {
   accountTypes,
@@ -202,7 +203,21 @@ export async function createAccountAction(
       throw new Error(error.message);
     }
 
+    await createNotificationEvent(supabase, {
+      actorUserId: user.id,
+      body: `관리자가 '${payload.name}' 계좌를 추가했습니다.`,
+      eventType: "account_created",
+      householdId,
+      metadata: {
+        owner_type: payload.ownerType,
+        type: payload.type,
+      },
+      title: "계좌 설정 변경",
+    });
+
     revalidatePath("/accounts");
+    revalidatePath("/dashboard");
+    revalidatePath("/", "layout");
     return { ok: true, message: "계좌를 추가했습니다." };
   } catch (error) {
     return {
@@ -224,7 +239,7 @@ export async function updateAccountAction(
       throw new Error("수정할 계좌를 찾을 수 없습니다.");
     }
 
-    const { supabase } = await assertCurrentAdminMember(householdId);
+    const { supabase, user } = await assertCurrentAdminMember(householdId);
     const payload = toAccountPayload(formData);
     const defaultWithdrawalAccountId = await validateWithdrawalAccount(
       supabase,
@@ -252,7 +267,22 @@ export async function updateAccountAction(
       throw new Error(error.message);
     }
 
+    await createNotificationEvent(supabase, {
+      actorUserId: user.id,
+      body: `관리자가 '${payload.name}' 계좌 설정을 수정했습니다.`,
+      eventType: "account_updated",
+      householdId,
+      metadata: {
+        account_id: accountId,
+        owner_type: payload.ownerType,
+        type: payload.type,
+      },
+      title: "계좌 설정 변경",
+    });
+
     revalidatePath("/accounts");
+    revalidatePath("/dashboard");
+    revalidatePath("/", "layout");
     return { ok: true, message: "계좌를 수정했습니다." };
   } catch (error) {
     return {
@@ -274,7 +304,18 @@ export async function deactivateAccountAction(
       throw new Error("비활성화할 계좌를 찾을 수 없습니다.");
     }
 
-    const { supabase } = await assertCurrentAdminMember(householdId);
+    const { supabase, user } = await assertCurrentAdminMember(householdId);
+    const { data: account, error: accountError } = await supabase
+      .from("accounts")
+      .select("name")
+      .eq("household_id", householdId)
+      .eq("id", accountId)
+      .maybeSingle();
+
+    if (accountError) {
+      throw new Error(accountError.message);
+    }
+
     const { error } = await supabase
       .from("accounts")
       .update({
@@ -288,7 +329,20 @@ export async function deactivateAccountAction(
       throw new Error(error.message);
     }
 
+    await createNotificationEvent(supabase, {
+      actorUserId: user.id,
+      body: `관리자가 '${account?.name ?? "계좌"}' 계좌를 비활성화했습니다.`,
+      eventType: "account_deactivated",
+      householdId,
+      metadata: {
+        account_id: accountId,
+      },
+      title: "계좌 설정 변경",
+    });
+
     revalidatePath("/accounts");
+    revalidatePath("/dashboard");
+    revalidatePath("/", "layout");
     return { ok: true, message: "계좌를 비활성화했습니다." };
   } catch (error) {
     return {
@@ -313,10 +367,10 @@ export async function moveAccountAction(
       throw new Error("정렬할 계좌를 찾을 수 없습니다.");
     }
 
-    const { supabase } = await assertCurrentAdminMember(householdId);
+    const { supabase, user } = await assertCurrentAdminMember(householdId);
     const { data: accounts, error: listError } = await supabase
       .from("accounts")
-      .select("id, display_order, created_at")
+      .select("id, name, display_order, created_at")
       .eq("household_id", householdId)
       .eq("is_active", true)
       .order("display_order", { ascending: true })
@@ -358,7 +412,21 @@ export async function moveAccountAction(
       throw new Error(failed.error.message);
     }
 
+    await createNotificationEvent(supabase, {
+      actorUserId: user.id,
+      body: `관리자가 '${selected.name ?? "계좌"}' 계좌의 표시 순서를 변경했습니다.`,
+      eventType: "account_reordered",
+      householdId,
+      metadata: {
+        account_id: accountId,
+        direction,
+      },
+      title: "계좌 설정 변경",
+    });
+
     revalidatePath("/accounts");
+    revalidatePath("/dashboard");
+    revalidatePath("/", "layout");
     return { ok: true, message: "계좌 순서를 변경했습니다." };
   } catch (error) {
     return {

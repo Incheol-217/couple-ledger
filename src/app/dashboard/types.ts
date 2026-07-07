@@ -53,6 +53,7 @@ export type DashboardTransactionRow = {
   id: string;
   household_id: string;
   account_id: string;
+  transfer_account_id: string | null;
   category_id: string | null;
   recurring_item_id: string | null;
   type: TransactionType;
@@ -64,6 +65,11 @@ export type DashboardTransactionRow = {
   merchant: string | null;
   memo: string | null;
   created_at: string;
+};
+
+export type DashboardAccountBalance = {
+  account_id: string;
+  balance: number;
 };
 
 export type DashboardBudgetRow = {
@@ -103,6 +109,7 @@ export type PlannedRecurringOccurrence = {
 
 export type DashboardPageData = {
   accounts: AccountRow[];
+  accountBalances: DashboardAccountBalance[];
   adviceLogs: AiAdviceLogRow[];
   budgets: DashboardBudgetRow[];
   categories: CategoryRow[];

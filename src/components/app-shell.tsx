@@ -2,9 +2,11 @@ import Link from "next/link";
 import { LogOut, Plus, UserRound } from "lucide-react";
 import { signOutAction } from "@/app/login/actions";
 import { AppNav } from "@/components/app-nav";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getCurrentUserContext } from "@/lib/auth/session";
+import { getNotificationFeed } from "@/lib/notifications/feed";
 
 function displayRole(context: Awaited<ReturnType<typeof getCurrentUserContext>>) {
   if (context.isAdmin) {
@@ -25,6 +27,9 @@ function displayRole(context: Awaited<ReturnType<typeof getCurrentUserContext>>)
 export async function AppShell({ children }: { children: React.ReactNode }) {
   const context = await getCurrentUserContext();
   const canAccessSettings = context.isSignedIn && context.isAdmin;
+  const notifications = context.isSignedIn
+    ? await getNotificationFeed()
+    : { items: [], unreadCount: 0 };
 
   return (
     <div className="min-h-svh">
@@ -42,6 +47,10 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
           <div className="flex items-center gap-2">
             {context.isSignedIn ? (
               <>
+                <NotificationBell
+                  items={notifications.items}
+                  unreadCount={notifications.unreadCount}
+                />
                 <div className="hidden min-w-0 items-center gap-2 rounded-full border bg-card px-3 py-2 text-sm shadow-sm lg:flex">
                   <UserRound className="size-4 text-primary" aria-hidden="true" />
                   <span className="max-w-32 truncate">
