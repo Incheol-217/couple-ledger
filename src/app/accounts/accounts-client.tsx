@@ -6,6 +6,7 @@ import {
   ArrowDown,
   ArrowUp,
   Banknote,
+  Building2,
   CreditCard,
   Layers,
   Landmark,
@@ -80,6 +81,30 @@ function getWithdrawalName(accounts: AccountRow[], id: string | null) {
   return accounts.find((account) => account.id === id)?.name ?? "-";
 }
 
+function readableAccountId(account: AccountRow) {
+  return account.masked_identifier ? `•••• ${account.masked_identifier}` : "별칭 없음";
+}
+
+function walletCardBackground(account: AccountRow, selected: boolean) {
+  const color = account.color ?? "#aeee00";
+
+  if (!selected) {
+    return `linear-gradient(135deg, ${color} 0%, #f7f7f2 58%, #111214 130%)`;
+  }
+
+  return `radial-gradient(circle at 84% 18%, rgba(255,255,255,0.35), transparent 26%), linear-gradient(145deg, ${color} 0%, #202124 62%, #111214 100%)`;
+}
+
+function handleKeyboardSelect(
+  event: React.KeyboardEvent<HTMLElement>,
+  onSelect: () => void,
+) {
+  if (event.key === "Enter" || event.key === " ") {
+    event.preventDefault();
+    onSelect();
+  }
+}
+
 function AccountIcon({
   account,
   className,
@@ -99,6 +124,323 @@ function AccountIcon({
     >
       <Icon className="size-5" aria-hidden="true" />
     </span>
+  );
+}
+
+function WalletAccountCard({
+  account,
+  accounts,
+  householdId,
+  isAdmin,
+  isPending,
+  onDeactivate,
+  onEdit,
+  onSelect,
+  selected,
+  stackIndex,
+}: {
+  account: AccountRow;
+  accounts: AccountRow[];
+  householdId: string;
+  isAdmin: boolean;
+  isPending: boolean;
+  onDeactivate: (formData: FormData) => void;
+  onEdit: (account: AccountRow) => void;
+  onSelect: (accountId: string) => void;
+  selected: boolean;
+  stackIndex: number;
+}) {
+  const offsetIndex = Math.max(stackIndex, 0);
+  const translateY = selected ? 0 : 92 + offsetIndex * 44;
+  const translateX = selected ? 0 : Math.min(offsetIndex + 1, 4) * 8;
+  const scale = selected ? 1 : 1 - Math.min(offsetIndex + 1, 5) * 0.035;
+  const rotate = selected ? 0 : -Math.min(offsetIndex + 1, 4) * 0.45;
+  const baseColor = account.color ?? "#aeee00";
+
+  return (
+    <article
+      aria-label={`${account.name} 계좌`}
+      aria-pressed={selected}
+      className={cn(
+        "absolute inset-x-0 top-0 h-80 cursor-pointer overflow-hidden rounded-[2rem] border p-5 shadow-[0_22px_50px_rgba(18,18,18,0.28)] outline-none transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] focus-visible:ring-4 focus-visible:ring-primary/40",
+        selected
+          ? "border-white/20 text-white"
+          : "border-black/10 text-[#111214] hover:brightness-105",
+      )}
+      onClick={() => onSelect(account.id)}
+      onKeyDown={(event) => handleKeyboardSelect(event, () => onSelect(account.id))}
+      role="button"
+      style={{
+        background: walletCardBackground(account, selected),
+        transform: `translate3d(${translateX}px, ${translateY}px, 0) scale(${scale}) rotate(${rotate}deg)`,
+        zIndex: selected ? 40 : 30 - offsetIndex,
+      }}
+      tabIndex={0}
+    >
+      <span
+        className="absolute right-8 top-0 h-9 w-28 -translate-y-3 rounded-t-[1.35rem] border border-white/20 border-b-0"
+        style={{ background: baseColor }}
+      />
+      <div className="relative z-10 flex h-full flex-col">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex min-w-0 items-start gap-3">
+            <AccountIcon
+              account={account}
+              className={cn("rounded-full", selected ? "bg-white/20" : "")}
+            />
+            <div className="min-w-0">
+              <p className="truncate text-lg font-semibold">{account.name}</p>
+              <p
+                className={cn(
+                  "mt-1 truncate text-sm",
+                  selected ? "text-white/68" : "text-black/58",
+                )}
+              >
+                {accountTypeLabels[account.type]} ·{" "}
+                {ownerTypeLabels[account.owner_type]}
+              </p>
+            </div>
+          </div>
+          <Badge
+            className={selected ? "bg-white text-secondary" : "bg-secondary text-white"}
+          >
+            {selected ? "앞면" : ownerTypeLabels[account.owner_type]}
+          </Badge>
+        </div>
+
+        <div className={selected ? "mt-8" : "mt-auto"}>
+          <p
+            className={cn(
+              "text-xs",
+              selected ? "text-white/58" : "text-black/55",
+            )}
+          >
+            {account.institution_name ?? "기관 없음"}
+          </p>
+          <p className="mt-1 font-mono text-sm tracking-normal">
+            {readableAccountId(account)}
+          </p>
+        </div>
+
+        <div
+          className={cn(
+            "mt-5 gap-2 transition-all duration-500 sm:grid sm:grid-cols-3",
+            selected
+              ? "hidden opacity-100 sm:grid"
+              : "pointer-events-none hidden max-h-0 opacity-0",
+          )}
+        >
+          <div className="rounded-[1.15rem] bg-white/14 p-3 backdrop-blur">
+            <p className={cn("text-xs", selected ? "text-white/56" : "")}>기관</p>
+            <p className="mt-1 truncate text-sm font-semibold">
+              {account.institution_name ?? "-"}
+            </p>
+          </div>
+          <div className="rounded-[1.15rem] bg-white/14 p-3 backdrop-blur">
+            <p className={cn("text-xs", selected ? "text-white/56" : "")}>기본 출금</p>
+            <p className="mt-1 truncate text-sm font-semibold">
+              {account.type === "card"
+                ? getWithdrawalName(accounts, account.default_withdrawal_account_id)
+                : "-"}
+            </p>
+          </div>
+          <div className="rounded-[1.15rem] bg-white/14 p-3 backdrop-blur">
+            <p className={cn("text-xs", selected ? "text-white/56" : "")}>표시 순서</p>
+            <p className="mt-1 truncate text-sm font-semibold">
+              {account.display_order}
+            </p>
+          </div>
+        </div>
+
+        {selected && isAdmin ? (
+          <div
+            className="mt-4 flex gap-2"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <Button
+              className="flex-1 bg-white text-secondary hover:bg-white/90"
+              onClick={() => onEdit(account)}
+              type="button"
+              variant="outline"
+            >
+              <Pencil className="size-4" aria-hidden="true" />
+              수정
+            </Button>
+            <form action={onDeactivate}>
+              <input name="household_id" type="hidden" value={householdId} />
+              <input name="account_id" type="hidden" value={account.id} />
+              <Button
+                className="bg-white/12 text-white hover:bg-white/20"
+                disabled={isPending}
+                type="submit"
+                variant="outline"
+              >
+                <Archive className="size-4" aria-hidden="true" />
+                비활성화
+              </Button>
+            </form>
+          </div>
+        ) : null}
+      </div>
+    </article>
+  );
+}
+
+function WalletDeck({
+  accounts,
+  allAccounts,
+  householdId,
+  isAdmin,
+  isPending,
+  onCreate,
+  onDeactivate,
+  onEdit,
+  onSelect,
+  selectedAccountId,
+}: {
+  accounts: AccountRow[];
+  allAccounts: AccountRow[];
+  householdId: string;
+  isAdmin: boolean;
+  isPending: boolean;
+  onCreate: () => void;
+  onDeactivate: (formData: FormData) => void;
+  onEdit: (account: AccountRow) => void;
+  onSelect: (accountId: string) => void;
+  selectedAccountId: string | null;
+}) {
+  const selectedAccount =
+    accounts.find((account) => account.id === selectedAccountId) ??
+    accounts[0] ??
+    null;
+  const stackedAccounts = selectedAccount
+    ? [
+        selectedAccount,
+        ...accounts.filter((account) => account.id !== selectedAccount.id),
+      ]
+    : [];
+  const deckHeight = Math.max(
+    430,
+    Math.min(660, 372 + Math.max(stackedAccounts.length - 1, 0) * 44),
+  );
+
+  if (accounts.length === 0) {
+    return (
+      <Card className="overflow-hidden rounded-[2rem]">
+        <CardContent className="flex min-h-80 flex-col items-center justify-center gap-3 p-6 text-center">
+          <Banknote className="size-8 text-muted-foreground" aria-hidden="true" />
+          <div>
+            <p className="font-medium">아직 계좌가 없습니다</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              생활비 통장, 공용 카드, 현금을 먼저 추가해 보세요.
+            </p>
+          </div>
+          {isAdmin ? (
+            <Button onClick={onCreate} type="button">
+              <Plus className="size-4" aria-hidden="true" />
+              계좌 추가
+            </Button>
+          ) : null}
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <section className="overflow-hidden rounded-[2rem] bg-[#111214] p-4 text-white shadow-[0_24px_70px_rgba(18,18,18,0.22)] sm:p-6">
+      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-sm text-white/58">Wallet</p>
+          <h2 className="text-2xl font-semibold tracking-normal">계좌 지갑</h2>
+        </div>
+        <div className="flex items-center gap-2">
+          <Badge className="bg-white text-secondary">{accounts.length}개</Badge>
+          {isAdmin ? (
+            <Button
+              className="bg-primary text-secondary hover:bg-primary/90"
+              onClick={onCreate}
+              type="button"
+            >
+              <Plus className="size-4" aria-hidden="true" />
+              계좌 추가
+            </Button>
+          ) : null}
+        </div>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
+        <div className="relative" style={{ minHeight: deckHeight }}>
+          {stackedAccounts.map((account, index) => (
+            <WalletAccountCard
+              account={account}
+              accounts={allAccounts}
+              householdId={householdId}
+              isAdmin={isAdmin}
+              isPending={isPending}
+              key={account.id}
+              onDeactivate={onDeactivate}
+              onEdit={onEdit}
+              onSelect={onSelect}
+              selected={account.id === selectedAccount?.id}
+              stackIndex={index - 1}
+            />
+          ))}
+        </div>
+
+        <aside className="rounded-[1.5rem] border border-white/10 bg-white/8 p-4 backdrop-blur">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-sm text-white/55">선택된 계좌</p>
+              <h3 className="mt-1 text-xl font-semibold tracking-normal">
+                {selectedAccount?.name}
+              </h3>
+            </div>
+            {selectedAccount ? <AccountIcon account={selectedAccount} /> : null}
+          </div>
+
+          <dl className="mt-5 grid gap-3 text-sm">
+            <div className="flex items-center justify-between gap-4 rounded-[1rem] bg-white/10 px-3 py-2">
+              <dt className="flex items-center gap-2 text-white/58">
+                <Building2 className="size-4" aria-hidden="true" />
+                기관
+              </dt>
+              <dd className="truncate font-medium">
+                {selectedAccount?.institution_name ?? "-"}
+              </dd>
+            </div>
+            <div className="flex items-center justify-between gap-4 rounded-[1rem] bg-white/10 px-3 py-2">
+              <dt className="text-white/58">타입</dt>
+              <dd className="font-medium">
+                {selectedAccount ? accountTypeLabels[selectedAccount.type] : "-"}
+              </dd>
+            </div>
+            <div className="flex items-center justify-between gap-4 rounded-[1rem] bg-white/10 px-3 py-2">
+              <dt className="text-white/58">소유</dt>
+              <dd className="font-medium">
+                {selectedAccount
+                  ? ownerTypeLabels[selectedAccount.owner_type]
+                  : "-"}
+              </dd>
+            </div>
+            <div className="flex items-center justify-between gap-4 rounded-[1rem] bg-white/10 px-3 py-2">
+              <dt className="text-white/58">카드 출금</dt>
+              <dd className="truncate font-medium">
+                {selectedAccount?.type === "card"
+                  ? getWithdrawalName(
+                      allAccounts,
+                      selectedAccount.default_withdrawal_account_id,
+                    )
+                  : "-"}
+              </dd>
+            </div>
+          </dl>
+
+          <div className="mt-5 rounded-[1rem] bg-primary px-3 py-2 text-sm font-semibold text-secondary">
+            활성 계좌 {accounts.length}개
+          </div>
+        </aside>
+      </div>
+    </section>
   );
 }
 
@@ -319,10 +661,17 @@ export function AccountsClient({
 }) {
   const [mode, setMode] = useState<"create" | "edit" | null>(null);
   const [selectedAccount, setSelectedAccount] = useState<AccountRow | null>(null);
+  const [selectedWalletId, setSelectedWalletId] = useState<string | null>(
+    accounts.find((account) => account.is_active)?.id ?? null,
+  );
   const [result, setResult] = useState<AccountActionResult | null>(null);
   const [isPending, startTransition] = useTransition();
   const activeAccounts = accounts.filter((account) => account.is_active);
   const inactiveAccounts = accounts.filter((account) => !account.is_active);
+  const resolvedSelectedWalletId =
+    activeAccounts.find((account) => account.id === selectedWalletId)?.id ??
+    activeAccounts[0]?.id ??
+    null;
 
   function openCreate() {
     if (!isAdmin) {
@@ -473,101 +822,20 @@ export function AccountsClient({
         />
       ) : null}
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {activeAccounts.length > 0 ? (
-          activeAccounts.map((account) => (
-            <Card key={account.id}>
-              <CardContent className="p-5">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex min-w-0 items-start gap-3">
-                    <AccountIcon account={account} />
-                    <div className="min-w-0">
-                      <p className="truncate font-medium">{account.name}</p>
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        {accountTypeLabels[account.type]} ·{" "}
-                        {ownerTypeLabels[account.owner_type]}
-                      </p>
-                    </div>
-                  </div>
-                  <Badge variant="secondary">활성</Badge>
-                </div>
-
-                <div className="mt-5 grid gap-2 text-sm">
-                  <div className="flex justify-between gap-4">
-                    <span className="text-muted-foreground">기관</span>
-                    <span className="truncate">
-                      {account.institution_name ?? "-"}
-                    </span>
-                  </div>
-                  <div className="flex justify-between gap-4">
-                    <span className="text-muted-foreground">기본 출금</span>
-                    <span className="truncate">
-                      {account.type === "card"
-                        ? getWithdrawalName(
-                            accounts,
-                            account.default_withdrawal_account_id,
-                          )
-                        : "-"}
-                    </span>
-                  </div>
-                </div>
-
-                {isAdmin ? (
-                  <div className="mt-5 flex gap-2">
-                    <Button
-                      className="flex-1"
-                      onClick={() => openEdit(account)}
-                      type="button"
-                      variant="outline"
-                    >
-                      <Pencil className="size-4" aria-hidden="true" />
-                      수정
-                    </Button>
-                    <form
-                      action={(formData) =>
-                        runSimpleAction(deactivateAccountAction, formData)
-                      }
-                    >
-                      <input
-                        name="household_id"
-                        type="hidden"
-                        value={household.id}
-                      />
-                      <input name="account_id" type="hidden" value={account.id} />
-                      <Button
-                        disabled={isPending}
-                        type="submit"
-                        variant="outline"
-                      >
-                        <Archive className="size-4" aria-hidden="true" />
-                        <span className="sr-only">비활성화</span>
-                      </Button>
-                    </form>
-                  </div>
-                ) : null}
-              </CardContent>
-            </Card>
-          ))
-        ) : (
-          <Card className="md:col-span-2 xl:col-span-3">
-            <CardContent className="flex min-h-40 flex-col items-center justify-center gap-3 p-6 text-center">
-              <Banknote className="size-8 text-muted-foreground" aria-hidden="true" />
-              <div>
-                <p className="font-medium">아직 계좌가 없습니다</p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  생활비 통장, 공용 카드, 현금을 먼저 추가해 보세요.
-                </p>
-              </div>
-              {isAdmin ? (
-                <Button onClick={openCreate} type="button">
-                  <Plus className="size-4" aria-hidden="true" />
-                  계좌 추가
-                </Button>
-              ) : null}
-            </CardContent>
-          </Card>
-        )}
-      </section>
+      <WalletDeck
+        accounts={activeAccounts}
+        allAccounts={accounts}
+        householdId={household.id}
+        isAdmin={isAdmin}
+        isPending={isPending}
+        onCreate={openCreate}
+        onDeactivate={(formData) =>
+          runSimpleAction(deactivateAccountAction, formData)
+        }
+        onEdit={openEdit}
+        onSelect={setSelectedWalletId}
+        selectedAccountId={resolvedSelectedWalletId}
+      />
 
       <Card>
         <CardHeader>
