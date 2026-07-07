@@ -46,6 +46,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { formatAmountInput } from "@/lib/formatters/money";
 import { cn } from "@/lib/utils";
 
 const moneyFormatter = new Intl.NumberFormat("ko-KR", {
@@ -61,6 +62,10 @@ function toAmount(value: RecurringItemRow["amount"]) {
 
 function formatMoney(value: number) {
   return moneyFormatter.format(Math.round(value));
+}
+
+function formatAmountField(event: React.FormEvent<HTMLInputElement>) {
+  event.currentTarget.value = formatAmountInput(event.currentTarget.value);
 }
 
 function todayString() {
@@ -309,11 +314,14 @@ function RecurringForm({
               <Label htmlFor="recurring-amount">금액</Label>
               <Input
                 autoComplete="off"
-                defaultValue={item ? String(Math.round(toAmount(item.amount))) : ""}
+                defaultValue={
+                  item ? formatAmountInput(String(Math.round(toAmount(item.amount)))) : ""
+                }
                 id="recurring-amount"
                 inputMode="numeric"
                 name="amount"
-                placeholder="12900"
+                onInput={formatAmountField}
+                placeholder="12,900"
                 required
                 type="text"
               />

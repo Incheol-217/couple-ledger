@@ -246,6 +246,8 @@ describe("Login and role access", () => {
 describe("UX guardrails", () => {
   const quickEntry = read("src/app/m/new/quick-transaction-client.tsx");
   const dashboard = read("src/app/dashboard/dashboard-client.tsx");
+  const recurring = read("src/app/recurring/recurring-client.tsx");
+  const moneyFormatter = read("src/lib/formatters/money.ts");
   const reportPage = read("src/app/reports/page.tsx");
   const reports = read("src/app/reports/reports-client.tsx");
   const appNav = read("src/components/app-nav.tsx");
@@ -255,6 +257,13 @@ describe("UX guardrails", () => {
     assert.match(quickEntry, /inputMode="numeric"/);
     assert.match(quickEntry, /enterKeyHint="next"/);
     assert.match(quickEntry, /env\(safe-area-inset-bottom\)/);
+  });
+
+  it("formats amount inputs with thousands separators while keeping numeric submission safe", () => {
+    assert.match(moneyFormatter, /replace\(\/\\B\(\?=\(\\d\{3\}\)\+\(\?!\\d\)\)\/g, ","\)/);
+    assert.match(quickEntry, /setAmount\(formatAmountInput\(event\.target\.value\)\)/);
+    assert.match(recurring, /onInput=\{formatAmountField\}/);
+    assert.match(recurring, /placeholder="12,900"/);
   });
 
   it("keeps the dashboard responsive and chart-backed", () => {

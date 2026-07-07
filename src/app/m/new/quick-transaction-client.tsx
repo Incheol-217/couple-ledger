@@ -31,6 +31,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { formatAmountInput } from "@/lib/formatters/money";
 import { cn } from "@/lib/utils";
 
 function nowParts() {
@@ -85,10 +86,6 @@ function quickCategories(
     .filter((category): category is CategoryRow => Boolean(category));
 
   return uniqueById([...recent, ...filtered]).slice(0, 6);
-}
-
-function formatAmountInput(value: string) {
-  return value.replace(/[^\d]/g, "");
 }
 
 function ResultMessage({ result }: { result: QuickTransactionActionResult | null }) {
