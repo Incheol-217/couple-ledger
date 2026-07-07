@@ -113,3 +113,25 @@
       sans-serif;
   }
 }
+
+@media print {
+  @page {
+    margin: 14mm;
+  }
+
+  body {
+    background: #ffffff !important;
+  }
+
+  main {
+    padding-bottom: 0 !important;
+  }
+
+  .print-hidden {
+    display: none !important;
+  }
+
+  .break-inside-avoid {
+    break-inside: avoid;
+  }
+}

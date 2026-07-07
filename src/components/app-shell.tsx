@@ -28,7 +28,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-svh">
-      <header className="sticky top-0 z-40 bg-background/85 backdrop-blur-xl">
+      <header className="print-hidden sticky top-0 z-40 bg-background/85 backdrop-blur-xl">
         <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
           <Link className="flex items-center gap-2 font-semibold" href="/">
             <span className="grid size-8 place-items-center rounded-md bg-secondary text-sm text-primary">
@@ -80,7 +80,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
 
       <main className="pb-20 md:pb-0">{children}</main>
 
-      <div className="pointer-events-none fixed inset-x-0 bottom-4 z-40 md:hidden">
+      <div className="print-hidden pointer-events-none fixed inset-x-0 bottom-4 z-40 md:hidden">
         <AppNav canAccessSettings={canAccessSettings} compact />
       </div>
     </div>

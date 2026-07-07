@@ -205,6 +205,9 @@ describe("Login and role access", () => {
 describe("UX guardrails", () => {
   const quickEntry = read("src/app/m/new/quick-transaction-client.tsx");
   const dashboard = read("src/app/dashboard/dashboard-client.tsx");
+  const reportPage = read("src/app/reports/page.tsx");
+  const reports = read("src/app/reports/reports-client.tsx");
+  const appNav = read("src/components/app-nav.tsx");
   const settings = read("src/app/settings/settings-client.tsx");
 
   it("keeps mobile amount entry keypad-friendly and PWA-aware", () => {
@@ -221,6 +224,16 @@ describe("UX guardrails", () => {
     assert.match(dashboard, /<Tabs/);
     assert.match(dashboard, /AI 소비 조언/);
     assert.match(dashboard, /makeFriendlyAdviceLine/);
+  });
+
+  it("provides printable household reports", () => {
+    assert.match(appNav, /href:\s*"\/reports"/);
+    assert.match(reportPage, /\.from\("transactions"\)/);
+    assert.match(reportPage, /\.eq\("household_id", household\.id\)/);
+    assert.match(reportPage, /user_id/);
+    assert.match(reports, /window\.print\(\)/);
+    assert.match(reports, /인쇄 \/ PDF 저장/);
+    assert.match(reports, /AI 소비 조언/);
   });
 
   it("uses compact account summary cards on mobile", () => {

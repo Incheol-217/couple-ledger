@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   CalendarClock,
+  FileText,
   LayoutDashboard,
   ReceiptText,
   Settings,
@@ -14,6 +15,7 @@ import { cn } from "@/lib/utils";
 const navItems = [
   { href: "/dashboard", label: "대시보드", icon: LayoutDashboard },
   { href: "/transactions", label: "내역", icon: ReceiptText },
+  { href: "/reports", label: "보고서", icon: FileText },
   { href: "/accounts", label: "계좌", icon: WalletCards },
   { href: "/recurring", label: "고정비", icon: CalendarClock },
   { href: "/settings", label: "설정", icon: Settings },
