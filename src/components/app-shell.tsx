@@ -27,10 +27,10 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-svh">
-      <header className="sticky top-0 z-40 border-b bg-background/70 backdrop-blur-xl">
+      <header className="sticky top-0 z-40 bg-background/85 backdrop-blur-xl">
         <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
           <Link className="flex items-center gap-2 font-semibold" href="/">
-            <span className="grid size-8 place-items-center rounded-md bg-primary text-sm text-primary-foreground">
+            <span className="grid size-8 place-items-center rounded-md bg-secondary text-sm text-primary">
               B
             </span>
             <span>공동 가계부</span>
@@ -41,7 +41,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
           <div className="flex items-center gap-2">
             {context.isSignedIn ? (
               <>
-                <div className="hidden min-w-0 items-center gap-2 rounded-md border bg-card px-3 py-2 text-sm shadow-sm lg:flex">
+                <div className="hidden min-w-0 items-center gap-2 rounded-full border bg-card px-3 py-2 text-sm shadow-sm lg:flex">
                   <UserRound className="size-4 text-primary" aria-hidden="true" />
                   <span className="max-w-32 truncate">
                     {context.displayName ?? context.email ?? "로그인 사용자"}
@@ -79,7 +79,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
 
       <main className="pb-20 md:pb-0">{children}</main>
 
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/80 backdrop-blur-xl md:hidden">
+      <div className="pointer-events-none fixed inset-x-0 bottom-4 z-40 md:hidden">
         <AppNav canAccessSettings={context.isAdmin} compact />
       </div>
     </div>

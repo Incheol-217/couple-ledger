@@ -36,8 +36,8 @@ export function AppNav({
       className={cn(
         "flex items-center",
         compact
-          ? "h-16 justify-around px-2"
-          : "gap-1 rounded-md border bg-card p-1 shadow-sm",
+          ? "pointer-events-auto mx-auto h-16 max-w-[calc(100%-2rem)] justify-stretch gap-1 rounded-full border border-secondary/20 bg-secondary p-2 shadow-[0_18px_40px_rgba(18,18,18,0.24)]"
+          : "gap-1 rounded-full border border-secondary/15 bg-secondary p-1 shadow-[0_12px_28px_rgba(18,18,18,0.16)]",
       )}
     >
       {visibleItems.map((item) => {
@@ -49,17 +49,19 @@ export function AppNav({
             className={cn(
               "inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition",
               compact
-                ? "h-12 min-w-14 flex-col px-2 text-xs"
+                ? "h-12 min-w-0 flex-1 flex-col gap-1 rounded-full px-1 text-[11px] leading-none"
                 : "h-9 px-3",
               active
                 ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                : "text-secondary-foreground/72 hover:bg-secondary-foreground/10 hover:text-secondary-foreground",
             )}
             href={item.href}
             key={item.href}
           >
             <Icon className="size-4" aria-hidden="true" />
-            <span>{item.label}</span>
+            <span className={compact ? "max-w-full truncate" : undefined}>
+              {item.label}
+            </span>
           </Link>
         );
       })}

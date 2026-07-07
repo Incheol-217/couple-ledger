@@ -211,6 +211,13 @@ describe("UX guardrails", () => {
     assert.match(dashboard, /<Tabs/);
   });
 
+  it("uses compact account summary cards on mobile", () => {
+    assert.match(dashboard, /md:hidden/);
+    assert.match(dashboard, /hidden md:block/);
+    assert.match(dashboard, /<AccountSummaryCards accountSummaries=\{accountSummaries\} compact/);
+    assert.match(dashboard, /<AccountSummaryTable accountSummaries=\{accountSummaries\}/);
+  });
+
   it("keeps settings sections reachable through real tabs", () => {
     assert.match(settings, /<Tabs/);
     assert.match(settings, /<TabsList/);

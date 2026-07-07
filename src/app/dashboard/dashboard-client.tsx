@@ -56,6 +56,14 @@ type ChartRow = {
   amount: number;
 };
 
+type AccountSummaryView = {
+  account: AccountRow;
+  expense: number;
+  fixedPlanned: number;
+  recentTransactions: DashboardTransactionRow[];
+  subscriptionPlanned: number;
+};
+
 const periodLabels = {
   this_month: "이번 달",
   last_month: "지난 달",
@@ -312,6 +320,150 @@ function DashboardNotice({
   }
 
   return null;
+}
+
+function AccountSummaryTable({
+  accountSummaries,
+}: {
+  accountSummaries: AccountSummaryView[];
+}) {
+  return (
+    <div className="overflow-x-auto rounded-md border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>계좌</TableHead>
+            <TableHead>타입</TableHead>
+            <TableHead>소유</TableHead>
+            <TableHead className="text-right">기간 지출</TableHead>
+            <TableHead className="text-right">예정 고정비</TableHead>
+            <TableHead className="text-right">예정 구독비</TableHead>
+            <TableHead>최근 거래</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {accountSummaries.length === 0 ? (
+            <TableRow>
+              <TableCell className="text-center text-muted-foreground" colSpan={7}>
+                표시할 계좌가 없습니다.
+              </TableCell>
+            </TableRow>
+          ) : (
+            accountSummaries.map((summary) => (
+              <TableRow key={summary.account.id}>
+                <TableCell className="font-medium">
+                  {summary.account.name}
+                </TableCell>
+                <TableCell>{accountTypeLabels[summary.account.type]}</TableCell>
+                <TableCell>
+                  {ownerTypeLabels[summary.account.owner_type]}
+                </TableCell>
+                <TableCell className="text-right">
+                  {formatMoney(summary.expense)}
+                </TableCell>
+                <TableCell className="text-right">
+                  {formatMoney(summary.fixedPlanned)}
+                </TableCell>
+                <TableCell className="text-right">
+                  {formatMoney(summary.subscriptionPlanned)}
+                </TableCell>
+                <TableCell className="min-w-52">
+                  {summary.recentTransactions.length > 0 ? (
+                    <div className="flex flex-wrap gap-1.5">
+                      {summary.recentTransactions.map((transaction) => (
+                        <Badge key={transaction.id} variant="outline">
+                          {formatShortDate(transaction.transaction_date)}{" "}
+                          {transactionTitle(transaction)}
+                        </Badge>
+                      ))}
+                    </div>
+                  ) : (
+                    <span className="text-muted-foreground">-</span>
+                  )}
+                </TableCell>
+              </TableRow>
+            ))
+          )}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
+function AccountSummaryCards({
+  accountSummaries,
+  compact = false,
+}: {
+  accountSummaries: AccountSummaryView[];
+  compact?: boolean;
+}) {
+  if (accountSummaries.length === 0) {
+    return <EmptyState message="표시할 계좌가 없습니다." />;
+  }
+
+  return (
+    <div className={compact ? "grid gap-3" : "grid gap-3 md:grid-cols-2"}>
+      {accountSummaries.map((summary) => (
+        <div
+          className="min-w-0 rounded-md border bg-muted/30 p-4"
+          key={summary.account.id}
+        >
+          <div className="min-w-0">
+            <div className="flex min-w-0 items-start justify-between gap-3">
+              <div className="min-w-0">
+                <h3 className="truncate font-semibold">
+                  {summary.account.name}
+                </h3>
+                <p className="mt-1 truncate text-sm text-muted-foreground">
+                  {accountTypeLabels[summary.account.type]} ·{" "}
+                  {ownerTypeLabels[summary.account.owner_type]}
+                </p>
+              </div>
+              <Badge className="shrink-0" variant="secondary">
+                {formatMoney(summary.expense)}
+              </Badge>
+            </div>
+
+            <dl className="mt-4 grid grid-cols-2 gap-2 text-sm">
+              <div className="rounded-md bg-card px-3 py-2">
+                <dt className="text-xs text-muted-foreground">고정비</dt>
+                <dd className="mt-1 truncate font-semibold">
+                  {formatMoney(summary.fixedPlanned)}
+                </dd>
+              </div>
+              <div className="rounded-md bg-card px-3 py-2">
+                <dt className="text-xs text-muted-foreground">구독비</dt>
+                <dd className="mt-1 truncate font-semibold">
+                  {formatMoney(summary.subscriptionPlanned)}
+                </dd>
+              </div>
+            </dl>
+
+            <div className="mt-4 min-w-0">
+              <p className="mb-2 text-xs text-muted-foreground">최근 거래</p>
+              <div className="flex min-w-0 flex-wrap gap-1.5">
+                {summary.recentTransactions.length > 0 ? (
+                  summary.recentTransactions.map((transaction) => (
+                    <Badge
+                      className="max-w-full truncate"
+                      key={transaction.id}
+                      variant="outline"
+                    >
+                      {transactionTitle(transaction)}
+                    </Badge>
+                  ))
+                ) : (
+                  <span className="text-sm text-muted-foreground">
+                    최근 거래 없음
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 export function DashboardClient(props: DashboardClientProps) {
@@ -821,143 +973,26 @@ export function DashboardClient(props: DashboardClientProps) {
             </div>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="table">
-              <TabsList>
-                <TabsTrigger value="table">테이블</TabsTrigger>
-                <TabsTrigger value="cards">카드</TabsTrigger>
-              </TabsList>
+            <div className="md:hidden">
+              <AccountSummaryCards accountSummaries={accountSummaries} compact />
+            </div>
 
-              <TabsContent value="table">
-                <div className="overflow-x-auto rounded-md border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>계좌</TableHead>
-                        <TableHead>타입</TableHead>
-                        <TableHead>소유</TableHead>
-                        <TableHead className="text-right">기간 지출</TableHead>
-                        <TableHead className="text-right">예정 고정비</TableHead>
-                        <TableHead className="text-right">예정 구독비</TableHead>
-                        <TableHead>최근 거래</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {accountSummaries.length === 0 ? (
-                        <TableRow>
-                          <TableCell
-                            className="text-center text-muted-foreground"
-                            colSpan={7}
-                          >
-                            표시할 계좌가 없습니다.
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        accountSummaries.map((summary) => (
-                          <TableRow key={summary.account.id}>
-                            <TableCell className="font-medium">
-                              {summary.account.name}
-                            </TableCell>
-                            <TableCell>
-                              {accountTypeLabels[summary.account.type]}
-                            </TableCell>
-                            <TableCell>
-                              {ownerTypeLabels[summary.account.owner_type]}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              {formatMoney(summary.expense)}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              {formatMoney(summary.fixedPlanned)}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              {formatMoney(summary.subscriptionPlanned)}
-                            </TableCell>
-                            <TableCell className="min-w-52">
-                              {summary.recentTransactions.length > 0 ? (
-                                <div className="flex flex-wrap gap-1.5">
-                                  {summary.recentTransactions.map(
-                                    (transaction) => (
-                                      <Badge
-                                        key={transaction.id}
-                                        variant="outline"
-                                      >
-                                        {formatShortDate(
-                                          transaction.transaction_date,
-                                        )}{" "}
-                                        {transactionTitle(transaction)}
-                                      </Badge>
-                                    ),
-                                  )}
-                                </div>
-                              ) : (
-                                <span className="text-muted-foreground">-</span>
-                              )}
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
-              </TabsContent>
+            <div className="hidden md:block">
+              <Tabs defaultValue="table">
+                <TabsList>
+                  <TabsTrigger value="table">테이블</TabsTrigger>
+                  <TabsTrigger value="cards">카드</TabsTrigger>
+                </TabsList>
 
-              <TabsContent value="cards">
-                <div className="grid gap-3 md:grid-cols-2">
-                  {accountSummaries.length === 0 ? (
-                    <EmptyState message="표시할 계좌가 없습니다." />
-                  ) : (
-                    accountSummaries.map((summary) => (
-                      <div
-                        className="rounded-md border bg-muted/15 p-4"
-                        key={summary.account.id}
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <h3 className="font-semibold">
-                              {summary.account.name}
-                            </h3>
-                            <p className="mt-1 text-sm text-muted-foreground">
-                              {accountTypeLabels[summary.account.type]} ·{" "}
-                              {ownerTypeLabels[summary.account.owner_type]}
-                            </p>
-                          </div>
-                          <Badge variant="secondary">
-                            {formatMoney(summary.expense)}
-                          </Badge>
-                        </div>
-                        <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
-                          <div>
-                            <dt className="text-muted-foreground">고정비</dt>
-                            <dd className="mt-1 font-medium">
-                              {formatMoney(summary.fixedPlanned)}
-                            </dd>
-                          </div>
-                          <div>
-                            <dt className="text-muted-foreground">구독비</dt>
-                            <dd className="mt-1 font-medium">
-                              {formatMoney(summary.subscriptionPlanned)}
-                            </dd>
-                          </div>
-                        </dl>
-                        <div className="mt-4 flex flex-wrap gap-1.5">
-                          {summary.recentTransactions.length > 0 ? (
-                            summary.recentTransactions.map((transaction) => (
-                              <Badge key={transaction.id} variant="outline">
-                                {transactionTitle(transaction)}
-                              </Badge>
-                            ))
-                          ) : (
-                            <span className="text-sm text-muted-foreground">
-                              최근 거래 없음
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </TabsContent>
-            </Tabs>
+                <TabsContent value="table">
+                  <AccountSummaryTable accountSummaries={accountSummaries} />
+                </TabsContent>
+
+                <TabsContent value="cards">
+                  <AccountSummaryCards accountSummaries={accountSummaries} />
+                </TabsContent>
+              </Tabs>
+            </div>
           </CardContent>
         </Card>
 

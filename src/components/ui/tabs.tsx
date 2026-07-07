@@ -53,7 +53,7 @@ function TabsList({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       className={cn(
-        "inline-flex h-9 w-fit items-center rounded-md bg-muted p-1 text-muted-foreground",
+        "inline-flex h-10 w-fit items-center rounded-full bg-secondary p-1 text-secondary-foreground",
         className,
       )}
       role="tablist"
@@ -76,8 +76,8 @@ function TabsTrigger({
       className={cn(
         "inline-flex h-7 items-center justify-center whitespace-nowrap rounded-sm px-3 text-sm font-medium transition focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50",
         isSelected
-          ? "bg-background text-foreground shadow-sm"
-          : "text-muted-foreground hover:text-foreground",
+          ? "bg-primary text-primary-foreground shadow-sm"
+          : "text-secondary-foreground/70 hover:text-secondary-foreground",
         className,
       )}
       onClick={() => context.setValue(value)}
