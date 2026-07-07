@@ -26,6 +26,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { FilterSheet } from "@/components/filter-sheet";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import {
@@ -543,6 +544,9 @@ export function DashboardClient(props: DashboardClientProps) {
     () => makeAccountFilterOptions(accounts),
     [accounts],
   );
+  const selectedAccountLabel =
+    accountOptions.find((option) => option.value === filters.account)?.label ??
+    "전체";
 
   const filteredTransactions = useMemo(
     () =>
@@ -760,101 +764,114 @@ export function DashboardClient(props: DashboardClientProps) {
         </Card>
       ) : null}
 
-      <Card>
-        <CardContent className="grid gap-3 p-4 md:grid-cols-2 xl:grid-cols-[1.1fr_1fr_1fr_1fr]">
-          <div className="md:col-span-2 xl:col-span-1">
+      <div className="flex items-center justify-between gap-3 rounded-full border bg-card px-4 py-3 shadow-sm">
+        <div className="min-w-0">
+          <p className="truncate text-sm font-medium">{household?.name}</p>
+          <p className="mt-0.5 truncate text-xs text-muted-foreground">
+            {dateRange.label} · {selectedAccountLabel} ·{" "}
+            {expenseTypeLabels[filters.expenseType]}
+          </p>
+        </div>
+        <FilterSheet
+          description="대시보드에 표시할 기간, 계좌, 지출 유형을 고릅니다."
+          summary={dateRange.label}
+        >
+          <div className="grid gap-4">
             <p className="text-sm font-medium">{household?.name}</p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {dateRange.label} · {expenseTypeLabels[filters.expenseType]}
-            </p>
+
+            <label className="flex flex-col gap-1.5 text-sm">
+              기간
+              <Select
+                value={filters.period}
+                onChange={(event) =>
+                  updateQuery({
+                    period: event.target.value,
+                    start:
+                      event.target.value === "custom"
+                        ? dateRange.start
+                        : undefined,
+                    end:
+                      event.target.value === "custom"
+                        ? dateRange.end
+                        : undefined,
+                  })
+                }
+              >
+                {Object.entries(periodLabels).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </Select>
+            </label>
+
+            <label className="flex flex-col gap-1.5 text-sm">
+              계좌
+              <Select
+                value={filters.account}
+                onChange={(event) =>
+                  updateQuery({ account: event.target.value || undefined })
+                }
+              >
+                {accountOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </Select>
+            </label>
+
+            <label className="flex flex-col gap-1.5 text-sm">
+              지출 유형
+              <Select
+                value={filters.expenseType}
+                onChange={(event) =>
+                  updateQuery({ expenseType: event.target.value || undefined })
+                }
+              >
+                {Object.entries(expenseTypeLabels).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </Select>
+            </label>
+
+            {filters.period === "custom" ? (
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="flex flex-col gap-1.5 text-sm">
+                  시작일
+                  <Input
+                    max={dateRange.end}
+                    type="date"
+                    value={dateRange.start}
+                    onChange={(event) =>
+                      updateQuery({
+                        period: "custom",
+                        start: event.target.value,
+                      })
+                    }
+                  />
+                </label>
+                <label className="flex flex-col gap-1.5 text-sm">
+                  종료일
+                  <Input
+                    min={dateRange.start}
+                    type="date"
+                    value={dateRange.end}
+                    onChange={(event) =>
+                      updateQuery({
+                        period: "custom",
+                        end: event.target.value,
+                      })
+                    }
+                  />
+                </label>
+              </div>
+            ) : null}
           </div>
-
-          <label className="flex flex-col gap-1.5 text-sm">
-            기간
-            <Select
-              value={filters.period}
-              onChange={(event) =>
-                updateQuery({
-                  period: event.target.value,
-                  start: event.target.value === "custom" ? dateRange.start : undefined,
-                  end: event.target.value === "custom" ? dateRange.end : undefined,
-                })
-              }
-            >
-              {Object.entries(periodLabels).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </Select>
-          </label>
-
-          <label className="flex flex-col gap-1.5 text-sm">
-            계좌
-            <Select
-              value={filters.account}
-              onChange={(event) =>
-                updateQuery({ account: event.target.value || undefined })
-              }
-            >
-              {accountOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </Select>
-          </label>
-
-          <label className="flex flex-col gap-1.5 text-sm">
-            지출 유형
-            <Select
-              value={filters.expenseType}
-              onChange={(event) =>
-                updateQuery({ expenseType: event.target.value || undefined })
-              }
-            >
-              {Object.entries(expenseTypeLabels).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </Select>
-          </label>
-
-          {filters.period === "custom" ? (
-            <div className="grid gap-3 md:col-span-2 xl:col-span-4 xl:grid-cols-2">
-              <label className="flex flex-col gap-1.5 text-sm">
-                시작일
-                <Input
-                  max={dateRange.end}
-                  type="date"
-                  value={dateRange.start}
-                  onChange={(event) =>
-                    updateQuery({
-                      period: "custom",
-                      start: event.target.value,
-                    })
-                  }
-                />
-              </label>
-              <label className="flex flex-col gap-1.5 text-sm">
-                종료일
-                <Input
-                  min={dateRange.start}
-                  type="date"
-                  value={dateRange.end}
-                  onChange={(event) =>
-                    updateQuery({
-                      period: "custom",
-                      end: event.target.value,
-                    })
-                  }
-                />
-              </label>
-            </div>
-          ) : null}
-        </CardContent>
-      </Card>
+        </FilterSheet>
+      </div>
 
       <section className="grid gap-3 md:grid-cols-3 xl:grid-cols-6">
         {[

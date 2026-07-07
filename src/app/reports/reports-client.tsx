@@ -18,6 +18,7 @@ import { transactionTypeLabels } from "@/app/m/new/types";
 import { recurringKindLabels } from "@/app/recurring/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { FilterSheet } from "@/components/filter-sheet";
 import {
   Card,
   CardContent,
@@ -254,72 +255,89 @@ function ReportToolbar({
   }
 
   return (
-    <Card className="print-hidden">
-      <CardContent className="grid gap-3 p-4 md:grid-cols-[1fr_1fr_auto]">
-        <label className="flex flex-col gap-1.5 text-sm">
-          기간
-          <Select
-            value={range.period}
-            onChange={(event) =>
-              updateQuery({
-                end: event.target.value === "custom" ? range.end : undefined,
-                period: event.target.value,
-                start:
-                  event.target.value === "custom" ? range.start : undefined,
-              })
-            }
-          >
-            {Object.entries(periodLabels).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </Select>
-        </label>
+    <div className="print-hidden flex items-center justify-between gap-3 rounded-full border bg-card px-4 py-3 shadow-sm">
+      <div className="min-w-0">
+        <p className="truncate text-sm font-medium">보고서 필터</p>
+        <p className="mt-0.5 truncate text-xs text-muted-foreground">
+          {range.label}
+        </p>
+      </div>
 
-        <div className="grid gap-3 sm:grid-cols-2">
-          <label className="flex flex-col gap-1.5 text-sm">
-            시작일
-            <Input
-              max={range.end}
-              type="date"
-              value={range.start}
-              onChange={(event) =>
-                updateQuery({
-                  period: "custom",
-                  start: event.target.value,
-                })
-              }
-            />
-          </label>
-          <label className="flex flex-col gap-1.5 text-sm">
-            종료일
-            <Input
-              min={range.start}
-              type="date"
-              value={range.end}
-              onChange={(event) =>
-                updateQuery({
-                  end: event.target.value,
-                  period: "custom",
-                })
-              }
-            />
-          </label>
-        </div>
+      <div className="flex shrink-0 items-center gap-2">
+        <FilterSheet
+          description="보고서에 담을 기간을 선택합니다."
+          summary={range.label}
+        >
+          <div className="grid gap-4">
+            <label className="flex flex-col gap-1.5 text-sm">
+              기간
+              <Select
+                value={range.period}
+                onChange={(event) =>
+                  updateQuery({
+                    end:
+                      event.target.value === "custom" ? range.end : undefined,
+                    period: event.target.value,
+                    start:
+                      event.target.value === "custom"
+                        ? range.start
+                        : undefined,
+                  })
+                }
+              >
+                {Object.entries(periodLabels).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </Select>
+            </label>
 
-        <div className="flex items-end">
-          <Button
-            className="w-full md:w-auto"
-            onClick={() => window.print()}
-            type="button"
-          >
-            <Printer className="size-4" aria-hidden="true" />
-            인쇄 / PDF 저장
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="flex flex-col gap-1.5 text-sm">
+                시작일
+                <Input
+                  max={range.end}
+                  type="date"
+                  value={range.start}
+                  onChange={(event) =>
+                    updateQuery({
+                      period: "custom",
+                      start: event.target.value,
+                    })
+                  }
+                />
+              </label>
+              <label className="flex flex-col gap-1.5 text-sm">
+                종료일
+                <Input
+                  min={range.start}
+                  type="date"
+                  value={range.end}
+                  onChange={(event) =>
+                    updateQuery({
+                      end: event.target.value,
+                      period: "custom",
+                    })
+                  }
+                />
+              </label>
+            </div>
+          </div>
+        </FilterSheet>
+
+        <Button
+          aria-label="인쇄 또는 PDF 저장"
+          className="size-10"
+          onClick={() => window.print()}
+          size="icon"
+          type="button"
+        >
+          <Printer className="size-4" aria-hidden="true" />
+          <span className="sr-only">인쇄 / PDF 저장</span>
+        </Button>
+      </div>
+    </div>
   );
 }
 
