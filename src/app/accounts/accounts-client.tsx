@@ -306,12 +306,14 @@ export function AccountsClient({
   accounts,
   errorMessage,
   household,
+  isAdmin,
   isConfigured,
   isSignedIn,
 }: {
   accounts: AccountRow[];
   errorMessage?: string;
   household: HouseholdOption | null;
+  isAdmin: boolean;
   isConfigured: boolean;
   isSignedIn: boolean;
 }) {
@@ -323,12 +325,28 @@ export function AccountsClient({
   const inactiveAccounts = accounts.filter((account) => !account.is_active);
 
   function openCreate() {
+    if (!isAdmin) {
+      setResult({
+        ok: false,
+        message: "관리자 계정만 계좌를 추가할 수 있습니다.",
+      });
+      return;
+    }
+
     setSelectedAccount(null);
     setMode("create");
     setResult(null);
   }
 
   function openEdit(account: AccountRow) {
+    if (!isAdmin) {
+      setResult({
+        ok: false,
+        message: "관리자 계정만 계좌를 변경할 수 있습니다.",
+      });
+      return;
+    }
+
     setSelectedAccount(account);
     setMode("edit");
     setResult(null);
@@ -346,6 +364,14 @@ export function AccountsClient({
     action: typeof deactivateAccountAction | typeof moveAccountAction,
     formData: FormData,
   ) {
+    if (!isAdmin) {
+      setResult({
+        ok: false,
+        message: "관리자 계정만 계좌를 변경할 수 있습니다.",
+      });
+      return;
+    }
+
     setResult(null);
     startTransition(async () => {
       const actionResult = await action(formData);
@@ -403,11 +429,26 @@ export function AccountsClient({
             {inactiveAccounts.length}개
           </p>
         </div>
-        <Button className="w-full sm:w-auto" onClick={openCreate} type="button">
-          <Plus className="size-4" aria-hidden="true" />
-          계좌 추가
-        </Button>
+        {isAdmin ? (
+          <Button className="w-full sm:w-auto" onClick={openCreate} type="button">
+            <Plus className="size-4" aria-hidden="true" />
+            계좌 추가
+          </Button>
+        ) : (
+          <Badge className="w-fit" variant="secondary">
+            조회 전용
+          </Badge>
+        )}
       </div>
+
+      {!isAdmin ? (
+        <Card>
+          <CardContent className="p-4 text-sm text-muted-foreground">
+            계좌 추가와 변경은 관리자 계정에서만 가능합니다. 남편/아내
+            계정에서는 현재 등록된 계좌를 조회할 수 있습니다.
+          </CardContent>
+        </Card>
+      ) : null}
 
       {errorMessage || result ? (
         <div
@@ -422,7 +463,7 @@ export function AccountsClient({
         </div>
       ) : null}
 
-      {mode ? (
+      {mode && isAdmin ? (
         <AccountForm
           accounts={accounts}
           householdId={household.id}
@@ -471,37 +512,39 @@ export function AccountsClient({
                   </div>
                 </div>
 
-                <div className="mt-5 flex gap-2">
-                  <Button
-                    className="flex-1"
-                    onClick={() => openEdit(account)}
-                    type="button"
-                    variant="outline"
-                  >
-                    <Pencil className="size-4" aria-hidden="true" />
-                    수정
-                  </Button>
-                  <form
-                    action={(formData) =>
-                      runSimpleAction(deactivateAccountAction, formData)
-                    }
-                  >
-                    <input
-                      name="household_id"
-                      type="hidden"
-                      value={household.id}
-                    />
-                    <input name="account_id" type="hidden" value={account.id} />
+                {isAdmin ? (
+                  <div className="mt-5 flex gap-2">
                     <Button
-                      disabled={isPending}
-                      type="submit"
+                      className="flex-1"
+                      onClick={() => openEdit(account)}
+                      type="button"
                       variant="outline"
                     >
-                      <Archive className="size-4" aria-hidden="true" />
-                      <span className="sr-only">비활성화</span>
+                      <Pencil className="size-4" aria-hidden="true" />
+                      수정
                     </Button>
-                  </form>
-                </div>
+                    <form
+                      action={(formData) =>
+                        runSimpleAction(deactivateAccountAction, formData)
+                      }
+                    >
+                      <input
+                        name="household_id"
+                        type="hidden"
+                        value={household.id}
+                      />
+                      <input name="account_id" type="hidden" value={account.id} />
+                      <Button
+                        disabled={isPending}
+                        type="submit"
+                        variant="outline"
+                      >
+                        <Archive className="size-4" aria-hidden="true" />
+                        <span className="sr-only">비활성화</span>
+                      </Button>
+                    </form>
+                  </div>
+                ) : null}
               </CardContent>
             </Card>
           ))
@@ -515,10 +558,12 @@ export function AccountsClient({
                   생활비 통장, 공용 카드, 현금을 먼저 추가해 보세요.
                 </p>
               </div>
-              <Button onClick={openCreate} type="button">
-                <Plus className="size-4" aria-hidden="true" />
-                계좌 추가
-              </Button>
+              {isAdmin ? (
+                <Button onClick={openCreate} type="button">
+                  <Plus className="size-4" aria-hidden="true" />
+                  계좌 추가
+                </Button>
+              ) : null}
             </CardContent>
           </Card>
         )}
@@ -528,7 +573,9 @@ export function AccountsClient({
         <CardHeader>
           <CardTitle>계좌 관리 테이블</CardTitle>
           <CardDescription>
-            활성 계좌는 위아래 버튼으로 대시보드 표시 순서를 바꿀 수 있습니다.
+            {isAdmin
+              ? "활성 계좌는 위아래 버튼으로 대시보드 표시 순서를 바꿀 수 있습니다."
+              : "관리자 계정으로 로그인하면 계좌 추가와 표시 순서를 변경할 수 있습니다."}
           </CardDescription>
         </CardHeader>
         <CardContent className="overflow-x-auto">
@@ -579,76 +626,11 @@ export function AccountsClient({
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <div className="flex justify-end gap-1">
-                      <form
-                        action={(formData) =>
-                          runSimpleAction(moveAccountAction, formData)
-                        }
-                      >
-                        <input
-                          name="household_id"
-                          type="hidden"
-                          value={household.id}
-                        />
-                        <input
-                          name="account_id"
-                          type="hidden"
-                          value={account.id}
-                        />
-                        <input name="direction" type="hidden" value="up" />
-                        <Button
-                          disabled={!account.is_active || index === 0 || isPending}
-                          size="icon"
-                          type="submit"
-                          variant="ghost"
-                        >
-                          <ArrowUp className="size-4" aria-hidden="true" />
-                          <span className="sr-only">위로 이동</span>
-                        </Button>
-                      </form>
-                      <form
-                        action={(formData) =>
-                          runSimpleAction(moveAccountAction, formData)
-                        }
-                      >
-                        <input
-                          name="household_id"
-                          type="hidden"
-                          value={household.id}
-                        />
-                        <input
-                          name="account_id"
-                          type="hidden"
-                          value={account.id}
-                        />
-                        <input name="direction" type="hidden" value="down" />
-                        <Button
-                          disabled={
-                            !account.is_active ||
-                            index >= activeAccounts.length - 1 ||
-                            isPending
-                          }
-                          size="icon"
-                          type="submit"
-                          variant="ghost"
-                        >
-                          <ArrowDown className="size-4" aria-hidden="true" />
-                          <span className="sr-only">아래로 이동</span>
-                        </Button>
-                      </form>
-                      <Button
-                        onClick={() => openEdit(account)}
-                        size="icon"
-                        type="button"
-                        variant="ghost"
-                      >
-                        <Pencil className="size-4" aria-hidden="true" />
-                        <span className="sr-only">수정</span>
-                      </Button>
-                      {account.is_active ? (
+                    {isAdmin ? (
+                      <div className="flex justify-end gap-1">
                         <form
                           action={(formData) =>
-                            runSimpleAction(deactivateAccountAction, formData)
+                            runSimpleAction(moveAccountAction, formData)
                           }
                         >
                           <input
@@ -661,18 +643,89 @@ export function AccountsClient({
                             type="hidden"
                             value={account.id}
                           />
+                          <input name="direction" type="hidden" value="up" />
                           <Button
-                            disabled={isPending}
+                            disabled={!account.is_active || index === 0 || isPending}
                             size="icon"
                             type="submit"
                             variant="ghost"
                           >
-                            <Archive className="size-4" aria-hidden="true" />
-                            <span className="sr-only">비활성화</span>
+                            <ArrowUp className="size-4" aria-hidden="true" />
+                            <span className="sr-only">위로 이동</span>
                           </Button>
                         </form>
-                      ) : null}
-                    </div>
+                        <form
+                          action={(formData) =>
+                            runSimpleAction(moveAccountAction, formData)
+                          }
+                        >
+                          <input
+                            name="household_id"
+                            type="hidden"
+                            value={household.id}
+                          />
+                          <input
+                            name="account_id"
+                            type="hidden"
+                            value={account.id}
+                          />
+                          <input name="direction" type="hidden" value="down" />
+                          <Button
+                            disabled={
+                              !account.is_active ||
+                              index >= activeAccounts.length - 1 ||
+                              isPending
+                            }
+                            size="icon"
+                            type="submit"
+                            variant="ghost"
+                          >
+                            <ArrowDown className="size-4" aria-hidden="true" />
+                            <span className="sr-only">아래로 이동</span>
+                          </Button>
+                        </form>
+                        <Button
+                          onClick={() => openEdit(account)}
+                          size="icon"
+                          type="button"
+                          variant="ghost"
+                        >
+                          <Pencil className="size-4" aria-hidden="true" />
+                          <span className="sr-only">수정</span>
+                        </Button>
+                        {account.is_active ? (
+                          <form
+                            action={(formData) =>
+                              runSimpleAction(deactivateAccountAction, formData)
+                            }
+                          >
+                            <input
+                              name="household_id"
+                              type="hidden"
+                              value={household.id}
+                            />
+                            <input
+                              name="account_id"
+                              type="hidden"
+                              value={account.id}
+                            />
+                            <Button
+                              disabled={isPending}
+                              size="icon"
+                              type="submit"
+                              variant="ghost"
+                            >
+                              <Archive className="size-4" aria-hidden="true" />
+                              <span className="sr-only">비활성화</span>
+                            </Button>
+                          </form>
+                        ) : null}
+                      </div>
+                    ) : (
+                      <span className="block text-right text-sm text-muted-foreground">
+                        조회 전용
+                      </span>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}

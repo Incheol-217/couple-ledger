@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { Sparkles } from "lucide-react";
 import {
   Bar,
   BarChart,
@@ -43,6 +44,7 @@ import {
 } from "@/components/ui/tabs";
 import type {
   AccountFilter,
+  AiAdviceLogRow,
   DashboardPageData,
   DashboardTransactionRow,
   ExpenseTypeFilter,
@@ -63,6 +65,8 @@ type AccountSummaryView = {
   recentTransactions: DashboardTransactionRow[];
   subscriptionPlanned: number;
 };
+
+type AdvicePreview = Pick<AiAdviceLogRow, "body" | "severity" | "title">;
 
 const periodLabels = {
   this_month: "이번 달",
@@ -320,6 +324,16 @@ function DashboardNotice({
   }
 
   return null;
+}
+
+function makeFriendlyAdviceLine(advice: AdvicePreview) {
+  const firstLine =
+    advice.body
+      .split(/\n+/)
+      .map((line) => line.replace(/^[-*•]\s*/, "").trim())
+      .find(Boolean) ?? advice.title;
+
+  return `괜찮아요, 함께 살펴보면 좋아요. ${firstLine}`;
 }
 
 function AccountSummaryTable({
@@ -717,6 +731,7 @@ export function DashboardClient(props: DashboardClientProps) {
       title: "흐름 안정",
     };
   })();
+  const topAdviceLine = makeFriendlyAdviceLine(generatedAdvice);
 
   if (!isConfigured || !isSignedIn) {
     return (
@@ -726,6 +741,17 @@ export function DashboardClient(props: DashboardClientProps) {
 
   return (
     <div className="flex flex-col gap-5">
+      <div className="flex items-center gap-2 rounded-full border border-primary/30 bg-primary/15 px-4 py-3 text-sm shadow-[0_12px_28px_rgba(18,18,18,0.08)]">
+        <span className="grid size-7 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground">
+          <Sparkles className="size-4" aria-hidden="true" />
+        </span>
+        <p className="min-w-0 truncate">
+          <span className="font-semibold">AI 소비 조언</span>
+          <span className="mx-2 text-muted-foreground">·</span>
+          <span className="text-muted-foreground">{topAdviceLine}</span>
+        </p>
+      </div>
+
       {errorMessage ? (
         <Card className="border-destructive/30 bg-destructive/5">
           <CardContent className="p-4 text-sm text-destructive">

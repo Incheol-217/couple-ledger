@@ -24,6 +24,7 @@ function displayRole(context: Awaited<ReturnType<typeof getCurrentUserContext>>)
 
 export async function AppShell({ children }: { children: React.ReactNode }) {
   const context = await getCurrentUserContext();
+  const canAccessSettings = context.isSignedIn && context.isAdmin;
 
   return (
     <div className="min-h-svh">
@@ -36,7 +37,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
             <span>공동 가계부</span>
           </Link>
           <div className="hidden md:block">
-            <AppNav canAccessSettings={context.isAdmin} />
+            <AppNav canAccessSettings={canAccessSettings} />
           </div>
           <div className="flex items-center gap-2">
             {context.isSignedIn ? (
@@ -80,7 +81,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
       <main className="pb-20 md:pb-0">{children}</main>
 
       <div className="pointer-events-none fixed inset-x-0 bottom-4 z-40 md:hidden">
-        <AppNav canAccessSettings={context.isAdmin} compact />
+        <AppNav canAccessSettings={canAccessSettings} compact />
       </div>
     </div>
   );

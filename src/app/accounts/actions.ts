@@ -59,7 +59,7 @@ async function createSupabaseForAction() {
   return createClient();
 }
 
-async function assertCurrentMember(householdId: string) {
+async function assertCurrentAdminMember(householdId: string) {
   if (!householdId) {
     throw new Error("household를 찾을 수 없습니다.");
   }
@@ -76,13 +76,14 @@ async function assertCurrentMember(householdId: string) {
 
   const { data, error } = await supabase
     .from("household_members")
-    .select("id")
+    .select("id, role")
     .eq("household_id", householdId)
     .eq("user_id", user.id)
+    .eq("role", "owner")
     .maybeSingle();
 
   if (error || !data) {
-    throw new Error("이 household의 계좌를 관리할 권한이 없습니다.");
+    throw new Error("관리자 계정만 계좌를 변경할 수 있습니다.");
   }
 
   return { supabase, user };
@@ -156,7 +157,7 @@ export async function createAccountAction(
 ): Promise<AccountActionResult> {
   try {
     const householdId = readText(formData, "household_id");
-    const { supabase, user } = await assertCurrentMember(householdId);
+    const { supabase, user } = await assertCurrentAdminMember(householdId);
     const payload = toAccountPayload(formData);
     const defaultWithdrawalAccountId = await validateWithdrawalAccount(
       supabase,
@@ -223,7 +224,7 @@ export async function updateAccountAction(
       throw new Error("수정할 계좌를 찾을 수 없습니다.");
     }
 
-    const { supabase } = await assertCurrentMember(householdId);
+    const { supabase } = await assertCurrentAdminMember(householdId);
     const payload = toAccountPayload(formData);
     const defaultWithdrawalAccountId = await validateWithdrawalAccount(
       supabase,
@@ -273,7 +274,7 @@ export async function deactivateAccountAction(
       throw new Error("비활성화할 계좌를 찾을 수 없습니다.");
     }
 
-    const { supabase } = await assertCurrentMember(householdId);
+    const { supabase } = await assertCurrentAdminMember(householdId);
     const { error } = await supabase
       .from("accounts")
       .update({
@@ -312,7 +313,7 @@ export async function moveAccountAction(
       throw new Error("정렬할 계좌를 찾을 수 없습니다.");
     }
 
-    const { supabase } = await assertCurrentMember(householdId);
+    const { supabase } = await assertCurrentAdminMember(householdId);
     const { data: accounts, error: listError } = await supabase
       .from("accounts")
       .select("id, display_order, created_at")

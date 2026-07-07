@@ -151,6 +151,8 @@ describe("Login and role access", () => {
   const appNav = read("src/components/app-nav.tsx");
   const homePage = read("src/app/page.tsx");
   const loginForm = read("src/app/login/login-form.tsx");
+  const accountActions = read("src/app/accounts/actions.ts");
+  const accountsClient = read("src/app/accounts/accounts-client.tsx");
 
   it("protects initial account setup with a setup secret", () => {
     assert.match(setupRoute, /SETUP_SECRET/);
@@ -175,6 +177,14 @@ describe("Login and role access", () => {
     assert.match(settingsPage, /context\.isAdmin/);
     assert.match(settingsPage, /관리자만 접근할 수 있습니다/);
     assert.match(appNav, /canAccessSettings/);
+  });
+
+  it("keeps account changes behind admin access", () => {
+    assert.match(accountActions, /assertCurrentAdminMember/);
+    assert.match(accountActions, /\.eq\("role", "owner"\)/);
+    assert.match(accountActions, /관리자 계정만 계좌를 변경할 수 있습니다/);
+    assert.match(accountsClient, /관리자 계정만 계좌를 추가할 수 있습니다/);
+    assert.match(accountsClient, /조회 전용/);
   });
 
   it("sends first visits to login and signed-in visits to dashboard", () => {
@@ -209,6 +219,8 @@ describe("UX guardrails", () => {
     assert.match(dashboard, /xl:grid-cols/);
     assert.match(dashboard, /<Table/);
     assert.match(dashboard, /<Tabs/);
+    assert.match(dashboard, /AI 소비 조언/);
+    assert.match(dashboard, /makeFriendlyAdviceLine/);
   });
 
   it("uses compact account summary cards on mobile", () => {

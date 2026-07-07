@@ -12,6 +12,7 @@ function hasSupabaseEnv() {
 
 type MembershipRow = {
   household_id: string;
+  role: "owner" | "member";
   households:
     | {
         id: string;
@@ -46,6 +47,7 @@ async function getAccountsPageData() {
       errorMessage: undefined,
       household: null,
       isConfigured: false,
+      isAdmin: false,
       isSignedIn: false,
     };
   }
@@ -61,13 +63,14 @@ async function getAccountsPageData() {
       errorMessage: undefined,
       household: null,
       isConfigured: true,
+      isAdmin: false,
       isSignedIn: false,
     };
   }
 
   const { data: membership, error: membershipError } = await supabase
     .from("household_members")
-    .select("household_id, households(id, name)")
+    .select("household_id, role, households(id, name)")
     .eq("user_id", user.id)
     .order("joined_at", { ascending: true })
     .limit(1)
@@ -79,6 +82,7 @@ async function getAccountsPageData() {
       errorMessage: membershipError.message,
       household: null,
       isConfigured: true,
+      isAdmin: false,
       isSignedIn: true,
     };
   }
@@ -91,6 +95,7 @@ async function getAccountsPageData() {
       errorMessage: undefined,
       household: null,
       isConfigured: true,
+      isAdmin: false,
       isSignedIn: true,
     };
   }
@@ -109,6 +114,7 @@ async function getAccountsPageData() {
     accounts: (accounts ?? []) as AccountRow[],
     errorMessage: accountsError?.message,
     household,
+    isAdmin: membership?.role === "owner",
     isConfigured: true,
     isSignedIn: true,
   };
