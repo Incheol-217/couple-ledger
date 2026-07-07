@@ -47,12 +47,12 @@ export function AppNav({
         return (
           <Link
             className={cn(
-              "inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition",
+              "inline-flex items-center justify-center gap-2 rounded-full text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/45",
               compact
                 ? "h-12 min-w-0 flex-1 flex-col gap-1 rounded-full px-1 text-[11px] leading-none"
                 : "h-9 px-3",
               active
-                ? "bg-primary text-primary-foreground"
+                ? "bg-primary text-primary-foreground shadow-[inset_0_-1px_0_rgba(0,0,0,0.12)]"
                 : "text-secondary-foreground/72 hover:bg-secondary-foreground/10 hover:text-secondary-foreground",
             )}
             href={item.href}

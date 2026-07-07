@@ -53,7 +53,7 @@ function TabsList({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       className={cn(
-        "inline-flex h-10 w-fit items-center rounded-full bg-secondary p-1 text-secondary-foreground",
+        "inline-flex h-10 w-fit items-center gap-1 rounded-full bg-secondary p-1 text-secondary-foreground",
         className,
       )}
       role="tablist"
@@ -74,9 +74,9 @@ function TabsTrigger({
     <button
       aria-selected={isSelected}
       className={cn(
-        "inline-flex h-7 items-center justify-center whitespace-nowrap rounded-sm px-3 text-sm font-medium transition focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50",
+        "inline-flex h-8 items-center justify-center whitespace-nowrap rounded-full px-3 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/45 disabled:pointer-events-none disabled:opacity-50",
         isSelected
-          ? "bg-primary text-primary-foreground shadow-sm"
+          ? "bg-primary text-primary-foreground shadow-[inset_0_-1px_0_rgba(0,0,0,0.12)]"
           : "text-secondary-foreground/70 hover:text-secondary-foreground",
         className,
       )}
