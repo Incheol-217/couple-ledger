@@ -5,8 +5,15 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowDownLeft,
   ArrowUpRight,
+  CalendarCheck2,
   Landmark,
+  PiggyBank,
+  ReceiptText,
+  Repeat2,
   Sparkles,
+  TrendingDown,
+  TrendingUp,
+  type LucideIcon,
   WalletCards,
 } from "lucide-react";
 import {
@@ -58,6 +65,7 @@ import type {
   ExpenseTypeFilter,
   PlannedRecurringOccurrence,
 } from "./types";
+import { cn } from "@/lib/utils";
 
 type DashboardClientProps = DashboardPageData;
 
@@ -345,72 +353,152 @@ function MainAccountBalanceCard({
   const netFlow = periodInflow - periodOutflow;
 
   return (
-    <section className="overflow-hidden rounded-[2rem] bg-[#111214] p-4 text-white shadow-[0_24px_60px_rgba(18,18,18,0.22)] sm:p-5">
-      <div className="flex items-start justify-between gap-4">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="grid size-9 place-items-center rounded-full bg-primary text-secondary">
-              <Landmark className="size-5" aria-hidden="true" />
-            </span>
+    <section className="overflow-hidden rounded-lg bg-secondary p-3 text-secondary-foreground shadow-[0_24px_60px_rgba(18,18,18,0.2)]">
+      <div className="grid gap-3 lg:grid-cols-[minmax(0,1.35fr)_minmax(260px,0.65fr)]">
+        <div className="rounded-lg bg-primary p-5 text-primary-foreground shadow-[inset_0_-1px_0_rgba(0,0,0,0.12)]">
+          <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
-              <p className="truncate text-sm text-white/60">메인 계좌</p>
-              <h2 className="truncate text-xl font-semibold tracking-normal">
-                {account.name}
-              </h2>
+              <div className="flex items-center gap-2">
+                <span className="grid size-10 place-items-center rounded-md bg-primary-foreground/12">
+                  <Landmark className="size-5" aria-hidden="true" />
+                </span>
+                <div className="min-w-0">
+                  <p className="truncate text-sm opacity-75">메인 계좌</p>
+                  <h2 className="truncate text-xl font-semibold tracking-normal">
+                    {account.name}
+                  </h2>
+                </div>
+              </div>
+            </div>
+            <span className="shrink-0 rounded-full bg-primary-foreground px-3 py-1 text-xs font-bold text-secondary">
+              {ownerTypeLabels[account.owner_type]}
+            </span>
+          </div>
+
+          <div className="mt-8">
+            <p className="text-sm opacity-70">현재 잔액</p>
+            <p className="mt-2 break-keep text-4xl font-semibold tracking-normal sm:text-5xl">
+              {formatMoney(balance)}
+            </p>
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              <span className="rounded-full bg-primary-foreground/14 px-3 py-1 text-xs font-semibold">
+                {dateRangeLabel}
+              </span>
+              <span className="rounded-full bg-primary-foreground/14 px-3 py-1 text-xs font-semibold">
+                기간 흐름 {netFlow >= 0 ? "+" : "-"}
+                {formatMoney(Math.abs(netFlow))}
+              </span>
             </div>
           </div>
         </div>
-        <span className="rounded-full bg-primary px-3 py-1 text-xs font-bold text-secondary">
-          {ownerTypeLabels[account.owner_type]}
-        </span>
-      </div>
 
-      <div className="mt-5 rounded-[1.5rem] bg-white p-4 text-[#111214] shadow-[0_18px_45px_rgba(0,0,0,0.22)] sm:p-5">
-        <div className="flex items-center justify-between gap-3">
-          <p className="text-sm text-muted-foreground">잔액</p>
-          <span className="rounded-full bg-primary px-3 py-1 text-xs font-bold text-secondary">
-            {netFlow >= 0 ? "+" : "-"}
-            {formatMoney(Math.abs(netFlow))}
-          </span>
-        </div>
-        <p className="mt-4 break-keep text-4xl font-semibold tracking-normal sm:text-5xl">
-          {formatMoney(balance)}
-        </p>
-        <p className="mt-2 text-xs text-muted-foreground">
-          기록 기준 잔액 · {dateRangeLabel}
-        </p>
-      </div>
+        <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
+          {[
+            {
+              icon: ArrowDownLeft,
+              label: "들어온 돈",
+              value: periodInflow,
+            },
+            {
+              icon: ArrowUpRight,
+              label: "나간 돈",
+              value: periodOutflow,
+            },
+            {
+              icon: WalletCards,
+              label: "남은 예정",
+              value: scheduledOutflow,
+            },
+          ].map((item) => {
+            const Icon = item.icon;
 
-      <div className="mt-4 grid grid-cols-3 gap-2">
-        <div className="rounded-[1.25rem] bg-white/10 p-3">
-          <span className="grid size-9 place-items-center rounded-full bg-primary text-secondary">
-            <ArrowDownLeft className="size-4" aria-hidden="true" />
-          </span>
-          <p className="mt-3 text-xs text-white/55">입금</p>
-          <p className="mt-1 truncate text-sm font-semibold">
-            {formatMoney(periodInflow)}
-          </p>
-        </div>
-        <div className="rounded-[1.25rem] bg-white/10 p-3">
-          <span className="grid size-9 place-items-center rounded-full bg-white text-secondary">
-            <ArrowUpRight className="size-4" aria-hidden="true" />
-          </span>
-          <p className="mt-3 text-xs text-white/55">출금</p>
-          <p className="mt-1 truncate text-sm font-semibold">
-            {formatMoney(periodOutflow)}
-          </p>
-        </div>
-        <div className="rounded-[1.25rem] bg-white/10 p-3">
-          <span className="grid size-9 place-items-center rounded-full bg-white text-secondary">
-            <WalletCards className="size-4" aria-hidden="true" />
-          </span>
-          <p className="mt-3 text-xs text-white/55">예정</p>
-          <p className="mt-1 truncate text-sm font-semibold">
-            {formatMoney(scheduledOutflow)}
-          </p>
+            return (
+              <div
+                className="rounded-lg border border-white/10 bg-white/[0.06] p-4"
+                key={item.label}
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <span className="grid size-9 place-items-center rounded-md bg-primary text-secondary">
+                    <Icon className="size-4" aria-hidden="true" />
+                  </span>
+                  <span className="text-xs text-white/45">KRW</span>
+                </div>
+                <p className="mt-4 text-xs text-white/55">{item.label}</p>
+                <p className="mt-1 truncate text-lg font-semibold">
+                  {formatMoney(item.value)}
+                </p>
+              </div>
+            );
+          })}
         </div>
       </div>
     </section>
+  );
+}
+
+function MetricCard({
+  emphasis = "light",
+  helper,
+  icon: Icon,
+  label,
+  value,
+}: {
+  emphasis?: "dark" | "light" | "primary";
+  helper: string;
+  icon: LucideIcon;
+  label: string;
+  value: string;
+}) {
+  return (
+    <Card
+      className={cn(
+        "overflow-hidden shadow-[0_16px_34px_rgba(18,18,18,0.08)]",
+        emphasis === "dark" &&
+          "border-secondary bg-secondary text-secondary-foreground",
+        emphasis === "primary" &&
+          "border-primary bg-primary text-primary-foreground",
+      )}
+    >
+      <CardContent className="flex min-h-36 flex-col justify-between p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div
+            className={cn(
+              "grid size-10 place-items-center rounded-md",
+              emphasis === "dark"
+                ? "bg-primary text-secondary"
+                : emphasis === "primary"
+                  ? "bg-primary-foreground text-secondary"
+                  : "bg-secondary text-primary",
+            )}
+          >
+            <Icon className="size-5" aria-hidden="true" />
+          </div>
+          <span
+            className={cn(
+              "rounded-full px-2.5 py-1 text-xs font-semibold",
+              emphasis === "light"
+                ? "bg-muted text-muted-foreground"
+                : "bg-white/12 text-current",
+            )}
+          >
+            {helper}
+          </span>
+        </div>
+        <div className="min-w-0">
+          <p
+            className={cn(
+              "text-sm",
+              emphasis === "light" ? "text-muted-foreground" : "opacity-70",
+            )}
+          >
+            {label}
+          </p>
+          <p className="mt-2 truncate text-2xl font-semibold tracking-normal">
+            {value}
+          </p>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -581,59 +669,67 @@ function AccountSummaryCards({
     <div className={compact ? "grid gap-3" : "grid gap-3 md:grid-cols-2"}>
       {accountSummaries.map((summary) => (
         <div
-          className="min-w-0 rounded-md border bg-muted/30 p-4"
+          className="min-w-0 overflow-hidden rounded-lg border bg-card p-3 shadow-[0_14px_32px_rgba(18,18,18,0.08)]"
           key={summary.account.id}
         >
-          <div className="min-w-0">
-            <div className="flex min-w-0 items-start justify-between gap-3">
+          <div className="rounded-lg bg-secondary p-4 text-secondary-foreground">
+            <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <h3 className="truncate font-semibold">
+                <p className="text-xs text-white/50">Account</p>
+                <h3 className="mt-1 truncate text-lg font-semibold">
                   {summary.account.name}
                 </h3>
-                <p className="mt-1 truncate text-sm text-muted-foreground">
+                <p className="mt-1 truncate text-sm text-white/55">
                   {accountTypeLabels[summary.account.type]} ·{" "}
                   {ownerTypeLabels[summary.account.owner_type]}
                 </p>
               </div>
-              <Badge className="shrink-0" variant="secondary">
-                {formatMoney(summary.expense)}
+              <Badge className="shrink-0 bg-primary text-secondary">
+                {summary.recentTransactions.length}건
               </Badge>
             </div>
 
-            <dl className="mt-4 grid grid-cols-2 gap-2 text-sm">
-              <div className="rounded-md bg-card px-3 py-2">
-                <dt className="text-xs text-muted-foreground">고정비</dt>
-                <dd className="mt-1 truncate font-semibold">
-                  {formatMoney(summary.fixedPlanned)}
-                </dd>
-              </div>
-              <div className="rounded-md bg-card px-3 py-2">
-                <dt className="text-xs text-muted-foreground">구독비</dt>
-                <dd className="mt-1 truncate font-semibold">
-                  {formatMoney(summary.subscriptionPlanned)}
-                </dd>
-              </div>
-            </dl>
+            <div className="mt-7">
+              <p className="text-xs text-white/50">기간 지출</p>
+              <p className="mt-1 truncate text-2xl font-semibold tracking-normal">
+                {formatMoney(summary.expense)}
+              </p>
+            </div>
+          </div>
 
-            <div className="mt-4 min-w-0">
-              <p className="mb-2 text-xs text-muted-foreground">최근 거래</p>
-              <div className="flex min-w-0 flex-wrap gap-1.5">
-                {summary.recentTransactions.length > 0 ? (
-                  summary.recentTransactions.map((transaction) => (
-                    <Badge
-                      className="max-w-full truncate"
-                      key={transaction.id}
-                      variant="outline"
-                    >
-                      {transactionTitle(transaction)}
-                    </Badge>
-                  ))
-                ) : (
-                  <span className="text-sm text-muted-foreground">
-                    최근 거래가 없어요
-                  </span>
-                )}
-              </div>
+          <dl className="mt-3 grid grid-cols-2 gap-2 text-sm">
+            <div className="rounded-lg bg-muted/35 px-3 py-3">
+              <dt className="text-xs text-muted-foreground">고정비 예정</dt>
+              <dd className="mt-1 truncate font-semibold">
+                {formatMoney(summary.fixedPlanned)}
+              </dd>
+            </div>
+            <div className="rounded-lg bg-muted/35 px-3 py-3">
+              <dt className="text-xs text-muted-foreground">구독비 예정</dt>
+              <dd className="mt-1 truncate font-semibold">
+                {formatMoney(summary.subscriptionPlanned)}
+              </dd>
+            </div>
+          </dl>
+
+          <div className="mt-3 min-w-0 rounded-lg border bg-background/70 p-3">
+            <p className="mb-2 text-xs text-muted-foreground">최근 거래</p>
+            <div className="flex min-w-0 flex-wrap gap-1.5">
+              {summary.recentTransactions.length > 0 ? (
+                summary.recentTransactions.map((transaction) => (
+                  <Badge
+                    className="max-w-full truncate bg-card"
+                    key={transaction.id}
+                    variant="outline"
+                  >
+                    {transactionTitle(transaction)}
+                  </Badge>
+                ))
+              ) : (
+                <span className="text-sm text-muted-foreground">
+                  최근 거래가 없어요
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -1058,52 +1154,61 @@ export function DashboardClient(props: DashboardClientProps) {
         scheduledOutflow={mainAccountScheduledOutflow}
       />
 
-      <section className="grid gap-3 md:grid-cols-3 xl:grid-cols-6">
+      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         {[
           {
+            emphasis: "dark" as const,
             helper: "발생 기준",
+            icon: TrendingDown,
             label: "총 지출",
             value: formatMoney(totalExpense),
           },
           {
+            emphasis: "primary" as const,
             helper: "입금 거래",
+            icon: TrendingUp,
             label: "총 수입",
             value: formatMoney(totalIncome),
           },
           {
+            emphasis: "light" as const,
             helper: budgetTotal > 0 ? `예산 ${formatMoney(budgetTotal)}` : "예산 없음",
+            icon: PiggyBank,
             label: "남은 예산",
             value: formatMoney(remainingBudget),
           },
           {
+            emphasis: "light" as const,
             helper: "쓴 돈 + 나갈 돈",
+            icon: CalendarCheck2,
             label: "고정비 합계",
             value: formatMoney(actualFixedExpense + plannedFixedExpense),
           },
           {
+            emphasis: "light" as const,
             helper: "쓴 돈 + 나갈 돈",
+            icon: Repeat2,
             label: "구독비 합계",
             value: formatMoney(
               actualSubscriptionExpense + plannedSubscriptionExpense,
             ),
           },
           {
+            emphasis: "light" as const,
             helper: "반복비 제외",
+            icon: ReceiptText,
             label: "변동비 합계",
             value: formatMoney(variableExpense),
           },
         ].map((metric) => (
-          <Card key={metric.label}>
-            <CardContent className="p-4">
-              <p className="text-sm text-muted-foreground">{metric.label}</p>
-              <p className="mt-3 text-xl font-semibold tracking-normal">
-                {metric.value}
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {metric.helper}
-              </p>
-            </CardContent>
-          </Card>
+          <MetricCard
+            emphasis={metric.emphasis}
+            helper={metric.helper}
+            icon={metric.icon}
+            key={metric.label}
+            label={metric.label}
+            value={metric.value}
+          />
         ))}
       </section>
 
@@ -1120,68 +1225,75 @@ export function DashboardClient(props: DashboardClientProps) {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="overflow-hidden border-secondary bg-secondary text-secondary-foreground shadow-[0_18px_44px_rgba(18,18,18,0.18)]">
           <CardHeader>
-            <CardTitle>AI 소비 조언</CardTitle>
-            <CardDescription>
-              최근 기록과 곧 나갈 돈을 함께 봤어요.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center gap-2">
-              <Badge
-                variant={
-                  generatedAdvice.severity === "critical"
-                    ? "default"
-                    : "secondary"
-                }
-              >
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <CardTitle>AI 소비 조언</CardTitle>
+                <CardDescription className="text-secondary-foreground/55">
+                  최근 기록과 곧 나갈 돈을 함께 봤어요.
+                </CardDescription>
+              </div>
+              <Badge className="bg-primary text-secondary">
                 {generatedAdvice.severity === "warning"
                   ? "주의"
                   : generatedAdvice.severity === "critical"
                     ? "위험"
                     : "정보"}
               </Badge>
-              {latestAdvice ? (
-                <span className="text-xs text-muted-foreground">
-                  {formatShortDate(latestAdvice.created_at.slice(0, 10))}
-                </span>
-              ) : null}
             </div>
-            <div>
-              <h2 className="text-lg font-semibold">{generatedAdvice.title}</h2>
-              <p className="mt-3 text-sm leading-6 text-muted-foreground">
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="rounded-lg bg-primary p-4 text-primary-foreground">
+              <div className="flex items-center justify-between gap-3">
+                <Sparkles className="size-5 shrink-0" aria-hidden="true" />
+                {latestAdvice ? (
+                  <span className="text-xs opacity-70">
+                    {formatShortDate(latestAdvice.created_at.slice(0, 10))}
+                  </span>
+                ) : null}
+              </div>
+              <h2 className="mt-5 text-xl font-semibold tracking-normal">
+                {generatedAdvice.title}
+              </h2>
+              <p className="mt-3 text-sm leading-6 opacity-75">
                 {generatedAdvice.body}
               </p>
             </div>
-            <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1 2xl:grid-cols-3">
-              <div className="rounded-md border bg-muted/20 p-3">
-                <p className="text-xs text-muted-foreground">변동비 비중</p>
-                <p className="mt-1 font-semibold">
-                  {totalExpense > 0
-                    ? `${Math.round((variableExpense / totalExpense) * 100)}%`
-                    : "0%"}
-                </p>
-              </div>
-              <div className="rounded-md border bg-muted/20 p-3">
-                <p className="text-xs text-muted-foreground">다음 7일</p>
-                <p className="mt-1 font-semibold">
-                  {formatMoney(
+            <div className="grid gap-2 sm:grid-cols-3 xl:grid-cols-1 2xl:grid-cols-3">
+              {[
+                {
+                  label: "변동비 비중",
+                  value:
+                    totalExpense > 0
+                      ? `${Math.round((variableExpense / totalExpense) * 100)}%`
+                      : "0%",
+                },
+                {
+                  label: "다음 7일",
+                  value: formatMoney(
                     nextSevenOccurrences.reduce(
                       (sum, occurrence) => sum + occurrence.amount,
                       0,
                     ),
-                  )}
-                </p>
-              </div>
-              <div className="rounded-md border bg-muted/20 p-3">
-                <p className="text-xs text-muted-foreground">수입 대비 지출</p>
-                <p className="mt-1 font-semibold">
-                  {totalIncome > 0
-                    ? `${Math.round((totalExpense / totalIncome) * 100)}%`
-                    : "-"}
-                </p>
-              </div>
+                  ),
+                },
+                {
+                  label: "수입 대비 지출",
+                  value:
+                    totalIncome > 0
+                      ? `${Math.round((totalExpense / totalIncome) * 100)}%`
+                      : "-",
+                },
+              ].map((item) => (
+                <div
+                  className="rounded-lg border border-white/10 bg-white/[0.06] p-3"
+                  key={item.label}
+                >
+                  <p className="text-xs text-white/50">{item.label}</p>
+                  <p className="mt-1 font-semibold">{item.value}</p>
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>
