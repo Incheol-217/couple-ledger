@@ -5,9 +5,12 @@ import { useMemo, useState, useTransition } from "react";
 import {
   ArrowRightLeft,
   CalendarClock,
+  Camera,
   Check,
   CircleDollarSign,
   CreditCard,
+  Keyboard,
+  Loader2,
   ReceiptText,
   RotateCcw,
   Save,
@@ -137,6 +140,28 @@ function OptionChip({
   );
 }
 
+type EntryMode = "manual" | "receipt";
+
+type ReceiptDraft = {
+  account_id: string | null;
+  account_name: string | null;
+  amount: number | null;
+  category_id: string | null;
+  category_name: string | null;
+  confidence: number | null;
+  memo: string | null;
+  merchant: string | null;
+  transaction_date: string | null;
+  transaction_time: string | null;
+  warnings: string[];
+};
+
+type ReceiptParseResponse = {
+  ok: boolean;
+  message?: string;
+  receipt?: ReceiptDraft;
+};
+
 export function QuickTransactionClient({
   accounts,
   categories,
@@ -166,8 +191,14 @@ export function QuickTransactionClient({
   const [memo, setMemo] = useState("");
   const [date, setDate] = useState(nowParts().date);
   const [time, setTime] = useState(nowParts().time);
+  const [entryMode, setEntryMode] = useState<EntryMode>("manual");
+  const [receiptFileName, setReceiptFileName] = useState("");
+  const [receiptApplied, setReceiptApplied] = useState(false);
+  const [receiptMessage, setReceiptMessage] = useState<string | null>(null);
+  const [receiptError, setReceiptError] = useState<string | null>(null);
   const [result, setResult] = useState<QuickTransactionActionResult | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [isReceiptPending, startReceiptTransition] = useTransition();
 
   const visibleCategories = useMemo(
     () => categories.filter((category) => category.type === type),
@@ -203,6 +234,10 @@ export function QuickTransactionClient({
     setMemo("");
     setDate(nextNow.date);
     setTime(nextNow.time);
+    setReceiptFileName("");
+    setReceiptApplied(false);
+    setReceiptMessage(null);
+    setReceiptError(null);
   }
 
   function changeType(nextType: TransactionType) {
@@ -219,9 +254,100 @@ export function QuickTransactionClient({
     }
   }
 
+  function changeEntryMode(nextMode: EntryMode) {
+    setEntryMode(nextMode);
+    setResult(null);
+    setReceiptError(null);
+    setReceiptMessage(null);
+    setReceiptApplied(false);
+
+    if (nextMode === "receipt") {
+      changeType("expense");
+    }
+  }
+
+  function applyReceiptDraft(receipt: ReceiptDraft) {
+    setType("expense");
+    setTransferAccountId("");
+
+    if (receipt.amount) {
+      setAmount(formatAmountInput(String(receipt.amount)));
+    }
+
+    if (receipt.account_id) {
+      setAccountId(receipt.account_id);
+    }
+
+    if (receipt.category_id) {
+      setCategoryId(receipt.category_id);
+    }
+
+    if (receipt.merchant) {
+      setMerchant(receipt.merchant);
+    }
+
+    if (receipt.memo) {
+      setMemo(receipt.memo);
+    }
+
+    if (receipt.transaction_date) {
+      setDate(receipt.transaction_date);
+    }
+
+    if (receipt.transaction_time) {
+      setTime(receipt.transaction_time);
+    }
+
+    setReceiptMessage("영수증에서 내용을 채웠어요. 저장 전에 확인해 주세요.");
+    setReceiptApplied(true);
+  }
+
+  function readReceiptImage(event: React.ChangeEvent<HTMLInputElement>) {
+    const input = event.currentTarget;
+    const file = input.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    setReceiptFileName(file.name || "촬영한 영수증");
+    setReceiptApplied(false);
+    setReceiptError(null);
+    setReceiptMessage(null);
+
+    const formData = new FormData();
+    formData.append("image", file);
+
+    startReceiptTransition(async () => {
+      try {
+        const response = await fetch("/api/ai/receipt", {
+          body: formData,
+          method: "POST",
+        });
+        const data = (await response.json()) as ReceiptParseResponse;
+
+        if (!response.ok || !data.ok || !data.receipt) {
+          throw new Error(data.message ?? "영수증을 읽지 못했어요.");
+        }
+
+        applyReceiptDraft(data.receipt);
+      } catch (error) {
+        setReceiptError(
+          error instanceof Error ? error.message : "영수증을 읽지 못했어요.",
+        );
+      } finally {
+        input.value = "";
+      }
+    });
+  }
+
   function submit(formData: FormData) {
     formData.set("amount", amount);
     formData.set("type", type);
+    formData.set(
+      "source",
+      entryMode === "receipt" && receiptApplied ? "ocr" : "manual",
+    );
     formData.set("account_id", accountId);
     formData.set("category_id", categoryId);
     formData.set("transfer_account_id", transferAccountId);
@@ -294,6 +420,11 @@ export function QuickTransactionClient({
       <input name="household_id" type="hidden" value={household.id} />
       <input name="amount" type="hidden" value={amount} />
       <input name="type" type="hidden" value={type} />
+      <input
+        name="source"
+        type="hidden"
+        value={entryMode === "receipt" && receiptApplied ? "ocr" : "manual"}
+      />
       <input name="account_id" type="hidden" value={accountId} />
       <input name="category_id" type="hidden" value={categoryId} />
       <input name="transfer_account_id" type="hidden" value={transferAccountId} />
@@ -306,6 +437,111 @@ export function QuickTransactionClient({
       ) : null}
       <ResultMessage result={result} />
 
+      <section className="grid gap-3 rounded-lg border bg-card p-4 shadow-sm">
+        <div>
+          <p className="text-sm font-medium">기록 방법</p>
+          <p className="mt-1 text-sm leading-6 text-muted-foreground">
+            직접 쓰거나 영수증 사진으로 먼저 채울 수 있어요.
+          </p>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            className={cn(
+              "grid min-h-20 gap-2 rounded-lg border px-3 py-3 text-left shadow-sm transition",
+              entryMode === "manual"
+                ? "border-primary bg-primary text-primary-foreground"
+                : "bg-background hover:border-primary/40",
+            )}
+            onClick={() => changeEntryMode("manual")}
+            type="button"
+          >
+            <Keyboard className="size-5" aria-hidden="true" />
+            <span className="text-sm font-semibold">직접 쓰기</span>
+            <span
+              className={cn(
+                "text-xs",
+                entryMode === "manual"
+                  ? "text-primary-foreground/80"
+                  : "text-muted-foreground",
+              )}
+            >
+              금액부터 입력해요
+            </span>
+          </button>
+          <button
+            className={cn(
+              "grid min-h-20 gap-2 rounded-lg border px-3 py-3 text-left shadow-sm transition",
+              entryMode === "receipt"
+                ? "border-primary bg-primary text-primary-foreground"
+                : "bg-background hover:border-primary/40",
+            )}
+            onClick={() => changeEntryMode("receipt")}
+            type="button"
+          >
+            <Camera className="size-5" aria-hidden="true" />
+            <span className="text-sm font-semibold">영수증 찍기</span>
+            <span
+              className={cn(
+                "text-xs",
+                entryMode === "receipt"
+                  ? "text-primary-foreground/80"
+                  : "text-muted-foreground",
+              )}
+            >
+              사진으로 자동 채워요
+            </span>
+          </button>
+        </div>
+
+        {entryMode === "receipt" ? (
+          <div className="grid gap-3 rounded-md border border-dashed bg-muted/30 p-3">
+            <Label
+              className={cn(
+                "flex min-h-24 cursor-pointer flex-col items-center justify-center gap-2 rounded-md bg-background px-4 py-5 text-center shadow-sm transition hover:border-primary/40",
+                isReceiptPending && "cursor-wait opacity-75",
+              )}
+              htmlFor="receipt-image"
+            >
+              {isReceiptPending ? (
+                <Loader2 className="size-6 animate-spin text-primary" />
+              ) : (
+                <ReceiptText className="size-6 text-primary" />
+              )}
+              <span className="text-sm font-medium">
+                {isReceiptPending ? "영수증을 읽고 있어요" : "영수증 촬영하기"}
+              </span>
+              <span className="text-xs leading-5 text-muted-foreground">
+                iPhone에서는 카메라가 바로 열려요.
+              </span>
+            </Label>
+            <input
+              accept="image/*"
+              capture="environment"
+              className="sr-only"
+              disabled={isReceiptPending}
+              id="receipt-image"
+              onChange={readReceiptImage}
+              type="file"
+            />
+            {receiptFileName ? (
+              <p className="truncate text-xs text-muted-foreground">
+                선택한 사진: {receiptFileName}
+              </p>
+            ) : null}
+            {receiptMessage ? (
+              <div className="rounded-md border border-primary/20 bg-primary/10 px-3 py-2 text-sm text-primary">
+                {receiptMessage}
+              </div>
+            ) : null}
+            {receiptError ? (
+              <div className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                {receiptError}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+      </section>
+
       <section className="rounded-lg border bg-card p-4 shadow-sm">
         <Label className="text-muted-foreground" htmlFor="quick-amount">
           금액
@@ -313,7 +549,7 @@ export function QuickTransactionClient({
         <div className="mt-3 flex items-center gap-2">
           <input
             autoComplete="off"
-            autoFocus
+            autoFocus={entryMode === "manual"}
             className="min-w-0 flex-1 bg-transparent text-5xl font-semibold leading-none outline-none placeholder:text-muted-foreground/35"
             enterKeyHint="next"
             id="quick-amount"

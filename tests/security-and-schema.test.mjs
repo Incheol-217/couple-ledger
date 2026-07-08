@@ -107,6 +107,7 @@ describe("Supabase schema and RLS", () => {
 
 describe("AI spending advice privacy", () => {
   const aiRoute = read("src/app/api/ai/spending-advice/route.ts");
+  const receiptRoute = read("src/app/api/ai/receipt/route.ts");
 
   it("sends only summarized transaction fields to the model", () => {
     const transactionFields = selectFieldsAfterFrom(aiRoute, "transactions");
@@ -132,6 +133,15 @@ describe("AI spending advice privacy", () => {
 
   it("keeps advice out of investment, loan, tax, and legal guidance", () => {
     assert.match(aiRoute, /투자, 대출, 세금, 법률 조언은 하지 않습니다/);
+  });
+
+  it("extracts receipt drafts without sending unnecessary sensitive fields back", () => {
+    assert.match(receiptRoute, /input_image/);
+    assert.match(receiptRoute, /OPENAI_API_KEY/);
+    assert.match(receiptRoute, /카드번호, 승인번호, 사업자번호/);
+    assert.match(receiptRoute, /원문 OCR 전체를 넣지 않습니다/);
+    assert.match(receiptRoute, /\.eq\("type", "expense"\)/);
+    assert.doesNotMatch(receiptRoute, /masked_identifier|raw_text|ocr_text/i);
   });
 });
 
@@ -198,7 +208,8 @@ describe("Login and role access", () => {
 
   it("stores manual transactions under the signed-in user", () => {
     assert.match(quickAction, /user_id:\s*user\.id/);
-    assert.match(quickAction, /source:\s*"manual"/);
+    assert.match(quickAction, /readTransactionSource\(formData\)/);
+    assert.match(quickAction, /\n\s*source,\n/);
   });
 
   it("keeps settings behind admin access", () => {
@@ -265,11 +276,30 @@ describe("UX guardrails", () => {
   const reports = read("src/app/reports/reports-client.tsx");
   const appNav = read("src/components/app-nav.tsx");
   const settings = read("src/app/settings/settings-client.tsx");
+  const appShell = read("src/components/app-shell.tsx");
+  const mobileExpenseFab = read("src/components/mobile-expense-fab.tsx");
 
   it("keeps mobile amount entry keypad-friendly and PWA-aware", () => {
     assert.match(quickEntry, /inputMode="numeric"/);
     assert.match(quickEntry, /enterKeyHint="next"/);
     assert.match(quickEntry, /env\(safe-area-inset-bottom\)/);
+  });
+
+  it("lets mobile users start an expense quickly from anywhere", () => {
+    assert.match(appShell, /<MobileExpenseFab isSignedIn=\{context\.isSignedIn\}/);
+    assert.match(mobileExpenseFab, /href="\/m\/new"/);
+    assert.match(mobileExpenseFab, /지출 쓰기/);
+    assert.match(mobileExpenseFab, /bottom-\[5\.75rem\]/);
+    assert.match(mobileExpenseFab, /pathname\.startsWith\("\/m\/new"\)/);
+  });
+
+  it("supports receipt camera drafting before manual review", () => {
+    assert.match(quickEntry, /영수증 찍기/);
+    assert.match(quickEntry, /accept="image\/\*"/);
+    assert.match(quickEntry, /capture="environment"/);
+    assert.match(quickEntry, /fetch\("\/api\/ai\/receipt"/);
+    assert.match(quickEntry, /receiptApplied/);
+    assert.match(quickEntry, /source"\s*,\s*entryMode === "receipt" && receiptApplied \? "ocr" : "manual"/);
   });
 
   it("formats amount inputs with thousands separators while keeping numeric submission safe", () => {

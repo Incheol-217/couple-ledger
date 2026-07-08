@@ -177,7 +177,7 @@ export default async function MobileNewExpensePage() {
         <p className="text-sm font-medium text-primary">빠른 기록</p>
         <h1 className="mt-2 text-2xl font-semibold">빠른 입력</h1>
         <p className="mt-2 text-sm leading-6 text-muted-foreground">
-          금액부터 적고, 자주 쓰는 계좌와 카테고리를 바로 골라요.
+          직접 쓰거나 영수증을 찍어 필요한 값을 먼저 채워요.
         </p>
       </div>
 

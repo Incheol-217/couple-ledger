@@ -44,6 +44,10 @@ function readTransactionType(formData: FormData): TransactionType {
   return value as TransactionType;
 }
 
+function readTransactionSource(formData: FormData) {
+  return readText(formData, "source") === "ocr" ? "ocr" : "manual";
+}
+
 function readAmount(formData: FormData) {
   const rawAmount = readText(formData, "amount").replaceAll(",", "");
   const amount = Number(rawAmount);
@@ -165,6 +169,7 @@ export async function createQuickTransactionAction(
   try {
     const householdId = readText(formData, "household_id");
     const type = readTransactionType(formData);
+    const source = readTransactionSource(formData);
     const amount = readAmount(formData);
     const accountId = readText(formData, "account_id");
     const transferAccountId = readNullableText(formData, "transfer_account_id");
@@ -212,7 +217,7 @@ export async function createQuickTransactionAction(
       transfer_account_id: confirmedTransferAccountId,
       category_id: confirmedCategoryId,
       type,
-      source: "manual",
+      source,
       amount,
       currency_code: "KRW",
       transaction_date: transactionDate,
@@ -227,14 +232,16 @@ export async function createQuickTransactionAction(
 
     await createNotificationEvent(supabase, {
       actorUserId: user.id,
-      body: `${transactionTypeLabels[type]} ${formatWonForNotification(amount)}이 기록됐어요.`,
+      body: `${transactionTypeLabels[type]} ${formatWonForNotification(amount)}이 ${
+        source === "ocr" ? "영수증으로 " : ""
+      }기록됐어요.`,
       eventType: "transaction_created",
       householdId,
       metadata: {
         account_id: confirmedAccountId,
         amount,
         category_id: confirmedCategoryId,
-        source: "manual",
+        source,
         transfer_account_id: confirmedTransferAccountId,
         type,
       },
