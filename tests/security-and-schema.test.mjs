@@ -140,6 +140,8 @@ describe("AI spending advice privacy", () => {
     assert.match(receiptRoute, /OPENAI_API_KEY/);
     assert.match(receiptRoute, /카드번호, 승인번호, 사업자번호/);
     assert.match(receiptRoute, /원문 OCR 전체를 넣지 않습니다/);
+    assert.match(receiptRoute, /friendlyOpenAIError/);
+    assert.match(receiptRoute, /OpenAI 사용 한도가 부족해/);
     assert.match(receiptRoute, /\.eq\("type", "expense"\)/);
     assert.doesNotMatch(receiptRoute, /masked_identifier|raw_text|ocr_text/i);
   });
@@ -297,6 +299,7 @@ describe("UX guardrails", () => {
     assert.match(mobileExpenseAction, /cameraInputRef\.current\?\.click\(\)/);
     assert.match(mobileExpenseAction, /sessionStorage\.setItem\(\s*receiptDraftStorageKey/);
     assert.match(mobileExpenseAction, /router\.push\("\/m\/new\?mode=receipt"\)/);
+    assert.match(mobileExpenseAction, /직접 쓰기로 기록하기/);
     assert.doesNotMatch(mobileExpenseAction, /bottom-\[/);
   });
 
@@ -307,6 +310,7 @@ describe("UX guardrails", () => {
     assert.match(quickEntry, /capture="environment"/);
     assert.match(quickEntry, /fetch\("\/api\/ai\/receipt"/);
     assert.match(quickEntry, /sessionStorage\.getItem\(receiptDraftStorageKey\)/);
+    assert.match(quickEntry, /직접 쓰기로 기록하기/);
     assert.match(quickEntry, /receiptApplied/);
     assert.match(quickEntry, /source"\s*,\s*entryMode === "receipt" && receiptApplied \? "ocr" : "manual"/);
   });

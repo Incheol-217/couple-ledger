@@ -130,8 +130,17 @@ export function MobileExpenseAction({ isSignedIn }: { isSignedIn: boolean }) {
             </span>
           </button>
           {errorMessage ? (
-            <div className="mt-2 rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-xs leading-5 text-destructive">
-              {errorMessage}
+            <div className="mt-2 rounded-md border border-destructive/20 bg-destructive/10 p-3">
+              <p className="text-xs leading-5 text-destructive">
+                {errorMessage}
+              </p>
+              <Link
+                className="mt-2 inline-flex h-8 items-center rounded-md bg-card px-3 text-xs font-semibold text-foreground shadow-sm"
+                href="/m/new"
+                onClick={() => setIsOpen(false)}
+              >
+                직접 쓰기로 기록하기
+              </Link>
             </div>
           ) : null}
         </div>

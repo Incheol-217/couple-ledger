@@ -46,7 +46,9 @@ type OpenAIResponsesResponse = {
     }>;
   }>;
   error?: {
+    code?: string;
     message?: string;
+    type?: string;
   };
 };
 
@@ -148,6 +150,38 @@ function extractOutputText(data: OpenAIResponsesResponse) {
       .map((content) => content.text ?? content.output_text ?? "")
       .join("") ?? ""
   );
+}
+
+function friendlyOpenAIError(
+  data: OpenAIResponsesResponse,
+  responseStatus: number,
+) {
+  const rawMessage = [
+    data.error?.code,
+    data.error?.type,
+    data.error?.message,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLocaleLowerCase("en-US");
+
+  if (
+    rawMessage.includes("quota") ||
+    rawMessage.includes("billing") ||
+    rawMessage.includes("insufficient_quota")
+  ) {
+    return "OpenAI 사용 한도가 부족해 영수증을 읽지 못했어요. OpenAI 결제와 사용량을 확인한 뒤 다시 시도해 주세요.";
+  }
+
+  if (responseStatus === 401 || rawMessage.includes("api key")) {
+    return "OpenAI API key를 확인해 주세요. Vercel 환경변수 OPENAI_API_KEY가 올바른지 봐주세요.";
+  }
+
+  if (responseStatus === 429) {
+    return "요청이 잠시 많아 영수증을 읽지 못했어요. 잠시 후 다시 시도해 주세요.";
+  }
+
+  return "영수증을 읽지 못했어요. 직접 쓰기로 기록해 주세요.";
 }
 
 function receiptPrompt(
@@ -344,7 +378,7 @@ async function parseReceiptImage(
 
   if (!response.ok) {
     throw new ReceiptError(
-      data.error?.message ?? "영수증을 읽지 못했어요.",
+      friendlyOpenAIError(data, response.status),
       response.status,
     );
   }

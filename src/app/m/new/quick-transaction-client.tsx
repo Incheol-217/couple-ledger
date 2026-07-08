@@ -590,8 +590,19 @@ export function QuickTransactionClient({
               </div>
             ) : null}
             {receiptError ? (
-              <div className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                {receiptError}
+              <div className="rounded-md border border-destructive/20 bg-destructive/10 p-3">
+                <p className="text-sm leading-6 text-destructive">
+                  {receiptError}
+                </p>
+                <Button
+                  className="mt-2"
+                  onClick={() => changeEntryMode("manual")}
+                  size="sm"
+                  type="button"
+                  variant="outline"
+                >
+                  직접 쓰기로 기록하기
+                </Button>
               </div>
             ) : null}
           </div>
