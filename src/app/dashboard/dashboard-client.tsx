@@ -339,7 +339,7 @@ function MainAccountBalanceCard({
   scheduledOutflow: number;
 }) {
   if (!account) {
-    return <EmptyState message="메인 계좌로 표시할 계좌가 없습니다." />;
+    return <EmptyState message="메인으로 보여줄 계좌를 추가해 주세요." />;
   }
 
   const netFlow = periodInflow - periodOutflow;
@@ -416,7 +416,7 @@ function MainAccountBalanceCard({
 
 function CategoryExpenseChart({ data }: { data: ChartRow[] }) {
   if (data.length === 0) {
-    return <EmptyState message="표시할 카테고리 지출이 없습니다." />;
+    return <EmptyState message="카테고리 지출이 쌓이면 보여드릴게요." />;
   }
 
   return (
@@ -469,7 +469,7 @@ function DashboardNotice({
     return (
       <Card>
         <CardContent className="p-5 text-sm text-muted-foreground">
-          Supabase 환경변수를 설정하면 대시보드 데이터가 표시됩니다.
+          Supabase 환경변수를 넣으면 대시보드를 볼 수 있어요.
         </CardContent>
       </Card>
     );
@@ -479,7 +479,7 @@ function DashboardNotice({
     return (
       <Card>
         <CardContent className="p-5 text-sm text-muted-foreground">
-          로그인 후 공동 가계부 대시보드를 볼 수 있습니다.
+          로그인하면 공동 가계부 대시보드를 볼 수 있어요.
         </CardContent>
       </Card>
     );
@@ -495,7 +495,7 @@ function makeFriendlyAdviceLine(advice: AdvicePreview) {
       .map((line) => line.replace(/^[-*•]\s*/, "").trim())
       .find(Boolean) ?? advice.title;
 
-  return `괜찮아요, 함께 살펴보면 좋아요. ${firstLine}`;
+  return `괜찮아요. ${firstLine}`;
 }
 
 function AccountSummaryTable({
@@ -521,7 +521,7 @@ function AccountSummaryTable({
           {accountSummaries.length === 0 ? (
             <TableRow>
               <TableCell className="text-center text-muted-foreground" colSpan={7}>
-                표시할 계좌가 없습니다.
+                      계좌를 추가하면 여기에 보여요.
               </TableCell>
             </TableRow>
           ) : (
@@ -574,7 +574,7 @@ function AccountSummaryCards({
   compact?: boolean;
 }) {
   if (accountSummaries.length === 0) {
-    return <EmptyState message="표시할 계좌가 없습니다." />;
+    return <EmptyState message="계좌를 추가하면 여기에 보여요." />;
   }
 
   return (
@@ -630,7 +630,7 @@ function AccountSummaryCards({
                   ))
                 ) : (
                   <span className="text-sm text-muted-foreground">
-                    최근 거래 없음
+                    최근 거래가 없어요
                   </span>
                 )}
               </div>
@@ -889,7 +889,7 @@ export function DashboardClient(props: DashboardClientProps) {
 
     if (totalIncome > 0 && totalExpense > totalIncome) {
       return {
-        body: "선택 기간의 지출이 수입보다 큽니다. 다음 7일 예정 지출을 먼저 확인하고 변동비 결제를 늦출 수 있는지 살펴보세요.",
+        body: "선택한 기간에는 지출이 수입보다 커요. 다음 7일에 나갈 돈부터 확인해 보세요.",
         severity: "warning" as const,
         title: "현금흐름 주의",
       };
@@ -897,16 +897,16 @@ export function DashboardClient(props: DashboardClientProps) {
 
     if (currentMonthRemainingTotal > 0) {
       return {
-        body: `이번 달 남은 반복 지출은 ${formatMoney(
+        body: `이번 달에 남은 반복비는 ${formatMoney(
           currentMonthRemainingTotal,
-        )}입니다. 예정 금액을 제외한 뒤 변동비 여유분을 보는 편이 좋습니다.`,
+        )}이에요. 이 금액을 먼저 빼두면 남은 돈이 더 또렷해져요.`,
         severity: "info" as const,
-        title: "예정 지출 반영",
+        title: "예정 지출을 확인해요",
       };
     }
 
     return {
-      body: "아직 강한 소비 신호는 없습니다. 거래가 더 쌓이면 고정비와 변동비 흐름을 나눠 더 구체적으로 볼 수 있습니다.",
+      body: "흐름이 차분해 보여요. 거래가 더 쌓이면 고정비와 변동비를 나눠 볼게요.",
       severity: "info" as const,
       title: "흐름 안정",
     };
@@ -949,7 +949,7 @@ export function DashboardClient(props: DashboardClientProps) {
           </p>
         </div>
         <FilterSheet
-          description="대시보드에 표시할 기간, 계좌, 지출 유형을 고릅니다."
+          description="보고 싶은 기간과 계좌를 골라요."
           summary={dateRange.label}
         >
           <div className="grid gap-4">
@@ -1076,12 +1076,12 @@ export function DashboardClient(props: DashboardClientProps) {
             value: formatMoney(remainingBudget),
           },
           {
-            helper: "발생 + 예정",
+            helper: "쓴 돈 + 나갈 돈",
             label: "고정비 합계",
             value: formatMoney(actualFixedExpense + plannedFixedExpense),
           },
           {
-            helper: "발생 + 예정",
+            helper: "쓴 돈 + 나갈 돈",
             label: "구독비 합계",
             value: formatMoney(
               actualSubscriptionExpense + plannedSubscriptionExpense,
@@ -1112,7 +1112,7 @@ export function DashboardClient(props: DashboardClientProps) {
           <CardHeader>
             <CardTitle>카테고리별 지출</CardTitle>
             <CardDescription>
-              선택한 기간과 계좌 조건에 맞는 지출입니다.
+              많이 쓴 카테고리부터 보여요.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -1124,7 +1124,7 @@ export function DashboardClient(props: DashboardClientProps) {
           <CardHeader>
             <CardTitle>AI 소비 조언</CardTitle>
             <CardDescription>
-              최근 거래와 예정 지출을 바탕으로 본 흐름입니다.
+              최근 기록과 곧 나갈 돈을 함께 봤어요.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -1194,7 +1194,7 @@ export function DashboardClient(props: DashboardClientProps) {
               <div>
                 <CardTitle>계좌별 요약</CardTitle>
                 <CardDescription>
-                  지출, 예정 반복비, 최근 거래를 계좌별로 봅니다.
+                  계좌별로 쓴 돈과 곧 나갈 돈을 봐요.
                 </CardDescription>
               </div>
               <Badge variant="secondary">{visibleAccounts.length}개</Badge>
@@ -1208,7 +1208,7 @@ export function DashboardClient(props: DashboardClientProps) {
             <div className="hidden md:block">
               <Tabs defaultValue="table">
                 <TabsList>
-                  <TabsTrigger value="table">테이블</TabsTrigger>
+                  <TabsTrigger value="table">목록</TabsTrigger>
                   <TabsTrigger value="cards">카드</TabsTrigger>
                 </TabsList>
 
@@ -1226,9 +1226,9 @@ export function DashboardClient(props: DashboardClientProps) {
 
         <Card>
           <CardHeader>
-            <CardTitle>예정 반복 지출</CardTitle>
+            <CardTitle>곧 나갈 반복비</CardTitle>
             <CardDescription>
-              다음 7일과 이번 달 남은 결제 예정입니다.
+              다음 7일과 이번 달 남은 결제예요.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">
@@ -1239,7 +1239,7 @@ export function DashboardClient(props: DashboardClientProps) {
               </div>
               <div className="space-y-2">
                 {nextSevenOccurrences.length === 0 ? (
-                  <EmptyState message="다음 7일 예정 지출이 없습니다." />
+                  <EmptyState message="다음 7일에는 예정된 결제가 없어요." />
                 ) : (
                   nextSevenOccurrences.map((occurrence) => (
                     <div
@@ -1278,7 +1278,7 @@ export function DashboardClient(props: DashboardClientProps) {
               </div>
               <div className="space-y-2">
                 {currentMonthRemainingOccurrences.length === 0 ? (
-                  <EmptyState message="이번 달 남은 예정 지출이 없습니다." />
+                  <EmptyState message="이번 달에 남은 예정 결제가 없어요." />
                 ) : (
                   currentMonthRemainingOccurrences.map((occurrence) => (
                     <div

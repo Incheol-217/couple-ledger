@@ -82,7 +82,7 @@ async function readPayload(request: NextRequest) {
   try {
     return (await request.json()) as ShortcutTransactionPayload;
   } catch {
-    throw apiError("요청 본문은 JSON 형식이어야 합니다.");
+    throw apiError("요청 본문을 JSON 형식으로 보내주세요.");
   }
 }
 
@@ -109,7 +109,7 @@ function readAmount(payload: ShortcutTransactionPayload) {
         : Number.NaN;
 
   if (!Number.isFinite(amount) || amount <= 0) {
-    throw apiError("amount는 0보다 큰 숫자여야 합니다.");
+    throw apiError("amount에는 0보다 큰 숫자를 넣어주세요.");
   }
 
   return amount;
@@ -119,7 +119,7 @@ function readTransactionType(payload: ShortcutTransactionPayload) {
   const value = readText(payload, "type");
 
   if (!transactionTypes.includes(value as TransactionType)) {
-    throw apiError("type은 expense, income, transfer 중 하나여야 합니다.");
+    throw apiError("type은 expense, income, transfer 중 하나로 보내주세요.");
   }
 
   return value as TransactionType;
@@ -139,13 +139,13 @@ function readSpentAt(payload: ShortcutTransactionPayload) {
   const parsed = new Date(spentAt);
 
   if (Number.isNaN(parsed.getTime())) {
-    throw apiError("spent_at은 ISO 날짜/시간 형식이어야 합니다.");
+    throw apiError("spent_at은 ISO 날짜와 시간 형식으로 보내주세요.");
   }
 
   const dateOnly = spentAt.match(/^\d{4}-\d{2}-\d{2}/)?.[0];
 
   if (!dateOnly) {
-    throw apiError("spent_at은 YYYY-MM-DD로 시작하는 ISO 날짜/시간이어야 합니다.");
+    throw apiError("spent_at은 YYYY-MM-DD로 시작하는 ISO 날짜와 시간이어야 해요.");
   }
 
   return {
@@ -158,7 +158,7 @@ function assertShortcutSecret(payload: ShortcutTransactionPayload, request: Next
   const expectedSecret = process.env.SHORTCUTS_WEBHOOK_SECRET;
 
   if (!expectedSecret) {
-    throw apiError("SHORTCUTS_WEBHOOK_SECRET 환경변수가 설정되지 않았습니다.", 500);
+    throw apiError("SHORTCUTS_WEBHOOK_SECRET 환경변수를 넣어주세요.", 500);
   }
 
   const providedSecret =
@@ -168,7 +168,7 @@ function assertShortcutSecret(payload: ShortcutTransactionPayload, request: Next
     "";
 
   if (!providedSecret || !secureCompare(providedSecret, expectedSecret)) {
-    throw apiError("shortcut_secret이 올바르지 않습니다.", 401);
+    throw apiError("shortcut_secret을 다시 확인해 주세요.", 401);
   }
 }
 
@@ -189,7 +189,7 @@ async function assertHouseholdMember(
   }
 
   if (!data) {
-    throw apiError("household_id와 user_id가 일치하는 멤버를 찾을 수 없습니다.", 403);
+    throw apiError("household_id와 user_id에 맞는 멤버를 찾을 수 없어요.", 403);
   }
 }
 
@@ -220,12 +220,12 @@ async function findAccountByName(
   const accounts = (data ?? []) as AccountMatch[];
 
   if (accounts.length === 0) {
-    throw apiError(`${label} '${accountName}'을 찾을 수 없습니다.`);
+    throw apiError(`${label} '${accountName}'을 찾을 수 없어요.`);
   }
 
   if (accounts.length > 1) {
     throw apiError(
-      `${label} '${accountName}'이 여러 개입니다. Shortcuts에서 더 고유한 계좌명을 사용해 주세요.`,
+      `${label} '${accountName}'이 여러 개예요. 단축어에서 더 정확한 계좌명을 보내주세요.`,
       409,
     );
   }
@@ -288,7 +288,7 @@ async function findOrCreateCategoryByName({
 
     if (retryError || !retry) {
       throw apiError(
-        retryError?.message ?? "카테고리를 다시 조회하지 못했습니다.",
+        retryError?.message ?? "카테고리를 다시 조회하지 못했어요.",
         500,
       );
     }
@@ -312,11 +312,11 @@ export async function POST(request: NextRequest) {
     const userId = readText(payload, "user_id");
 
     if (!householdId) {
-      throw apiError("household_id가 필요합니다.");
+      throw apiError("household_id를 보내주세요.");
     }
 
     if (!userId) {
-      throw apiError("user_id가 필요합니다.");
+      throw apiError("user_id를 보내주세요.");
     }
 
     const type = readTransactionType(payload);
@@ -346,7 +346,7 @@ export async function POST(request: NextRequest) {
         : null;
 
     if (type === "transfer" && transferAccountId === accountId) {
-      throw apiError("이체 출금 계좌와 입금 계좌는 달라야 합니다.");
+      throw apiError("돈이 나가는 계좌와 들어오는 계좌를 다르게 보내주세요.");
     }
 
     const categoryId = await findOrCreateCategoryByName({
@@ -386,7 +386,7 @@ export async function POST(request: NextRequest) {
 
     await createNotificationEvent(supabase, {
       actorUserId: userId,
-      body: `${transactionTypeLabels[type]} ${formatWonForNotification(amount)}이 Shortcuts로 기록되었습니다.`,
+      body: `${transactionTypeLabels[type]} ${formatWonForNotification(amount)}이 단축어로 기록됐어요.`,
       eventType: "transaction_created",
       householdId,
       metadata: {
@@ -398,7 +398,7 @@ export async function POST(request: NextRequest) {
         transfer_account_id: transferAccountId,
         type,
       },
-      title: "새 거래 기록",
+      title: "새 거래가 올라왔어요",
     });
 
     revalidatePath("/dashboard");
@@ -408,7 +408,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       ok: true,
-      message: "거래를 저장했습니다.",
+      message: "거래를 저장했어요.",
       transaction,
     });
   } catch (error) {
@@ -418,7 +418,7 @@ export async function POST(request: NextRequest) {
         : apiError(
             error instanceof Error
               ? error.message
-              : "거래 저장 중 오류가 발생했습니다.",
+              : "거래를 저장하지 못했어요.",
             500,
           ),
     );

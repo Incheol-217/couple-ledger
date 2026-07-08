@@ -522,9 +522,9 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
       <PageHeader
-        eyebrow="Reports"
+        eyebrow="보고서"
         title="보고서"
-        description="기록된 수입, 지출, 고정비와 AI 조언을 출력용 문서로 정리합니다."
+        description="수입과 지출 흐름을 PDF로 남길 수 있어요."
       />
 
       <ReportsClient {...data} />

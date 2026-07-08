@@ -619,9 +619,9 @@ export default async function DashboardPage({
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
       <PageHeader
-        eyebrow="Dashboard"
+        eyebrow="대시보드"
         title="월간 대시보드"
-        description="지출, 계좌 흐름, 반복 결제 예정, 소비 조언을 한 화면에서 봅니다."
+        description="지출과 계좌 흐름, 곧 나갈 돈을 한눈에 봐요."
       />
 
       <DashboardClient {...data} />

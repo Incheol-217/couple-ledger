@@ -203,18 +203,18 @@ describe("Login and role access", () => {
 
   it("keeps settings behind admin access", () => {
     assert.match(settingsPage, /context\.isAdmin/);
-    assert.match(settingsPage, /관리자만 접근할 수 있습니다/);
+    assert.match(settingsPage, /관리자 계정으로 볼 수 있어요/);
     assert.match(appNav, /canAccessSettings/);
   });
 
   it("keeps account changes behind admin access", () => {
     assert.match(accountActions, /assertCurrentAdminMember/);
     assert.match(accountActions, /\.eq\("role", "owner"\)/);
-    assert.match(accountActions, /관리자 계정만 계좌를 변경할 수 있습니다/);
+    assert.match(accountActions, /관리자 계정으로 계좌를 바꿀 수 있어요/);
     assert.match(accountActions, /opening_balance/);
-    assert.match(accountsClient, /관리자 계정만 계좌를 추가할 수 있습니다/);
+    assert.match(accountsClient, /관리자 계정으로 계좌를 추가할 수 있어요/);
     assert.match(accountsClient, /등록 잔액/);
-    assert.match(accountsClient, /조회 전용/);
+    assert.match(accountsClient, /볼 수만 있어요/);
   });
 
   it("sends first visits to login and signed-in visits to dashboard", () => {

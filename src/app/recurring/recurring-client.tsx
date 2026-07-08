@@ -264,10 +264,10 @@ function RecurringForm({
     <Card>
       <CardHeader>
         <CardTitle>
-          {mode === "create" ? "반복 항목 추가" : "반복 항목 수정"}
+          {mode === "create" ? "반복비 추가하기" : "반복비 고치기"}
         </CardTitle>
         <CardDescription>
-          구독비와 고정비의 다음 결제일, 결제 계좌, 자동 거래 생성을 관리합니다.
+          다음 결제일과 결제 계좌를 정해요.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -393,7 +393,7 @@ function RecurringForm({
                 id="recurring-category"
                 name="category_id"
               >
-                <option value="">선택 안 함</option>
+                <option value="">선택하지 않기</option>
                 {categories.map((category) => (
                   <option key={category.id} value={category.id}>
                     {category.name}
@@ -409,7 +409,7 @@ function RecurringForm({
                 id="recurring-payer"
                 name="payer_user_id"
               >
-                <option value="">선택 안 함</option>
+                <option value="">선택하지 않기</option>
                 {members.map((member) => (
                   <option key={member.user_id} value={member.user_id}>
                     {member.label}
@@ -437,7 +437,7 @@ function RecurringForm({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="reminder-days">알림 기준일</Label>
+              <Label htmlFor="reminder-days">며칠 전에 알려줄까요?</Label>
               <Input
                 defaultValue={item?.reminder_days_before ?? 3}
                 id="reminder-days"
@@ -469,9 +469,9 @@ function RecurringForm({
               type="checkbox"
             />
             <span>
-              <span className="font-medium">자동 거래 생성 대상</span>
+              <span className="font-medium">결제일에 거래로 저장하기</span>
               <span className="mt-1 block text-muted-foreground">
-                활성 상태이고 다음 결제일이 도래하면 거래 생성 로직의 대상이 됩니다.
+                켜두면 결제일에 반복 거래를 자동으로 만들어요.
               </span>
             </span>
           </label>
@@ -489,11 +489,11 @@ function RecurringForm({
 
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button onClick={() => onDone()} type="button" variant="outline">
-              취소
+              닫기
             </Button>
             <Button disabled={isPending} type="submit">
               <Save className="size-4" aria-hidden="true" />
-              {isPending ? "저장 중" : "저장"}
+              {isPending ? "저장하고 있어요" : "저장하기"}
             </Button>
           </div>
         </form>
@@ -540,7 +540,7 @@ function StatusActionButton({
         ) : (
           <RotateCcw className="size-4" aria-hidden="true" />
         )}
-        {status === "paused" ? "일시정지" : status === "canceled" ? "취소" : "재개"}
+        {status === "paused" ? "멈추기" : status === "canceled" ? "취소하기" : "다시 켜기"}
       </Button>
     </form>
   );
@@ -588,10 +588,9 @@ export function RecurringClient({
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Supabase 설정 필요</CardTitle>
+          <CardTitle>Supabase 설정을 확인해 주세요</CardTitle>
           <CardDescription>
-            `.env.local`에 Supabase URL과 anon key를 채우면 반복비 관리가
-            활성화됩니다.
+            `.env.local`에 Supabase URL과 anon key를 넣으면 반복비를 볼 수 있어요.
           </CardDescription>
         </CardHeader>
       </Card>
@@ -602,10 +601,9 @@ export function RecurringClient({
     return (
       <Card>
         <CardHeader>
-          <CardTitle>로그인이 필요합니다</CardTitle>
+          <CardTitle>로그인해 주세요</CardTitle>
           <CardDescription>
-            구독비와 고정비는 household 멤버에게만 보이도록 RLS가 적용되어
-            있습니다.
+            로그인하면 함께 쓰는 반복비만 보여요.
           </CardDescription>
         </CardHeader>
       </Card>
@@ -616,9 +614,9 @@ export function RecurringClient({
     return (
       <Card>
         <CardHeader>
-          <CardTitle>공동 가계부가 없습니다</CardTitle>
+          <CardTitle>공동 가계부를 연결해 주세요</CardTitle>
           <CardDescription>
-            household가 만들어지고 멤버로 연결되면 반복 항목을 추가할 수 있습니다.
+            멤버 연결을 마치면 반복비를 추가할 수 있어요.
           </CardDescription>
         </CardHeader>
       </Card>
@@ -629,10 +627,9 @@ export function RecurringClient({
     return (
       <Card>
         <CardHeader>
-          <CardTitle>결제 계좌가 필요합니다</CardTitle>
+          <CardTitle>결제 계좌를 먼저 추가해 주세요</CardTitle>
           <CardDescription>
-            `/accounts`에서 계좌나 결제수단을 먼저 추가한 뒤 반복 항목을
-            등록해 주세요.
+            계좌나 카드를 추가하면 반복비를 등록할 수 있어요.
           </CardDescription>
         </CardHeader>
       </Card>
@@ -702,7 +699,7 @@ export function RecurringClient({
           <CardHeader>
             <CardTitle>다음 7일 결제 예정</CardTitle>
             <CardDescription>
-              가까운 결제일은 목록에서도 강조 표시됩니다.
+              곧 결제될 항목이에요.
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
@@ -728,7 +725,7 @@ export function RecurringClient({
         <div>
           <p className="text-sm font-medium">{household.name}</p>
           <p className="mt-1 text-sm text-muted-foreground">
-            구독비와 고정비를 결제일 기준으로 관리합니다.
+            결제일 기준으로 구독비와 고정비를 정리해요.
           </p>
         </div>
         <Button
@@ -737,7 +734,7 @@ export function RecurringClient({
           type="button"
         >
           <Plus className="size-4" aria-hidden="true" />
-          항목 추가
+          추가하기
         </Button>
       </div>
 
@@ -849,7 +846,7 @@ export function RecurringClient({
                         <dd>{getPayerName(members, item.payer_user_id)}</dd>
                       </div>
                       <div className="flex justify-between gap-4">
-                        <dt className="text-muted-foreground">자동 생성</dt>
+                        <dt className="text-muted-foreground">자동 저장</dt>
                         <dd className="inline-flex items-center gap-1">
                           {item.auto_create_transaction ? (
                             <>
@@ -923,15 +920,15 @@ export function RecurringClient({
                 />
                 <div>
                   <p className="font-medium">
-                    {recurringKindLabels[activeTab]} 항목이 없습니다
+                    추가한 {recurringKindLabels[activeTab]}가 없어요
                   </p>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    반복 결제가 생기면 이 탭에서 관리할 수 있습니다.
+                    반복 결제가 생기면 여기서 볼 수 있어요.
                   </p>
                 </div>
                 <Button onClick={() => openCreate(activeTab)} type="button">
                   <Plus className="size-4" aria-hidden="true" />
-                  항목 추가
+                  추가하기
                 </Button>
               </CardContent>
             </Card>

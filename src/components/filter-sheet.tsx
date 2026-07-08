@@ -9,7 +9,7 @@ export function FilterSheet({
   children,
   description,
   summary,
-  title = "필터 설정",
+  title = "필터",
 }: {
   children: React.ReactNode;
   description?: string;
@@ -21,7 +21,7 @@ export function FilterSheet({
   return (
     <>
       <Button
-        aria-label="필터 설정 열기"
+        aria-label="필터 열기"
         className="size-10 shrink-0"
         onClick={() => setOpen(true)}
         size="icon"
@@ -38,7 +38,7 @@ export function FilterSheet({
           role="dialog"
         >
           <button
-            aria-label="필터 설정 닫기"
+            aria-label="필터 닫기"
             className="absolute inset-0 cursor-default"
             onClick={() => setOpen(false)}
             type="button"
@@ -60,7 +60,7 @@ export function FilterSheet({
                 ) : null}
               </div>
               <Button
-                aria-label="필터 설정 닫기"
+                aria-label="필터 닫기"
                 onClick={() => setOpen(false)}
                 size="icon"
                 type="button"

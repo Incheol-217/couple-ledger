@@ -214,9 +214,9 @@ export default async function RecurringPage() {
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
       <PageHeader
-        eyebrow="Recurring"
+        eyebrow="반복비"
         title="구독비와 고정비"
-        description="반복 결제의 다음 결제일, 결제 계좌, 자동 거래 생성 여부를 관리합니다."
+        description="매달 나가는 돈을 결제일 기준으로 정리해요."
       />
 
       <RecurringClient {...data} />

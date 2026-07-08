@@ -126,9 +126,9 @@ export default async function AccountsPage() {
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
       <PageHeader
-        eyebrow="Accounts"
+        eyebrow="계좌"
         title="계좌"
-        description="계좌와 결제수단을 등록하고, 카드의 기본 출금 계좌와 표시 순서를 관리합니다."
+        description="계좌와 카드를 등록하고, 잔액과 표시 순서를 정리해요."
       />
 
       <AccountsClient {...data} />

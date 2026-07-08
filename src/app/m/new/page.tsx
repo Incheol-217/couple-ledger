@@ -174,10 +174,10 @@ export default async function MobileNewExpensePage() {
   return (
     <div className="mx-auto flex min-h-[calc(100svh-8rem)] w-full max-w-md flex-col gap-5 px-4 py-5 pb-28">
       <div>
-        <p className="text-sm font-medium text-primary">Quick Entry</p>
+        <p className="text-sm font-medium text-primary">빠른 기록</p>
         <h1 className="mt-2 text-2xl font-semibold">빠른 입력</h1>
         <p className="mt-2 text-sm leading-6 text-muted-foreground">
-          금액을 먼저 입력하고, 최근 사용한 계좌와 카테고리를 바로 선택합니다.
+          금액부터 적고, 자주 쓰는 계좌와 카테고리를 바로 골라요.
         </p>
       </div>
 

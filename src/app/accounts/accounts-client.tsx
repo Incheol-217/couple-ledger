@@ -331,8 +331,8 @@ function WalletAccountCard({
                 variant="outline"
               >
                 <Archive className="size-4" aria-hidden="true" />
-                <span className="hidden sm:inline">비활성화</span>
-                <span className="sr-only sm:hidden">비활성화</span>
+                <span className="hidden sm:inline">숨기기</span>
+                <span className="sr-only sm:hidden">숨기기</span>
               </Button>
             </form>
           </div>
@@ -390,9 +390,9 @@ function WalletDeck({
         <CardContent className="flex min-h-80 flex-col items-center justify-center gap-3 p-6 text-center">
           <Banknote className="size-8 text-muted-foreground" aria-hidden="true" />
           <div>
-            <p className="font-medium">아직 계좌가 없습니다</p>
+            <p className="font-medium">계좌를 추가해 주세요</p>
             <p className="mt-1 text-sm text-muted-foreground">
-              생활비 통장, 공용 카드, 현금을 먼저 추가해 보세요.
+              생활비 통장, 공용 카드, 현금을 먼저 넣어보세요.
             </p>
           </div>
           {isAdmin ? (
@@ -520,7 +520,7 @@ function WalletDeck({
           </dl>
 
           <div className="mt-5 rounded-[1rem] bg-primary px-3 py-2 text-sm font-semibold text-secondary">
-            활성 계좌 {accounts.length}개
+            사용 중인 계좌 {accounts.length}개
           </div>
         </aside>
       </div>
@@ -577,9 +577,9 @@ function AccountForm({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{mode === "create" ? "계좌 추가" : "계좌 수정"}</CardTitle>
+        <CardTitle>{mode === "create" ? "계좌 추가하기" : "계좌 고치기"}</CardTitle>
         <CardDescription>
-          은행 연동 없이 수동으로 계좌와 결제수단을 관리합니다.
+          통장에 들어있는 돈도 함께 적어주세요.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -607,7 +607,7 @@ function AccountForm({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="account-type">계좌 타입</Label>
+              <Label htmlFor="account-type">계좌 종류</Label>
               <Select
                 id="account-type"
                 name="type"
@@ -638,7 +638,7 @@ function AccountForm({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="institution-name">기관명</Label>
+              <Label htmlFor="institution-name">은행·카드사</Label>
               <Input
                 autoComplete="off"
                 defaultValue={selectedAccount?.institution_name ?? ""}
@@ -649,7 +649,7 @@ function AccountForm({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="masked-identifier">끝자리 또는 별칭</Label>
+              <Label htmlFor="masked-identifier">끝자리나 별칭</Label>
               <Input
                 autoComplete="off"
                 defaultValue={selectedAccount?.masked_identifier ?? ""}
@@ -721,14 +721,14 @@ function AccountForm({
           {type === "card" ? (
             <div className="space-y-2">
               <Label htmlFor="default-withdrawal-account">
-                기본 출금 계좌
+                카드값이 빠져나갈 계좌
               </Label>
               <Select
                 defaultValue={selectedAccount?.default_withdrawal_account_id ?? ""}
                 id="default-withdrawal-account"
                 name="default_withdrawal_account_id"
               >
-                <option value="">선택 안 함</option>
+                <option value="">선택하지 않기</option>
                 {withdrawalAccounts.map((account) => (
                   <option key={account.id} value={account.id}>
                     {account.name} · {accountTypeLabels[account.type]}
@@ -740,14 +740,14 @@ function AccountForm({
 
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button onClick={() => onDone()} type="button" variant="outline">
-              취소
+              닫기
             </Button>
             <Button disabled={isPending} type="submit">
               {isPending
-                ? "저장 중"
+                ? "저장하고 있어요"
                 : mode === "create"
-                  ? "계좌 추가"
-                  : "수정 저장"}
+                  ? "추가하기"
+                  : "저장하기"}
             </Button>
           </div>
         </form>
@@ -789,7 +789,7 @@ export function AccountsClient({
     if (!isAdmin) {
       setResult({
         ok: false,
-        message: "관리자 계정만 계좌를 추가할 수 있습니다.",
+        message: "관리자 계정으로 계좌를 추가할 수 있어요.",
       });
       return;
     }
@@ -803,7 +803,7 @@ export function AccountsClient({
     if (!isAdmin) {
       setResult({
         ok: false,
-        message: "관리자 계정만 계좌를 변경할 수 있습니다.",
+        message: "관리자 계정으로 계좌를 바꿀 수 있어요.",
       });
       return;
     }
@@ -828,7 +828,7 @@ export function AccountsClient({
     if (!isAdmin) {
       setResult({
         ok: false,
-        message: "관리자 계정만 계좌를 변경할 수 있습니다.",
+        message: "관리자 계정으로 계좌를 바꿀 수 있어요.",
       });
       return;
     }
@@ -844,10 +844,9 @@ export function AccountsClient({
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Supabase 설정 필요</CardTitle>
+          <CardTitle>Supabase 설정을 확인해 주세요</CardTitle>
           <CardDescription>
-            `.env.local`에 Supabase URL과 anon key를 채우면 계좌 관리가
-            활성화됩니다.
+            `.env.local`에 Supabase URL과 anon key를 넣으면 계좌를 볼 수 있어요.
           </CardDescription>
         </CardHeader>
       </Card>
@@ -858,9 +857,9 @@ export function AccountsClient({
     return (
       <Card>
         <CardHeader>
-          <CardTitle>로그인이 필요합니다</CardTitle>
+          <CardTitle>로그인해 주세요</CardTitle>
           <CardDescription>
-            계좌 데이터는 household 멤버에게만 보이도록 RLS가 적용되어 있습니다.
+            로그인하면 함께 쓰는 계좌만 보여요.
           </CardDescription>
         </CardHeader>
       </Card>
@@ -871,9 +870,9 @@ export function AccountsClient({
     return (
       <Card>
         <CardHeader>
-          <CardTitle>공동 가계부가 없습니다</CardTitle>
+          <CardTitle>공동 가계부를 연결해 주세요</CardTitle>
           <CardDescription>
-            household가 만들어지고 멤버로 연결되면 계좌를 추가할 수 있습니다.
+            멤버 연결을 마치면 계좌를 추가할 수 있어요.
           </CardDescription>
         </CardHeader>
       </Card>
@@ -886,7 +885,7 @@ export function AccountsClient({
         <div>
           <p className="text-sm font-medium">{household.name}</p>
           <p className="mt-1 text-sm text-muted-foreground">
-            활성 계좌 {activeAccounts.length}개 · 비활성 계좌{" "}
+            사용 중 {activeAccounts.length}개 · 숨김{" "}
             {inactiveAccounts.length}개
           </p>
         </div>
@@ -897,7 +896,7 @@ export function AccountsClient({
           </Button>
         ) : (
           <Badge className="w-fit" variant="secondary">
-            조회 전용
+            볼 수만 있어요
           </Badge>
         )}
       </div>
@@ -905,8 +904,7 @@ export function AccountsClient({
       {!isAdmin ? (
         <Card>
           <CardContent className="p-4 text-sm text-muted-foreground">
-            계좌 추가와 변경은 관리자 계정에서만 가능합니다. 남편/아내
-            계정에서는 현재 등록된 계좌를 조회할 수 있습니다.
+            계좌 추가와 변경은 관리자 계정으로 할 수 있어요.
           </CardContent>
         </Card>
       ) : null}
@@ -951,15 +949,15 @@ export function AccountsClient({
 
       <Card className="md:hidden">
         <CardHeader>
-          <CardTitle>계좌 관리</CardTitle>
+          <CardTitle>계좌 보기</CardTitle>
           <CardDescription>
-            모바일에서는 주요 정보와 관리 버튼을 카드로 봅니다.
+            등록한 계좌와 카드를 한눈에 볼 수 있어요.
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-3">
           {accounts.length === 0 ? (
             <div className="flex min-h-28 items-center justify-center rounded-md border border-dashed text-sm text-muted-foreground">
-              표시할 계좌가 없습니다.
+              추가한 계좌가 없어요.
             </div>
           ) : (
             accounts.map((account, index) => (
@@ -982,7 +980,7 @@ export function AccountsClient({
                     </div>
                   </div>
                   <Badge variant={account.is_active ? "default" : "outline"}>
-                    {account.is_active ? "활성" : "비활성"}
+                    {account.is_active ? "사용 중" : "숨김"}
                   </Badge>
                 </div>
 
@@ -1089,7 +1087,7 @@ export function AccountsClient({
                           variant="outline"
                         >
                           <Archive className="size-4" aria-hidden="true" />
-                          <span className="sr-only">비활성화</span>
+                          <span className="sr-only">숨기기</span>
                         </Button>
                       </form>
                     ) : null}
@@ -1103,11 +1101,11 @@ export function AccountsClient({
 
       <Card className="hidden md:block">
         <CardHeader>
-          <CardTitle>계좌 관리 테이블</CardTitle>
+          <CardTitle>계좌 목록</CardTitle>
           <CardDescription>
             {isAdmin
-              ? "활성 계좌는 위아래 버튼으로 대시보드 표시 순서를 바꿀 수 있습니다."
-              : "관리자 계정으로 로그인하면 계좌 추가와 표시 순서를 변경할 수 있습니다."}
+              ? "위아래 버튼으로 보이는 순서를 바꿀 수 있어요."
+              : "관리자 계정으로 로그인하면 계좌를 추가하거나 순서를 바꿀 수 있어요."}
           </CardDescription>
         </CardHeader>
         <CardContent className="overflow-x-auto">
@@ -1158,7 +1156,7 @@ export function AccountsClient({
                   </TableCell>
                   <TableCell>
                     <Badge variant={account.is_active ? "default" : "outline"}>
-                      {account.is_active ? "활성" : "비활성"}
+                      {account.is_active ? "사용 중" : "숨김"}
                     </Badge>
                   </TableCell>
                   <TableCell>
@@ -1252,14 +1250,14 @@ export function AccountsClient({
                               variant="ghost"
                             >
                               <Archive className="size-4" aria-hidden="true" />
-                              <span className="sr-only">비활성화</span>
+                              <span className="sr-only">숨기기</span>
                             </Button>
                           </form>
                         ) : null}
                       </div>
                     ) : (
                       <span className="block text-right text-sm text-muted-foreground">
-                        조회 전용
+                        볼 수만 있어요
                       </span>
                     )}
                   </TableCell>
@@ -1271,7 +1269,7 @@ export function AccountsClient({
                     className="h-32 text-center text-muted-foreground"
                     colSpan={7}
                   >
-                    표시할 계좌가 없습니다.
+                    추가한 계좌가 없어요.
                   </TableCell>
                 </TableRow>
               ) : null}

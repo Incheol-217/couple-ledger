@@ -4,7 +4,7 @@ function requireEnv(name: string) {
   const value = process.env[name];
 
   if (!value) {
-    throw new Error(`${name} 환경변수가 설정되지 않았습니다.`);
+    throw new Error(`${name} 환경변수를 넣어주세요.`);
   }
 
   return value;

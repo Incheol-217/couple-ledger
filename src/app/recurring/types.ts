@@ -64,11 +64,11 @@ export const billingCycleLabels: Record<BillingCycle, string> = {
   monthly: "매월",
   yearly: "매년",
   weekly: "매주",
-  custom: "사용자 지정",
+  custom: "직접 설정",
 };
 
 export const recurringStatusLabels: Record<RecurringStatus, string> = {
-  active: "활성",
-  paused: "일시정지",
-  canceled: "취소됨",
+  active: "사용 중",
+  paused: "멈춤",
+  canceled: "취소",
 };

@@ -38,7 +38,7 @@ function readTransactionType(formData: FormData): TransactionType {
   const value = readText(formData, "type");
 
   if (!transactionTypes.includes(value as TransactionType)) {
-    throw new Error("거래 타입을 다시 선택해 주세요.");
+    throw new Error("거래 구분을 다시 선택해 주세요.");
   }
 
   return value as TransactionType;
@@ -72,7 +72,7 @@ function readOccurredAt(formData: FormData, date: string, time: string) {
 
 async function createSupabaseForAction() {
   if (!hasSupabaseEnv()) {
-    throw new Error("Supabase 환경변수가 아직 설정되지 않았습니다.");
+    throw new Error("Supabase 환경변수를 넣어주세요.");
   }
 
   return createClient();
@@ -80,7 +80,7 @@ async function createSupabaseForAction() {
 
 async function assertCurrentMember(householdId: string) {
   if (!householdId) {
-    throw new Error("household를 찾을 수 없습니다.");
+    throw new Error("공동 가계부를 찾을 수 없어요.");
   }
 
   const supabase = await createSupabaseForAction();
@@ -90,7 +90,7 @@ async function assertCurrentMember(householdId: string) {
   } = await supabase.auth.getUser();
 
   if (userError || !user) {
-    throw new Error("로그인이 필요합니다.");
+    throw new Error("로그인해 주세요.");
   }
 
   const { data, error } = await supabase
@@ -101,7 +101,7 @@ async function assertCurrentMember(householdId: string) {
     .maybeSingle();
 
   if (error || !data) {
-    throw new Error("이 household에 거래를 저장할 권한이 없습니다.");
+    throw new Error("이 가계부에는 거래를 저장할 수 없어요.");
   }
 
   return { supabase, user };
@@ -125,7 +125,7 @@ async function assertAccount(
     .maybeSingle();
 
   if (error || !data || !data.is_active) {
-    throw new Error(`${label}을 찾을 수 없습니다.`);
+    throw new Error(`${label}을 찾을 수 없어요.`);
   }
 
   return data.id as string;
@@ -149,11 +149,11 @@ async function assertCategory(
     .maybeSingle();
 
   if (error || !data || !data.is_active) {
-    throw new Error("카테고리를 찾을 수 없습니다.");
+    throw new Error("카테고리를 찾을 수 없어요.");
   }
 
   if (data.type !== type) {
-    throw new Error("거래 타입과 카테고리 타입이 맞지 않습니다.");
+    throw new Error("거래 구분에 맞는 카테고리를 골라주세요.");
   }
 
   return data.id as string;
@@ -195,7 +195,7 @@ export async function createQuickTransactionAction(
         : null;
 
     if (type === "transfer" && confirmedTransferAccountId === confirmedAccountId) {
-      throw new Error("이체 출금 계좌와 입금 계좌는 달라야 합니다.");
+      throw new Error("돈이 나가는 계좌와 들어오는 계좌를 다르게 골라주세요.");
     }
 
     const confirmedCategoryId = await assertCategory(
@@ -227,7 +227,7 @@ export async function createQuickTransactionAction(
 
     await createNotificationEvent(supabase, {
       actorUserId: user.id,
-      body: `${transactionTypeLabels[type]} ${formatWonForNotification(amount)}이 기록되었습니다.`,
+      body: `${transactionTypeLabels[type]} ${formatWonForNotification(amount)}이 기록됐어요.`,
       eventType: "transaction_created",
       householdId,
       metadata: {
@@ -238,7 +238,7 @@ export async function createQuickTransactionAction(
         transfer_account_id: confirmedTransferAccountId,
         type,
       },
-      title: "새 거래 기록",
+      title: "새 거래가 올라왔어요",
     });
 
     revalidatePath("/m/new");
@@ -246,12 +246,12 @@ export async function createQuickTransactionAction(
     revalidatePath("/dashboard");
     revalidatePath("/", "layout");
 
-    return { ok: true, message: "거래를 저장했습니다." };
+    return { ok: true, message: "거래를 저장했어요." };
   } catch (error) {
     return {
       ok: false,
       message:
-        error instanceof Error ? error.message : "거래 저장에 실패했습니다.",
+        error instanceof Error ? error.message : "거래를 저장하지 못했어요.",
     };
   }
 }

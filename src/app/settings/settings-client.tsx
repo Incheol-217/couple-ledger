@@ -28,37 +28,37 @@ import {
 
 const settingsTabs = [
   {
-    description: "부부가 함께 쓰는 household 멤버를 확인합니다.",
+    description: "함께 쓰는 사람을 확인해요.",
     icon: UserRoundPlus,
     label: "부부 멤버",
     value: "members",
   },
   {
-    description: "지출과 수입을 묶어 볼 기준입니다.",
+    description: "지출과 수입을 묶어 봐요.",
     icon: Tags,
     label: "카테고리",
     value: "categories",
   },
   {
-    description: "기본 결제수단과 카드 출금 계좌를 관리합니다.",
+    description: "카드값이 빠져나갈 계좌를 정해요.",
     icon: WalletCards,
     label: "계좌 기본값",
     value: "accounts",
   },
   {
-    description: "iPhone 단축어에서 거래를 저장할 때 사용합니다.",
+    description: "iPhone 단축어로 거래를 저장해요.",
     icon: LinkIcon,
     label: "iOS Shortcuts webhook",
     value: "shortcuts",
   },
   {
-    description: "소비 조언 생성에 필요한 AI 설정입니다.",
+    description: "AI 소비 조언에 필요한 설정이에요.",
     icon: Bot,
     label: "AI 조언 설정",
     value: "ai",
   },
   {
-    description: "서버 작업과 단축어 인증에 쓰는 비밀값입니다.",
+    description: "서버 작업과 단축어에 쓰는 비밀값이에요.",
     icon: KeyRound,
     label: "비밀키",
     value: "secrets",
@@ -132,14 +132,14 @@ export function SettingsClient() {
 
       <TabsContent value="members">
         <SettingPanel
-          description="초대와 권한 관리는 다음 버전에서 화면으로 연결할 예정입니다."
+          description="초대와 권한 관리는 다음 버전에서 연결할게요."
           title="부부 멤버"
         >
           <InfoList
             items={[
-              "현재 데이터는 household 단위로 분리됩니다.",
-              "household_members에 속한 사용자만 계좌, 거래, 반복 항목을 볼 수 있습니다.",
-              "새 멤버 초대 UI는 아직 준비 중입니다.",
+              "데이터는 가계부별로 따로 보관돼요.",
+              "멤버만 계좌, 거래, 반복비를 볼 수 있어요.",
+              "새 멤버 초대 화면은 준비 중이에요.",
             ]}
           />
         </SettingPanel>
@@ -147,14 +147,14 @@ export function SettingsClient() {
 
       <TabsContent value="categories">
         <SettingPanel
-          description="모바일 입력과 대시보드 차트에서 함께 사용됩니다."
+          description="모바일 입력과 대시보드 차트에서 함께 써요."
           title="카테고리"
         >
           <InfoList
             items={[
-              "모바일 입력이나 Shortcuts webhook에서 새 카테고리를 만들 수 있습니다.",
-              "같은 household 안에서 같은 타입과 이름의 카테고리는 중복 생성되지 않습니다.",
-              "전용 카테고리 관리 화면은 다음 단계에서 추가하면 됩니다.",
+              "모바일 입력이나 단축어로 새 카테고리를 만들 수 있어요.",
+              "같은 가계부 안에서는 같은 이름의 카테고리를 중복으로 만들지 않아요.",
+              "카테고리 관리 화면은 다음 단계에서 추가할게요.",
             ]}
           />
         </SettingPanel>
@@ -166,18 +166,18 @@ export function SettingsClient() {
             <Button asChild variant="outline">
               <Link href="/accounts">
                 <WalletCards className="size-4" aria-hidden="true" />
-                계좌 관리
+                계좌 보러 가기
               </Link>
             </Button>
           }
-          description="카드의 기본 출금 계좌와 표시 순서를 관리합니다."
+          description="카드값이 빠져나갈 계좌와 순서를 정해요."
           title="계좌 기본값"
         >
           <InfoList
             items={[
-              "계좌와 결제수단은 /accounts 화면에서 추가하고 수정합니다.",
-              "카드 계좌는 기본 출금 계좌를 선택할 수 있습니다.",
-              "비활성화한 계좌는 새 거래 입력 목록에서 제외됩니다.",
+              "계좌와 카드는 계좌 화면에서 추가하고 고칠 수 있어요.",
+              "카드는 카드값이 빠져나갈 계좌를 고를 수 있어요.",
+              "숨긴 계좌는 새 거래 입력 목록에서 빠져요.",
             ]}
           />
         </SettingPanel>
@@ -185,8 +185,8 @@ export function SettingsClient() {
 
       <TabsContent value="shortcuts">
         <SettingPanel
-          description="iPhone에서 빠르게 거래를 보내는 webhook 설정입니다."
-          title="iOS Shortcuts webhook"
+          description="iPhone에서 거래를 빠르게 보내는 설정이에요."
+          title="iOS 단축어"
         >
           <div className="space-y-4">
             <div className="flex flex-wrap gap-2">
@@ -195,9 +195,9 @@ export function SettingsClient() {
             </div>
             <InfoList
               items={[
-                "Vercel 환경변수 SHORTCUTS_WEBHOOK_SECRET과 단축어의 shortcut_secret이 같아야 합니다.",
-                "요청에는 household_id, user_id, amount, type, account가 필요합니다.",
-                "카테고리 이름이 없으면 미분류로 저장되고, 이름이 있는데 없으면 새로 생성됩니다.",
+                "Vercel의 SHORTCUTS_WEBHOOK_SECRET과 단축어의 shortcut_secret을 같게 넣어주세요.",
+                "요청에는 household_id, user_id, amount, type, account가 필요해요.",
+                "새 카테고리 이름이 오면 자동으로 만들어요.",
               ]}
             />
           </div>
@@ -206,14 +206,14 @@ export function SettingsClient() {
 
       <TabsContent value="ai">
         <SettingPanel
-          description="AI에는 원본 거래가 아니라 요약 데이터만 전달합니다."
+          description="AI에는 요약 데이터만 보내요."
           title="AI 조언 설정"
         >
           <InfoList
             items={[
-              "Vercel 환경변수 OPENAI_API_KEY가 있어야 AI 조언 API가 동작합니다.",
-              "OPENAI_MODEL 기본값은 gpt-4o-mini입니다.",
-              "AI 조언은 투자, 대출, 세금, 법률 조언을 하지 않도록 제한되어 있습니다.",
+              "Vercel에 OPENAI_API_KEY를 넣으면 AI 조언을 만들 수 있어요.",
+              "OPENAI_MODEL 기본값은 gpt-4o-mini예요.",
+              "AI 조언은 투자, 대출, 세금, 법률 조언을 하지 않아요.",
             ]}
           />
         </SettingPanel>
@@ -221,14 +221,14 @@ export function SettingsClient() {
 
       <TabsContent value="secrets">
         <SettingPanel
-          description="서버 작업에 필요한 비밀값입니다."
+          description="서버 작업에 필요한 비밀값이에요."
           title="비밀키"
         >
           <InfoList
             items={[
-              "JOB_SECRET은 반복 거래 생성 작업을 수동 실행할 때 사용합니다.",
-              "SHORTCUTS_WEBHOOK_SECRET과 JOB_SECRET은 서로 다른 긴 문자열로 두는 편이 안전합니다.",
-              "비밀키는 GitHub에 올리지 말고 Vercel 환경변수에만 저장하세요.",
+              "JOB_SECRET은 반복 거래를 직접 만들 때 써요.",
+              "SHORTCUTS_WEBHOOK_SECRET과 JOB_SECRET은 서로 다르게 두는 편이 안전해요.",
+              "비밀키는 GitHub에 올리지 말고 Vercel 환경변수에만 저장해요.",
             ]}
           />
         </SettingPanel>

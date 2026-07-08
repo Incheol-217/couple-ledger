@@ -13,16 +13,16 @@ export default async function SettingsPage() {
     return (
       <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
         <PageHeader
-          eyebrow="Settings"
+          eyebrow="설정"
           title="설정"
-          description="공동 가계부의 기본값을 관리합니다."
+          description="가계부에 필요한 기본값을 정해요."
         />
         <Card>
           <CardHeader>
-            <CardTitle>Supabase 설정 필요</CardTitle>
+            <CardTitle>Supabase 설정을 확인해 주세요</CardTitle>
           </CardHeader>
           <CardContent className="text-sm text-muted-foreground">
-            환경변수를 먼저 설정하면 로그인과 관리자 권한을 사용할 수 있습니다.
+            환경변수를 넣으면 로그인과 관리자 설정을 쓸 수 있어요.
           </CardContent>
         </Card>
       </div>
@@ -33,16 +33,16 @@ export default async function SettingsPage() {
     return (
       <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
         <PageHeader
-          eyebrow="Settings"
+          eyebrow="설정"
           title="설정"
-          description="공동 가계부의 기본값을 관리합니다."
+          description="가계부에 필요한 기본값을 정해요."
         />
         <Card>
           <CardHeader>
-            <CardTitle>로그인이 필요합니다</CardTitle>
+            <CardTitle>로그인해 주세요</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-4 text-sm text-muted-foreground">
-            <p>설정값은 관리자 계정으로 로그인한 뒤 볼 수 있습니다.</p>
+            <p>관리자 계정으로 로그인하면 설정을 볼 수 있어요.</p>
             <div>
               <Button asChild>
                 <Link href="/login?next=/settings">로그인</Link>
@@ -58,18 +58,17 @@ export default async function SettingsPage() {
     return (
       <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
         <PageHeader
-          eyebrow="Settings"
+          eyebrow="설정"
           title="설정"
-          description="공동 가계부의 기본값을 관리합니다."
+          description="가계부에 필요한 기본값을 정해요."
         />
         <Card>
           <CardHeader>
-            <CardTitle>관리자만 접근할 수 있습니다</CardTitle>
+            <CardTitle>관리자 계정으로 볼 수 있어요</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-4 text-sm text-muted-foreground">
             <p>
-              남편/아내 계정은 거래 입력과 조회에 집중하고, 설정값은 관리자
-              계정에서 관리합니다.
+              설정은 관리자 계정에서 바꿔요. 남편/아내 계정은 거래 입력과 조회를 할 수 있어요.
             </p>
             <div className="flex flex-wrap gap-2">
               <Button asChild>
@@ -77,7 +76,7 @@ export default async function SettingsPage() {
               </Button>
               <form action={signOutAction}>
                 <Button type="submit" variant="outline">
-                  로그아웃 후 관리자 로그인
+                  관리자 계정으로 로그인
                 </Button>
               </form>
             </div>
@@ -90,9 +89,9 @@ export default async function SettingsPage() {
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
       <PageHeader
-        eyebrow="Settings"
+        eyebrow="설정"
         title="설정"
-        description="공동 가계부의 기본값을 관리합니다."
+        description="가계부에 필요한 기본값을 정해요."
       />
 
       <SettingsClient />

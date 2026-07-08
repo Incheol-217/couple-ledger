@@ -33,7 +33,7 @@ async function readJsonBody(request: NextRequest) {
 export async function POST(request: NextRequest) {
   if (!isAuthorized(request)) {
     return NextResponse.json(
-      { ok: false, message: "작업 실행 권한이 없습니다." },
+      { ok: false, message: "작업을 실행할 권한이 없어요." },
       { status: 401 },
     );
   }
@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
     today = typeof body.today === "string" ? body.today : undefined;
   } catch {
     return NextResponse.json(
-      { ok: false, message: "요청 본문은 JSON 형식이어야 합니다." },
+      { ok: false, message: "요청 본문을 JSON 형식으로 보내주세요." },
       { status: 400 },
     );
   }
@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
         message:
           error instanceof Error
             ? error.message
-            : "반복 거래 생성 작업에 실패했습니다.",
+            : "반복 거래를 만들지 못했어요.",
       },
       { status: 500 },
     );

@@ -245,10 +245,9 @@ export function QuickTransactionClient({
   if (!isConfigured) {
     return (
       <div className="rounded-lg border bg-card p-5 shadow-sm">
-        <p className="font-medium">Supabase 설정 필요</p>
+        <p className="font-medium">Supabase 설정을 확인해 주세요</p>
         <p className="mt-2 text-sm leading-6 text-muted-foreground">
-          `.env.local`에 Supabase URL과 anon key를 채우면 모바일 입력을
-          사용할 수 있습니다.
+          `.env.local`에 Supabase URL과 anon key를 넣으면 입력할 수 있어요.
         </p>
       </div>
     );
@@ -257,9 +256,9 @@ export function QuickTransactionClient({
   if (!isSignedIn) {
     return (
       <div className="rounded-lg border bg-card p-5 shadow-sm">
-        <p className="font-medium">로그인이 필요합니다</p>
+        <p className="font-medium">로그인해 주세요</p>
         <p className="mt-2 text-sm leading-6 text-muted-foreground">
-          거래는 household 멤버에게만 저장됩니다.
+          로그인하면 내 이름으로 거래가 저장돼요.
         </p>
         <Button asChild className="mt-4">
           <Link href="/login?next=/m/new">로그인</Link>
@@ -271,9 +270,9 @@ export function QuickTransactionClient({
   if (!household) {
     return (
       <div className="rounded-lg border bg-card p-5 shadow-sm">
-        <p className="font-medium">공동 가계부가 없습니다</p>
+        <p className="font-medium">공동 가계부를 연결해 주세요</p>
         <p className="mt-2 text-sm leading-6 text-muted-foreground">
-          household와 멤버 연결이 완료되면 거래를 입력할 수 있습니다.
+          멤버 연결을 마치면 거래를 입력할 수 있어요.
         </p>
       </div>
     );
@@ -282,9 +281,9 @@ export function QuickTransactionClient({
   if (activeAccounts.length === 0) {
     return (
       <div className="rounded-lg border bg-card p-5 shadow-sm">
-        <p className="font-medium">활성 계좌가 없습니다</p>
+        <p className="font-medium">계좌를 먼저 추가해 주세요</p>
         <p className="mt-2 text-sm leading-6 text-muted-foreground">
-          `/accounts`에서 생활비 통장이나 결제수단을 먼저 추가해 주세요.
+          생활비 통장이나 결제수단이 있어야 거래를 저장할 수 있어요.
         </p>
       </div>
     );
@@ -332,9 +331,9 @@ export function QuickTransactionClient({
 
       <section className="space-y-3">
         <div className="flex items-center justify-between gap-3">
-          <p className="text-sm font-medium">거래 타입</p>
+          <p className="text-sm font-medium">구분</p>
           <Badge variant="secondary">
-            {household.name} · 로그인 사용자로 자동 기록
+            {household.name} · 내 이름으로 기록돼요
           </Badge>
         </div>
         <div className="grid grid-cols-3 gap-2">
@@ -359,7 +358,7 @@ export function QuickTransactionClient({
         <div className="flex items-center gap-2">
           <WalletCards className="size-4 text-primary" aria-hidden="true" />
           <p className="text-sm font-medium">
-            {type === "transfer" ? "출금 계좌" : "계좌 또는 결제수단"}
+            {type === "transfer" ? "돈이 나가는 계좌" : "계좌 또는 카드"}
           </p>
         </div>
         <div className="grid gap-2">
@@ -403,7 +402,7 @@ export function QuickTransactionClient({
             onChange={(event) => setTransferAccountId(event.target.value)}
             value={transferAccountId}
           >
-            <option value="">선택 안 함</option>
+            <option value="">선택하지 않기</option>
             {selectableTransferAccounts.map((account) => (
               <option key={account.id} value={account.id}>
                 {account.name} · {accountTypeLabels[account.type]}
@@ -432,7 +431,7 @@ export function QuickTransactionClient({
           </div>
         ) : (
           <div className="rounded-md border bg-muted/40 px-3 py-3 text-sm text-muted-foreground">
-            선택 가능한 카테고리가 없습니다.
+            저장할 수 있는 카테고리가 없어요.
           </div>
         )}
         <Select
@@ -440,7 +439,7 @@ export function QuickTransactionClient({
           onChange={(event) => setCategoryId(event.target.value)}
           value={categoryId}
         >
-          <option value="">카테고리 없음</option>
+          <option value="">카테고리 없이 저장</option>
           {visibleCategories.map((category) => (
             <option key={category.id} value={category.id}>
               {category.name}
@@ -458,7 +457,7 @@ export function QuickTransactionClient({
             id="merchant"
             name="merchant_display"
             onChange={(event) => setMerchant(event.target.value)}
-            placeholder={selectedAccount ? `${selectedAccount.name} 결제` : "쿠팡"}
+            placeholder={selectedAccount ? `${selectedAccount.name} 결제` : "편의점"}
             type="text"
             value={merchant}
           />
@@ -470,7 +469,7 @@ export function QuickTransactionClient({
             id="memo"
             name="memo_display"
             onChange={(event) => setMemo(event.target.value)}
-            placeholder="간단한 메모"
+            placeholder="남겨둘 내용"
             rows={3}
             value={memo}
           />
@@ -527,7 +526,7 @@ export function QuickTransactionClient({
             type="submit"
           >
             <Save className="size-4" aria-hidden="true" />
-            {isPending ? "저장 중" : "저장"}
+            {isPending ? "저장하고 있어요" : "저장하기"}
           </Button>
         </div>
       </div>

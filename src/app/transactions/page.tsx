@@ -7,10 +7,10 @@ export default function TransactionsPage() {
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
       <PageHeader
-        eyebrow="Transactions"
+        eyebrow="거래"
         title="거래 내역"
-        description="수동 입력, 단축어, recurring 거래를 한곳에서 확인합니다."
-        action={<Button type="button">거래 추가</Button>}
+        description="직접 입력한 거래와 단축어로 보낸 거래를 함께 봐요."
+        action={<Button type="button">거래 추가하기</Button>}
       />
 
       <section className="overflow-hidden rounded-lg border bg-card shadow-sm">
@@ -20,7 +20,7 @@ export default function TransactionsPage() {
           ))}
         </div>
         <div className="flex min-h-64 items-center justify-center px-4 py-10 text-sm text-muted-foreground">
-          아직 거래가 없습니다.
+          거래를 추가하면 여기에 보여요.
         </div>
       </section>
     </div>

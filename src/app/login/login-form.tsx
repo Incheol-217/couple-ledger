@@ -161,7 +161,7 @@ export function LoginForm({
 
           <Button className="h-11" disabled={isPending} type="submit">
             <LogIn className="size-4" aria-hidden="true" />
-            {isPending ? "로그인 중" : "로그인"}
+            {isPending ? "로그인하고 있어요" : "로그인"}
           </Button>
         </div>
       </form>
@@ -169,10 +169,10 @@ export function LoginForm({
       <div className="rounded-lg border bg-muted/30 p-4 text-sm leading-6 text-muted-foreground">
         <div className="mb-2 flex items-center gap-2 font-medium text-foreground">
           <LockKeyhole className="size-4" aria-hidden="true" />
-          계정 생성이 먼저 필요합니다
+          계정을 먼저 만들어주세요
         </div>
-        세 계정은 Vercel 환경변수와 초기 설정 API로 생성합니다. 한 번 생성한
-        뒤에는 각자 이메일과 비밀번호로 로그인하면 됩니다.
+        관리자, 남편, 아내 계정은 초기 설정 API로 한 번만 만들면 돼요.
+        그다음부터는 각자 이메일과 비밀번호로 로그인해요.
       </div>
     </div>
   );

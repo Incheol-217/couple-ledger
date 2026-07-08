@@ -102,7 +102,7 @@ export function NotificationBell({
             <div>
               <p className="text-sm font-semibold">알림</p>
               <p className="text-xs text-muted-foreground">
-                상대방 기록과 관리자 변경 사항
+                함께 볼 일이 모여 있어요
               </p>
             </div>
             {unreadItems.length > 0 ? (
@@ -114,7 +114,7 @@ export function NotificationBell({
                 />
                 <Button size="sm" type="submit" variant="ghost">
                   <CheckCheck className="size-4" aria-hidden="true" />
-                  읽음
+                  모두 읽기
                 </Button>
               </form>
             ) : null}
@@ -124,9 +124,9 @@ export function NotificationBell({
             {items.length === 0 ? (
               <div className="grid place-items-center gap-2 rounded-[1.5rem] border border-dashed bg-muted/35 px-4 py-10 text-center">
                 <Inbox className="size-6 text-muted-foreground" aria-hidden="true" />
-                <p className="text-sm font-semibold">새 알림이 없습니다.</p>
+                <p className="text-sm font-semibold">새 알림이 없어요</p>
                 <p className="text-xs text-muted-foreground">
-                  상대방이 거래를 남기거나 관리자가 설정을 바꾸면 여기에 쌓입니다.
+                  거래 기록이나 설정 변경이 생기면 여기서 볼 수 있어요.
                 </p>
               </div>
             ) : (

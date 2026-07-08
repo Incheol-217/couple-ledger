@@ -201,7 +201,7 @@ export async function createRecurringTransactions(
   const today = options.today ?? todayInTimeZone();
 
   if (!isDateOnly(today)) {
-    throw new Error("today는 YYYY-MM-DD 형식이어야 합니다.");
+    throw new Error("today는 YYYY-MM-DD 형식으로 보내주세요.");
   }
 
   const supabase = createAdminClient();
@@ -325,7 +325,7 @@ export async function createRecurringTransactions(
         message:
           errorForItem instanceof Error
             ? errorForItem.message
-            : "반복 거래 생성 중 오류가 발생했습니다.",
+            : "반복 거래를 만들지 못했어요.",
       });
     }
   }

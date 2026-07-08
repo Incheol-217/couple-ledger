@@ -206,7 +206,7 @@ function ReportsNotice({
     return (
       <Card>
         <CardContent className="p-5 text-sm text-muted-foreground">
-          Supabase 환경변수를 설정하면 보고서 데이터를 불러올 수 있습니다.
+          Supabase 환경변수를 넣으면 보고서를 만들 수 있어요.
         </CardContent>
       </Card>
     );
@@ -216,7 +216,7 @@ function ReportsNotice({
     return (
       <Card>
         <CardContent className="grid gap-4 p-5 text-sm text-muted-foreground">
-          <p>로그인 후 공동 가계부 보고서를 출력할 수 있습니다.</p>
+          <p>로그인하면 공동 가계부 보고서를 만들 수 있어요.</p>
           <div>
             <Button asChild>
               <Link href="/login?next=/reports">로그인</Link>
@@ -265,7 +265,7 @@ function ReportToolbar({
 
       <div className="flex shrink-0 items-center gap-2">
         <FilterSheet
-          description="보고서에 담을 기간을 선택합니다."
+          description="보고서에 담을 기간을 골라요."
           summary={range.label}
         >
           <div className="grid gap-4">
@@ -349,7 +349,7 @@ function UpcomingRecurringTable({
   occurrences: ReportRecurringOccurrence[];
 }) {
   if (occurrences.length === 0) {
-    return <EmptyReportState message="선택한 기간에 남은 예정 지출이 없습니다." />;
+    return <EmptyReportState message="선택한 기간에 남은 예정 결제가 없어요." />;
   }
 
   return (
@@ -414,7 +414,7 @@ export function ReportsClient(props: ReportsClientProps) {
     return (
       <Card>
         <CardContent className="p-5 text-sm text-muted-foreground">
-          공동 가계부가 아직 연결되지 않았습니다.
+          공동 가계부를 연결해 주세요.
         </CardContent>
       </Card>
     );
@@ -569,14 +569,14 @@ export function ReportsClient(props: ReportsClientProps) {
           {
             label: "고정비",
             value: formatMoney(actualFixedExpense + plannedFixedExpense),
-            helper: "발생 + 예정",
+            helper: "쓴 돈 + 나갈 돈",
           },
           {
             label: "구독비",
             value: formatMoney(
               actualSubscriptionExpense + plannedSubscriptionExpense,
             ),
-            helper: "발생 + 예정",
+            helper: "쓴 돈 + 나갈 돈",
           },
         ].map((metric) => (
           <Card className="break-inside-avoid" key={metric.label}>
@@ -598,7 +598,7 @@ export function ReportsClient(props: ReportsClientProps) {
           <CardHeader>
             <CardTitle>지출 구성</CardTitle>
             <CardDescription>
-              변동비, 고정비, 구독비를 나눠 본 기간 지출입니다.
+              변동비, 고정비, 구독비를 나눠 봐요.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -637,7 +637,7 @@ export function ReportsClient(props: ReportsClientProps) {
           <CardHeader>
             <CardTitle>카테고리별 지출</CardTitle>
             <CardDescription>
-              지출이 큰 카테고리부터 정렬했습니다.
+              많이 쓴 카테고리부터 보여요.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -668,7 +668,7 @@ export function ReportsClient(props: ReportsClientProps) {
                 })}
               </div>
             ) : (
-              <EmptyReportState message="카테고리별 지출이 아직 없습니다." />
+              <EmptyReportState message="카테고리 지출이 쌓이면 보여요." />
             )}
           </CardContent>
         </Card>
@@ -682,7 +682,7 @@ export function ReportsClient(props: ReportsClientProps) {
               계좌별 요약
             </CardTitle>
             <CardDescription>
-              계좌별 지출, 수입, 예정 지출을 함께 봅니다.
+              계좌별로 쓴 돈과 들어온 돈을 봐요.
             </CardDescription>
           </CardHeader>
           <CardContent className="overflow-x-auto">
@@ -729,7 +729,7 @@ export function ReportsClient(props: ReportsClientProps) {
                       className="h-24 text-center text-muted-foreground"
                       colSpan={5}
                     >
-                      표시할 계좌가 없습니다.
+                      계좌를 추가하면 여기에 보여요.
                     </TableCell>
                   </TableRow>
                 )}
@@ -742,10 +742,10 @@ export function ReportsClient(props: ReportsClientProps) {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <CalendarDays className="size-5" aria-hidden="true" />
-              예정 고정비/구독비
+              예정 반복비
             </CardTitle>
             <CardDescription>
-              선택한 기간 안에서 아직 거래로 생성되지 않은 예정 항목입니다.
+              아직 거래로 저장되지 않은 예정 결제예요.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -761,7 +761,7 @@ export function ReportsClient(props: ReportsClientProps) {
         <CardHeader>
           <CardTitle>최근 거래</CardTitle>
           <CardDescription>
-            보고서 기간에 기록된 거래 중 최신순으로 최대 20건을 표시합니다.
+            최근 기록 20건을 볼 수 있어요.
           </CardDescription>
         </CardHeader>
         <CardContent className="overflow-x-auto">
@@ -828,7 +828,7 @@ export function ReportsClient(props: ReportsClientProps) {
                     className="h-24 text-center text-muted-foreground"
                     colSpan={7}
                   >
-                    선택한 기간에 기록된 거래가 없습니다.
+                    선택한 기간에 기록된 거래가 없어요.
                   </TableCell>
                 </TableRow>
               )}
@@ -836,8 +836,7 @@ export function ReportsClient(props: ReportsClientProps) {
           </Table>
           {totalTransfer > 0 ? (
             <p className="mt-3 text-xs text-muted-foreground">
-              이체 합계 {formatMoney(totalTransfer)}는 계좌 이동으로, 총 지출에는
-              포함하지 않았습니다.
+              이체 합계 {formatMoney(totalTransfer)}는 계좌 이동이라 총 지출에서 뺐어요.
             </p>
           ) : null}
         </CardContent>
@@ -848,7 +847,7 @@ export function ReportsClient(props: ReportsClientProps) {
           <CardHeader>
             <CardTitle>AI 조언 원문</CardTitle>
             <CardDescription>
-              가장 최근에 생성된 AI 소비 조언을 보고서에 함께 담았습니다.
+              가장 최근 AI 소비 조언이에요.
             </CardDescription>
           </CardHeader>
           <CardContent>

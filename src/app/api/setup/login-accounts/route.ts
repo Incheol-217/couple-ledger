@@ -15,7 +15,7 @@ function readEnv(name: string) {
   const value = process.env[name]?.trim();
 
   if (!value) {
-    throw new Error(`${name} 환경변수가 필요합니다.`);
+    throw new Error(`${name} 환경변수를 넣어주세요.`);
   }
 
   return value;
@@ -128,7 +128,7 @@ async function ensureUser(account: SetupAccount) {
 
     if (error || !data.user) {
       throw new Error(
-        error?.message ?? `${account.email} 계정을 갱신할 수 없습니다.`,
+        error?.message ?? `${account.email} 계정을 갱신하지 못했어요.`,
       );
     }
 
@@ -145,7 +145,7 @@ async function ensureUser(account: SetupAccount) {
   });
 
   if (error || !data.user) {
-    throw new Error(error?.message ?? `${account.email} 계정을 만들 수 없습니다.`);
+    throw new Error(error?.message ?? `${account.email} 계정을 만들지 못했어요.`);
   }
 
   return data.user;
@@ -180,7 +180,7 @@ async function ensureHousehold(adminUser: User) {
     .single();
 
   if (error || !data) {
-    throw new Error(error?.message ?? "household를 만들 수 없습니다.");
+    throw new Error(error?.message ?? "공동 가계부를 만들지 못했어요.");
   }
 
   return data as { id: string; name: string };
@@ -236,13 +236,13 @@ export async function POST(request: Request) {
     const emails = accounts.map((account) => account.email.toLowerCase());
 
     if (new Set(emails).size !== emails.length) {
-      throw new Error("남편, 아내, 관리자 이메일은 서로 달라야 합니다.");
+      throw new Error("남편, 아내, 관리자 이메일은 서로 다르게 넣어주세요.");
     }
 
     const adminAccount = accounts.find((account) => account.role === "owner");
 
     if (!adminAccount) {
-      throw new Error("관리자 계정 설정이 필요합니다.");
+      throw new Error("관리자 계정 설정을 넣어주세요.");
     }
 
     const createdUsers = new Map<string, User>();
@@ -256,7 +256,7 @@ export async function POST(request: Request) {
     const adminUser = createdUsers.get(adminAccount.email);
 
     if (!adminUser) {
-      throw new Error("관리자 계정을 찾을 수 없습니다.");
+      throw new Error("관리자 계정을 찾을 수 없어요.");
     }
 
     const household = await ensureHousehold(adminUser);
@@ -291,7 +291,7 @@ export async function POST(request: Request) {
         message:
           error instanceof Error
             ? error.message
-            : "로그인 계정 생성에 실패했습니다.",
+            : "로그인 계정을 만들지 못했어요.",
       },
       { status: 400 },
     );

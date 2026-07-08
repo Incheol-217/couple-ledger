@@ -532,17 +532,17 @@ function systemPrompt() {
   return [
     "당신은 부부가 함께 보는 공동 가계부의 소비 코치입니다.",
     "입력에는 원본 거래가 아니라 집계 데이터만 들어 있습니다.",
-    "한국어로, 차분하고 비난하지 않는 말투로 말합니다.",
-    "최대 3개의 bullet만 작성하고, 각 bullet은 바로 실행 가능한 조언이어야 합니다.",
+    "한국어 해요체로, 차분하고 비난하지 않는 말투로 말해요.",
+    "최대 3개의 bullet만 작성하고, 각 bullet은 바로 실행할 수 있는 조언이어야 해요.",
     "투자, 대출, 세금, 법률 조언은 하지 않습니다.",
     "상점명, 계좌번호, 카드번호, 원본 거래를 추정하거나 언급하지 않습니다.",
-    "정해진 JSON 형식으로만 응답합니다.",
+    "정해진 JSON 형식으로만 응답해요.",
   ].join("\n");
 }
 
 async function callOpenAI(snapshot: SpendingAdviceSnapshot) {
   if (!process.env.OPENAI_API_KEY) {
-    throw new Error("OPENAI_API_KEY 환경변수가 설정되지 않았습니다.");
+    throw new Error("OPENAI_API_KEY 환경변수를 넣어주세요.");
   }
 
   const response = await fetch("https://api.openai.com/v1/responses", {
@@ -614,7 +614,7 @@ async function callOpenAI(snapshot: SpendingAdviceSnapshot) {
   const data = (await response.json()) as OpenAIResponsesResponse;
 
   if (!response.ok) {
-    throw new Error(data.error?.message ?? "OpenAI API 호출에 실패했습니다.");
+    throw new Error(data.error?.message ?? "OpenAI API를 호출하지 못했어요.");
   }
 
   return {
@@ -656,7 +656,7 @@ function parseAdvice(text: string): OpenAIAdvice {
     : [];
 
   if (!parsed.title || bullets.length === 0) {
-    throw new Error("AI 응답 형식을 해석하지 못했습니다.");
+    throw new Error("AI 응답 형식을 읽지 못했어요.");
   }
 
   return {
@@ -673,7 +673,7 @@ function adviceBody(bullets: string[]) {
 export async function POST(request: NextRequest) {
   if (!hasSupabaseEnv()) {
     return NextResponse.json(
-      { ok: false, message: "Supabase 환경변수가 설정되지 않았습니다." },
+      { ok: false, message: "Supabase 환경변수를 넣어주세요." },
       { status: 500 },
     );
   }
@@ -686,7 +686,7 @@ export async function POST(request: NextRequest) {
       typeof body.household_id === "string" ? body.household_id : undefined;
   } catch {
     return NextResponse.json(
-      { ok: false, message: "요청 본문은 JSON 형식이어야 합니다." },
+      { ok: false, message: "요청 본문을 JSON 형식으로 보내주세요." },
       { status: 400 },
     );
   }
@@ -700,7 +700,7 @@ export async function POST(request: NextRequest) {
 
     if (userError || !user) {
       return NextResponse.json(
-        { ok: false, message: "로그인이 필요합니다." },
+        { ok: false, message: "로그인해 주세요." },
         { status: 401 },
       );
     }
@@ -713,7 +713,7 @@ export async function POST(request: NextRequest) {
 
     if (!household) {
       return NextResponse.json(
-        { ok: false, message: "공동 가계부를 찾을 수 없습니다." },
+        { ok: false, message: "공동 가계부를 찾을 수 없어요." },
         { status: 404 },
       );
     }
@@ -840,7 +840,7 @@ export async function POST(request: NextRequest) {
         message:
           error instanceof Error
             ? error.message
-            : "AI 소비 조언 생성에 실패했습니다.",
+            : "AI 소비 조언을 만들지 못했어요.",
       },
       { status: 500 },
     );

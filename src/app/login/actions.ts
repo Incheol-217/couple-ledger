@@ -29,7 +29,7 @@ export async function signInAction(
   if (!hasSupabaseAuthEnv()) {
     return {
       ok: false,
-      message: "Supabase 환경변수가 아직 설정되지 않았습니다.",
+      message: "Supabase 환경변수를 넣어주세요.",
     };
   }
 

@@ -66,7 +66,7 @@ function readAccountType(formData: FormData): AccountType {
   const value = readText(formData, "type");
 
   if (!accountTypes.includes(value as AccountType)) {
-    throw new Error("계좌 타입을 다시 선택해 주세요.");
+    throw new Error("계좌 종류를 다시 선택해 주세요.");
   }
 
   return value as AccountType;
@@ -84,7 +84,7 @@ function readOwnerType(formData: FormData): OwnerType {
 
 async function createSupabaseForAction() {
   if (!hasSupabaseEnv()) {
-    throw new Error("Supabase 환경변수가 아직 설정되지 않았습니다.");
+    throw new Error("Supabase 환경변수를 넣어주세요.");
   }
 
   return createClient();
@@ -92,7 +92,7 @@ async function createSupabaseForAction() {
 
 async function assertCurrentAdminMember(householdId: string) {
   if (!householdId) {
-    throw new Error("household를 찾을 수 없습니다.");
+    throw new Error("공동 가계부를 찾을 수 없어요.");
   }
 
   const supabase = await createSupabaseForAction();
@@ -102,7 +102,7 @@ async function assertCurrentAdminMember(householdId: string) {
   } = await supabase.auth.getUser();
 
   if (userError || !user) {
-    throw new Error("로그인이 필요합니다.");
+    throw new Error("로그인해 주세요.");
   }
 
   const { data, error } = await supabase
@@ -114,7 +114,7 @@ async function assertCurrentAdminMember(householdId: string) {
     .maybeSingle();
 
   if (error || !data) {
-    throw new Error("관리자 계정만 계좌를 변경할 수 있습니다.");
+    throw new Error("관리자 계정으로 계좌를 바꿀 수 있어요.");
   }
 
   return { supabase, user };
@@ -136,7 +136,7 @@ async function validateWithdrawalAccount(
   }
 
   if (accountId && defaultWithdrawalAccountId === accountId) {
-    throw new Error("카드는 자기 자신을 기본 출금 계좌로 사용할 수 없습니다.");
+    throw new Error("카드값이 빠져나갈 계좌로 같은 카드를 고를 수 없어요.");
   }
 
   const { data, error } = await supabase
@@ -147,11 +147,11 @@ async function validateWithdrawalAccount(
     .maybeSingle();
 
   if (error || !data) {
-    throw new Error("기본 출금 계좌를 찾을 수 없습니다.");
+    throw new Error("카드값이 빠져나갈 계좌를 찾을 수 없어요.");
   }
 
   if (!data.is_active || data.type === "card") {
-    throw new Error("기본 출금 계좌는 활성 상태의 카드 외 계좌여야 합니다.");
+    throw new Error("카드가 아닌 사용 중인 계좌를 골라주세요.");
   }
 
   return defaultWithdrawalAccountId;
@@ -239,7 +239,7 @@ export async function createAccountAction(
 
     await createNotificationEvent(supabase, {
       actorUserId: user.id,
-      body: `관리자가 '${payload.name}' 계좌를 추가했습니다.`,
+      body: `관리자가 '${payload.name}' 계좌를 추가했어요.`,
       eventType: "account_created",
       householdId,
       metadata: {
@@ -247,18 +247,18 @@ export async function createAccountAction(
         opening_balance: payload.openingBalance,
         type: payload.type,
       },
-      title: "계좌 설정 변경",
+      title: "계좌 설정이 바뀌었어요",
     });
 
     revalidatePath("/accounts");
     revalidatePath("/dashboard");
     revalidatePath("/", "layout");
-    return { ok: true, message: "계좌를 추가했습니다." };
+    return { ok: true, message: "계좌를 추가했어요." };
   } catch (error) {
     return {
       ok: false,
       message:
-        error instanceof Error ? error.message : "계좌 추가에 실패했습니다.",
+        error instanceof Error ? error.message : "계좌를 추가하지 못했어요.",
     };
   }
 }
@@ -271,7 +271,7 @@ export async function updateAccountAction(
     const accountId = readText(formData, "account_id");
 
     if (!accountId) {
-      throw new Error("수정할 계좌를 찾을 수 없습니다.");
+      throw new Error("수정할 계좌를 찾을 수 없어요.");
     }
 
     const { supabase, user } = await assertCurrentAdminMember(householdId);
@@ -306,7 +306,7 @@ export async function updateAccountAction(
 
     await createNotificationEvent(supabase, {
       actorUserId: user.id,
-      body: `관리자가 '${payload.name}' 계좌 설정을 수정했습니다.`,
+      body: `관리자가 '${payload.name}' 계좌 설정을 수정했어요.`,
       eventType: "account_updated",
       householdId,
       metadata: {
@@ -315,18 +315,18 @@ export async function updateAccountAction(
         opening_balance: payload.openingBalance,
         type: payload.type,
       },
-      title: "계좌 설정 변경",
+      title: "계좌 설정이 바뀌었어요",
     });
 
     revalidatePath("/accounts");
     revalidatePath("/dashboard");
     revalidatePath("/", "layout");
-    return { ok: true, message: "계좌를 수정했습니다." };
+    return { ok: true, message: "계좌를 수정했어요." };
   } catch (error) {
     return {
       ok: false,
       message:
-        error instanceof Error ? error.message : "계좌 수정에 실패했습니다.",
+        error instanceof Error ? error.message : "계좌를 수정하지 못했어요.",
     };
   }
 }
@@ -339,7 +339,7 @@ export async function deactivateAccountAction(
     const accountId = readText(formData, "account_id");
 
     if (!accountId) {
-      throw new Error("비활성화할 계좌를 찾을 수 없습니다.");
+      throw new Error("숨길 계좌를 찾을 수 없어요.");
     }
 
     const { supabase, user } = await assertCurrentAdminMember(householdId);
@@ -369,26 +369,26 @@ export async function deactivateAccountAction(
 
     await createNotificationEvent(supabase, {
       actorUserId: user.id,
-      body: `관리자가 '${account?.name ?? "계좌"}' 계좌를 비활성화했습니다.`,
+      body: `관리자가 '${account?.name ?? "계좌"}' 계좌를 숨겼어요.`,
       eventType: "account_deactivated",
       householdId,
       metadata: {
         account_id: accountId,
       },
-      title: "계좌 설정 변경",
+      title: "계좌 설정이 바뀌었어요",
     });
 
     revalidatePath("/accounts");
     revalidatePath("/dashboard");
     revalidatePath("/", "layout");
-    return { ok: true, message: "계좌를 비활성화했습니다." };
+    return { ok: true, message: "계좌를 숨겼어요." };
   } catch (error) {
     return {
       ok: false,
       message:
         error instanceof Error
           ? error.message
-          : "계좌 비활성화에 실패했습니다.",
+          : "계좌를 숨기지 못했어요.",
     };
   }
 }
@@ -402,7 +402,7 @@ export async function moveAccountAction(
     const direction = readText(formData, "direction");
 
     if (!accountId || !["up", "down"].includes(direction)) {
-      throw new Error("정렬할 계좌를 찾을 수 없습니다.");
+      throw new Error("순서를 바꿀 계좌를 찾을 수 없어요.");
     }
 
     const { supabase, user } = await assertCurrentAdminMember(householdId);
@@ -422,13 +422,13 @@ export async function moveAccountAction(
     const currentIndex = rows.findIndex((account) => account.id === accountId);
 
     if (currentIndex < 0) {
-      throw new Error("활성 계좌만 정렬할 수 있습니다.");
+      throw new Error("사용 중인 계좌만 순서를 바꿀 수 있어요.");
     }
 
     const targetIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
 
     if (targetIndex < 0 || targetIndex >= rows.length) {
-      return { ok: true, message: "이미 끝 위치입니다." };
+      return { ok: true, message: "이미 끝에 있어요." };
     }
 
     const nextRows = [...rows];
@@ -452,25 +452,25 @@ export async function moveAccountAction(
 
     await createNotificationEvent(supabase, {
       actorUserId: user.id,
-      body: `관리자가 '${selected.name ?? "계좌"}' 계좌의 표시 순서를 변경했습니다.`,
+      body: `관리자가 '${selected.name ?? "계좌"}' 계좌 순서를 바꿨어요.`,
       eventType: "account_reordered",
       householdId,
       metadata: {
         account_id: accountId,
         direction,
       },
-      title: "계좌 설정 변경",
+      title: "계좌 설정이 바뀌었어요",
     });
 
     revalidatePath("/accounts");
     revalidatePath("/dashboard");
     revalidatePath("/", "layout");
-    return { ok: true, message: "계좌 순서를 변경했습니다." };
+    return { ok: true, message: "계좌 순서를 바꿨어요." };
   } catch (error) {
     return {
       ok: false,
       message:
-        error instanceof Error ? error.message : "계좌 정렬에 실패했습니다.",
+        error instanceof Error ? error.message : "계좌 순서를 바꾸지 못했어요.",
     };
   }
 }

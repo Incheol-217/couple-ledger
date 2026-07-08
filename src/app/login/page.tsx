@@ -41,9 +41,9 @@ export default async function LoginPage({
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
       <PageHeader
-        eyebrow="Login"
+        eyebrow="로그인"
         title="로그인"
-        description="남편, 아내, 관리자 계정으로 공동 가계부에 들어갑니다."
+        description="내 계정으로 들어가면 기록자가 자동으로 남아요."
       />
 
       <LoginForm accountHints={getAccountHints()} nextPath={nextPath} />

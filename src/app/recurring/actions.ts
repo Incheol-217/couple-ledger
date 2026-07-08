@@ -51,7 +51,7 @@ function readKind(formData: FormData): RecurringKind {
   const value = readText(formData, "kind");
 
   if (!recurringKinds.includes(value as RecurringKind)) {
-    throw new Error("항목 종류를 다시 선택해 주세요.");
+    throw new Error("반복비 종류를 다시 선택해 주세요.");
   }
 
   return value as RecurringKind;
@@ -79,7 +79,7 @@ function readStatus(formData: FormData): RecurringStatus {
 
 async function createSupabaseForAction() {
   if (!hasSupabaseEnv()) {
-    throw new Error("Supabase 환경변수가 아직 설정되지 않았습니다.");
+    throw new Error("Supabase 환경변수를 확인해 주세요.");
   }
 
   return createClient();
@@ -87,7 +87,7 @@ async function createSupabaseForAction() {
 
 async function assertCurrentMember(householdId: string) {
   if (!householdId) {
-    throw new Error("household를 찾을 수 없습니다.");
+    throw new Error("공동 가계부를 찾을 수 없어요.");
   }
 
   const supabase = await createSupabaseForAction();
@@ -97,7 +97,7 @@ async function assertCurrentMember(householdId: string) {
   } = await supabase.auth.getUser();
 
   if (userError || !user) {
-    throw new Error("로그인이 필요합니다.");
+    throw new Error("로그인해 주세요.");
   }
 
   const { data, error } = await supabase
@@ -108,7 +108,7 @@ async function assertCurrentMember(householdId: string) {
     .maybeSingle();
 
   if (error || !data) {
-    throw new Error("이 household의 반복 항목을 관리할 권한이 없습니다.");
+    throw new Error("이 가계부의 반복비를 바꿀 수 없어요.");
   }
 
   return { supabase, user };
@@ -131,7 +131,7 @@ async function assertAccount(
     .maybeSingle();
 
   if (error || !data || !data.is_active) {
-    throw new Error("결제 계좌를 찾을 수 없습니다.");
+    throw new Error("결제 계좌를 찾을 수 없어요.");
   }
 
   return data.id as string;
@@ -154,7 +154,7 @@ async function assertCategory(
     .maybeSingle();
 
   if (error || !data || !data.is_active || data.type !== "expense") {
-    throw new Error("지출 카테고리를 찾을 수 없습니다.");
+    throw new Error("지출 카테고리를 찾을 수 없어요.");
   }
 
   return data.id as string;
@@ -177,7 +177,7 @@ async function assertPayer(
     .maybeSingle();
 
   if (error || !data) {
-    throw new Error("결제 담당자를 찾을 수 없습니다.");
+    throw new Error("결제 담당자를 찾을 수 없어요.");
   }
 
   return data.user_id as string;
@@ -191,7 +191,7 @@ function toPayload(formData: FormData) {
   const reminderDaysBefore = readNumber(formData, "reminder_days_before", 3);
 
   if (!name) {
-    throw new Error("항목 이름을 입력해 주세요.");
+    throw new Error("반복비 이름을 입력해 주세요.");
   }
 
   if (amount <= 0) {
@@ -269,7 +269,7 @@ export async function createRecurringItemAction(
 
     await createNotificationEvent(supabase, {
       actorUserId: user.id,
-      body: `'${payload.name}' ${recurringKindLabels[payload.kind]} 항목이 추가되었습니다.`,
+      body: `'${payload.name}' ${recurringKindLabels[payload.kind]} 항목이 추가됐어요.`,
       eventType: "recurring_created",
       householdId,
       metadata: {
@@ -280,18 +280,18 @@ export async function createRecurringItemAction(
         category_id: categoryId,
         kind: payload.kind,
       },
-      title: "반복비 설정 변경",
+      title: "반복비 설정이 바뀌었어요",
     });
 
     revalidatePath("/recurring");
     revalidatePath("/dashboard");
     revalidatePath("/", "layout");
-    return { ok: true, message: "반복 항목을 추가했습니다." };
+    return { ok: true, message: "반복비를 추가했어요." };
   } catch (error) {
     return {
       ok: false,
       message:
-        error instanceof Error ? error.message : "반복 항목 추가에 실패했습니다.",
+        error instanceof Error ? error.message : "반복비를 추가하지 못했어요.",
     };
   }
 }
@@ -304,7 +304,7 @@ export async function updateRecurringItemAction(
     const itemId = readText(formData, "recurring_item_id");
 
     if (!itemId) {
-      throw new Error("수정할 항목을 찾을 수 없습니다.");
+      throw new Error("수정할 반복비를 찾을 수 없어요.");
     }
 
     const { supabase, user } = await assertCurrentMember(householdId);
@@ -352,7 +352,7 @@ export async function updateRecurringItemAction(
 
     await createNotificationEvent(supabase, {
       actorUserId: user.id,
-      body: `'${payload.name}' ${recurringKindLabels[payload.kind]} 항목이 수정되었습니다.`,
+      body: `'${payload.name}' ${recurringKindLabels[payload.kind]} 항목이 수정됐어요.`,
       eventType: "recurring_updated",
       householdId,
       metadata: {
@@ -364,18 +364,18 @@ export async function updateRecurringItemAction(
         kind: payload.kind,
         recurring_item_id: itemId,
       },
-      title: "반복비 설정 변경",
+      title: "반복비 설정이 바뀌었어요",
     });
 
     revalidatePath("/recurring");
     revalidatePath("/dashboard");
     revalidatePath("/", "layout");
-    return { ok: true, message: "반복 항목을 수정했습니다." };
+    return { ok: true, message: "반복비를 수정했어요." };
   } catch (error) {
     return {
       ok: false,
       message:
-        error instanceof Error ? error.message : "반복 항목 수정에 실패했습니다.",
+        error instanceof Error ? error.message : "반복비를 수정하지 못했어요.",
     };
   }
 }
@@ -389,7 +389,7 @@ export async function updateRecurringStatusAction(
     const status = readStatus(formData);
 
     if (!itemId) {
-      throw new Error("상태를 변경할 항목을 찾을 수 없습니다.");
+      throw new Error("상태를 바꿀 반복비를 찾을 수 없어요.");
     }
 
     const { supabase, user } = await assertCurrentMember(householdId);
@@ -419,7 +419,7 @@ export async function updateRecurringStatusAction(
 
     await createNotificationEvent(supabase, {
       actorUserId: user.id,
-      body: `'${item?.name ?? "반복 항목"}' 상태가 ${recurringStatusLabels[status]}(으)로 변경되었습니다.`,
+      body: `'${item?.name ?? "반복비"}' 상태가 ${recurringStatusLabels[status]}로 바뀌었어요.`,
       eventType: "recurring_status_changed",
       householdId,
       metadata: {
@@ -427,7 +427,7 @@ export async function updateRecurringStatusAction(
         recurring_item_id: itemId,
         status,
       },
-      title: "반복비 설정 변경",
+      title: "반복비 설정이 바뀌었어요",
     });
 
     revalidatePath("/recurring");
@@ -437,16 +437,16 @@ export async function updateRecurringStatusAction(
       ok: true,
       message:
         status === "paused"
-          ? "항목을 일시정지했습니다."
+          ? "반복비를 잠시 멈췄어요."
           : status === "canceled"
-            ? "항목을 취소했습니다."
-            : "항목을 활성화했습니다.",
+            ? "반복비를 취소했어요."
+            : "반복비를 다시 켰어요.",
     };
   } catch (error) {
     return {
       ok: false,
       message:
-        error instanceof Error ? error.message : "상태 변경에 실패했습니다.",
+        error instanceof Error ? error.message : "상태를 바꾸지 못했어요.",
     };
   }
 }
