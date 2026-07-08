@@ -32,6 +32,36 @@ function readNullableText(formData: FormData, key: string) {
   return value.length > 0 ? value : null;
 }
 
+function readMoney(formData: FormData, key: string) {
+  const value = readText(formData, key).replaceAll(",", "");
+
+  if (!value) {
+    return 0;
+  }
+
+  const amount = Number(value);
+
+  if (!Number.isFinite(amount) || amount < 0) {
+    throw new Error("등록 잔액은 0원 이상으로 입력해 주세요.");
+  }
+
+  return amount;
+}
+
+function readDateOrToday(formData: FormData, key: string) {
+  const value = readText(formData, key);
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return value;
+  }
+
+  if (value) {
+    throw new Error("잔액 기준일을 다시 확인해 주세요.");
+  }
+
+  return new Date().toISOString().slice(0, 10);
+}
+
 function readAccountType(formData: FormData): AccountType {
   const value = readText(formData, "type");
 
@@ -148,6 +178,8 @@ function toAccountPayload(formData: FormData) {
     institutionName: readNullableText(formData, "institution_name"),
     maskedIdentifier: readNullableText(formData, "masked_identifier"),
     color: readNullableText(formData, "color") ?? "#16a34a",
+    openingBalance: readMoney(formData, "opening_balance"),
+    openingBalanceAsOf: readDateOrToday(formData, "opening_balance_as_of"),
     defaultWithdrawalAccountId:
       type === "card" ? rawWithdrawalAccountId : null,
   };
@@ -193,6 +225,8 @@ export async function createAccountAction(
       institution_name: payload.institutionName,
       masked_identifier: payload.maskedIdentifier,
       color: payload.color,
+      opening_balance: payload.openingBalance,
+      opening_balance_as_of: payload.openingBalanceAsOf,
       default_withdrawal_account_id: defaultWithdrawalAccountId,
       display_order: displayOrder,
       is_active: true,
@@ -210,6 +244,7 @@ export async function createAccountAction(
       householdId,
       metadata: {
         owner_type: payload.ownerType,
+        opening_balance: payload.openingBalance,
         type: payload.type,
       },
       title: "계좌 설정 변경",
@@ -258,6 +293,8 @@ export async function updateAccountAction(
         institution_name: payload.institutionName,
         masked_identifier: payload.maskedIdentifier,
         color: payload.color,
+        opening_balance: payload.openingBalance,
+        opening_balance_as_of: payload.openingBalanceAsOf,
         default_withdrawal_account_id: defaultWithdrawalAccountId,
       })
       .eq("household_id", householdId)
@@ -275,6 +312,7 @@ export async function updateAccountAction(
       metadata: {
         account_id: accountId,
         owner_type: payload.ownerType,
+        opening_balance: payload.openingBalance,
         type: payload.type,
       },
       title: "계좌 설정 변경",

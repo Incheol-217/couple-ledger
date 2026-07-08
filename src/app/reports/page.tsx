@@ -383,7 +383,7 @@ async function getReportData(
     supabase
       .from("accounts")
       .select(
-        "id, household_id, name, type, owner_type, default_withdrawal_account_id, institution_name, color, icon, display_order, is_active, created_at, updated_at",
+        "id, household_id, name, type, owner_type, default_withdrawal_account_id, institution_name, masked_identifier, color, icon, opening_balance, opening_balance_as_of, display_order, is_active, created_at, updated_at",
       )
       .eq("household_id", household.id)
       .eq("is_active", true)

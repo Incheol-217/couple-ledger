@@ -103,7 +103,7 @@ async function getAccountsPageData() {
   const { data: accounts, error: accountsError } = await supabase
     .from("accounts")
     .select(
-      "id, household_id, name, type, owner_type, default_withdrawal_account_id, institution_name, masked_identifier, color, icon, display_order, is_active, created_at, updated_at",
+      "id, household_id, name, type, owner_type, default_withdrawal_account_id, institution_name, masked_identifier, color, icon, opening_balance, opening_balance_as_of, display_order, is_active, created_at, updated_at",
     )
     .eq("household_id", household.id)
     .order("is_active", { ascending: false })

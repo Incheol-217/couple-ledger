@@ -86,6 +86,15 @@ describe("Supabase schema and RLS", () => {
     );
   });
 
+  it("stores account opening balances outside income transactions", () => {
+    assert.match(migrations, /opening_balance numeric\(14, 2\) not null default 0/);
+    assert.match(
+      migrations,
+      /opening_balance_as_of date not null default current_date/,
+    );
+    assert.match(migrations, /accounts_opening_balance_non_negative/);
+  });
+
   it("keeps notification events household-scoped and read markers user-scoped", () => {
     assert.match(migrations, /create table public\.notification_events/);
     assert.match(migrations, /create table public\.notification_reads/);
@@ -202,7 +211,9 @@ describe("Login and role access", () => {
     assert.match(accountActions, /assertCurrentAdminMember/);
     assert.match(accountActions, /\.eq\("role", "owner"\)/);
     assert.match(accountActions, /관리자 계정만 계좌를 변경할 수 있습니다/);
+    assert.match(accountActions, /opening_balance/);
     assert.match(accountsClient, /관리자 계정만 계좌를 추가할 수 있습니다/);
+    assert.match(accountsClient, /등록 잔액/);
     assert.match(accountsClient, /조회 전용/);
   });
 
@@ -246,8 +257,10 @@ describe("Login and role access", () => {
 describe("UX guardrails", () => {
   const quickEntry = read("src/app/m/new/quick-transaction-client.tsx");
   const dashboard = read("src/app/dashboard/dashboard-client.tsx");
+  const dashboardPage = read("src/app/dashboard/page.tsx");
   const recurring = read("src/app/recurring/recurring-client.tsx");
   const moneyFormatter = read("src/lib/formatters/money.ts");
+  const accountsClient = read("src/app/accounts/accounts-client.tsx");
   const reportPage = read("src/app/reports/page.tsx");
   const reports = read("src/app/reports/reports-client.tsx");
   const appNav = read("src/components/app-nav.tsx");
@@ -264,6 +277,8 @@ describe("UX guardrails", () => {
     assert.match(quickEntry, /setAmount\(formatAmountInput\(event\.target\.value\)\)/);
     assert.match(recurring, /onInput=\{formatAmountField\}/);
     assert.match(recurring, /placeholder="12,900"/);
+    assert.match(accountsClient, /onInput=\{formatAmountField\}/);
+    assert.match(accountsClient, /placeholder="1,000,000"/);
   });
 
   it("keeps the dashboard responsive and chart-backed", () => {
@@ -276,6 +291,8 @@ describe("UX guardrails", () => {
     assert.match(dashboard, /makeFriendlyAdviceLine/);
     assert.match(dashboard, /MainAccountBalanceCard/);
     assert.match(dashboard, /생활비통장/);
+    assert.match(dashboardPage, /Number\(account\.opening_balance\) \|\| 0/);
+    assert.match(dashboardPage, /buildAccountBalances\(\s*accounts,/);
   });
 
   it("provides printable household reports", () => {

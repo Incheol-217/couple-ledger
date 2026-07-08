@@ -15,6 +15,8 @@ export type AccountRow = {
   masked_identifier: string | null;
   color: string | null;
   icon: string | null;
+  opening_balance: number | string;
+  opening_balance_as_of: string;
   display_order: number;
   is_active: boolean;
   created_at: string;

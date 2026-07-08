@@ -43,6 +43,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
+import { formatAmountInput, formatWon } from "@/lib/formatters/money";
 import {
   Table,
   TableBody,
@@ -85,6 +86,26 @@ function readableAccountId(account: AccountRow) {
   return account.masked_identifier
     ? `•••• ${account.masked_identifier}`
     : "별칭 없음";
+}
+
+function formatAccountBalance(value: AccountRow["opening_balance"]) {
+  return formatWon(Number(value) || 0);
+}
+
+function formatAccountBalanceInput(value: AccountRow["opening_balance"] | null) {
+  if (value === null || value === "") {
+    return "";
+  }
+
+  return formatAmountInput(String(Math.round(Number(value) || 0)));
+}
+
+function formatAmountField(event: React.FormEvent<HTMLInputElement>) {
+  event.currentTarget.value = formatAmountInput(event.currentTarget.value);
+}
+
+function todayString() {
+  return new Date().toISOString().slice(0, 10);
 }
 
 function walletCardBackground(account: AccountRow, selected: boolean) {
@@ -232,11 +253,27 @@ function WalletAccountCard({
           <p className="mt-1 font-mono text-xs tracking-normal sm:text-sm">
             {readableAccountId(account)}
           </p>
+          <p
+            className={cn(
+              "mt-3 text-lg font-semibold tracking-normal sm:text-2xl",
+              selected ? "text-white" : "text-black",
+            )}
+          >
+            {formatAccountBalance(account.opening_balance)}
+          </p>
+          <p
+            className={cn(
+              "mt-1 text-xs",
+              selected ? "text-white/58" : "text-black/55",
+            )}
+          >
+            등록 잔액
+          </p>
         </div>
 
         <div
           className={cn(
-            "mt-5 gap-2 transition-all duration-500 sm:grid sm:grid-cols-3",
+            "mt-5 gap-2 transition-all duration-500 sm:grid sm:grid-cols-4",
             selected
               ? "hidden opacity-100 sm:grid"
               : "pointer-events-none hidden max-h-0 opacity-0",
@@ -260,6 +297,12 @@ function WalletAccountCard({
             <p className={cn("text-xs", selected ? "text-white/56" : "")}>표시 순서</p>
             <p className="mt-1 truncate text-sm font-semibold">
               {account.display_order}
+            </p>
+          </div>
+          <div className="rounded-[1.15rem] bg-white/14 p-3 backdrop-blur">
+            <p className={cn("text-xs", selected ? "text-white/56" : "")}>기준일</p>
+            <p className="mt-1 truncate text-sm font-semibold">
+              {account.opening_balance_as_of}
             </p>
           </div>
         </div>
@@ -450,6 +493,20 @@ function WalletDeck({
               </dd>
             </div>
             <div className="flex items-center justify-between gap-4 rounded-[1rem] bg-white/10 px-3 py-2">
+              <dt className="text-white/58">등록 잔액</dt>
+              <dd className="font-medium">
+                {selectedAccount
+                  ? formatAccountBalance(selectedAccount.opening_balance)
+                  : "-"}
+              </dd>
+            </div>
+            <div className="flex items-center justify-between gap-4 rounded-[1rem] bg-white/10 px-3 py-2">
+              <dt className="text-white/58">잔액 기준일</dt>
+              <dd className="font-medium">
+                {selectedAccount?.opening_balance_as_of ?? "-"}
+              </dd>
+            </div>
+            <div className="flex items-center justify-between gap-4 rounded-[1rem] bg-white/10 px-3 py-2">
               <dt className="text-white/58">카드 출금</dt>
               <dd className="truncate font-medium">
                 {selectedAccount?.type === "card"
@@ -599,6 +656,34 @@ function AccountForm({
                 id="masked-identifier"
                 name="masked_identifier"
                 placeholder="1234"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="opening-balance">등록 잔액</Label>
+              <Input
+                autoComplete="off"
+                defaultValue={formatAccountBalanceInput(
+                  selectedAccount?.opening_balance ?? null,
+                )}
+                id="opening-balance"
+                inputMode="numeric"
+                name="opening_balance"
+                onInput={formatAmountField}
+                placeholder="1,000,000"
+                type="text"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="opening-balance-as-of">잔액 기준일</Label>
+              <Input
+                defaultValue={
+                  selectedAccount?.opening_balance_as_of ?? todayString()
+                }
+                id="opening-balance-as-of"
+                name="opening_balance_as_of"
+                type="date"
               />
             </div>
 
@@ -909,6 +994,12 @@ export function AccountsClient({
                     </span>
                   </div>
                   <div className="flex justify-between gap-3">
+                    <span className="shrink-0 text-muted-foreground">등록 잔액</span>
+                    <span className="truncate font-medium">
+                      {formatAccountBalance(account.opening_balance)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between gap-3">
                     <span className="shrink-0 text-muted-foreground">카드 출금</span>
                     <span className="truncate">
                       {account.type === "card"
@@ -1026,6 +1117,7 @@ export function AccountsClient({
                 <TableHead>계좌</TableHead>
                 <TableHead>타입</TableHead>
                 <TableHead>소유</TableHead>
+                <TableHead className="text-right">등록 잔액</TableHead>
                 <TableHead>기본 출금</TableHead>
                 <TableHead>상태</TableHead>
                 <TableHead className="text-right">관리</TableHead>
@@ -1053,6 +1145,9 @@ export function AccountsClient({
                   </TableCell>
                   <TableCell>{accountTypeLabels[account.type]}</TableCell>
                   <TableCell>{ownerTypeLabels[account.owner_type]}</TableCell>
+                  <TableCell className="text-right font-medium">
+                    {formatAccountBalance(account.opening_balance)}
+                  </TableCell>
                   <TableCell>
                     {account.type === "card"
                       ? getWithdrawalName(
@@ -1174,7 +1269,7 @@ export function AccountsClient({
                 <TableRow>
                   <TableCell
                     className="h-32 text-center text-muted-foreground"
-                    colSpan={6}
+                    colSpan={7}
                   >
                     표시할 계좌가 없습니다.
                   </TableCell>

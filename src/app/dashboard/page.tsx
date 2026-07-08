@@ -323,9 +323,15 @@ function plannedOccurrencesForRange(
 }
 
 function buildAccountBalances(
+  accounts: AccountRow[],
   balanceTransactions: BalanceTransactionRow[],
 ): DashboardAccountBalance[] {
-  const balances = new Map<string, number>();
+  const balances = new Map<string, number>(
+    accounts.map((account) => [
+      account.id,
+      Number(account.opening_balance) || 0,
+    ]),
+  );
 
   balanceTransactions.forEach((transaction) => {
     const amount = Number(transaction.amount);
@@ -481,7 +487,7 @@ async function getDashboardData(
     supabase
       .from("accounts")
       .select(
-        "id, household_id, name, type, owner_type, default_withdrawal_account_id, institution_name, masked_identifier, color, icon, display_order, is_active, created_at, updated_at",
+        "id, household_id, name, type, owner_type, default_withdrawal_account_id, institution_name, masked_identifier, color, icon, opening_balance, opening_balance_as_of, display_order, is_active, created_at, updated_at",
       )
       .eq("household_id", household.id)
       .eq("is_active", true)
@@ -538,6 +544,7 @@ async function getDashboardData(
 
   const recurringItems =
     (recurringResult.data ?? []) as unknown as RecurringItemRow[];
+  const accounts = (accountsResult.data ?? []) as unknown as AccountRow[];
   const transactions =
     (transactionsResult.data ?? []) as unknown as DashboardTransactionRow[];
   const existingRecurringTransactionKeys = new Set(
@@ -560,8 +567,9 @@ async function getDashboardData(
   );
 
   return {
-    accounts: (accountsResult.data ?? []) as unknown as AccountRow[],
+    accounts,
     accountBalances: buildAccountBalances(
+      accounts,
       (balanceTransactionsResult.data ?? []) as unknown as BalanceTransactionRow[],
     ),
     adviceLogs: (adviceResult.data ?? []) as unknown as AiAdviceLogRow[],
