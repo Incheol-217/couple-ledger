@@ -175,11 +175,10 @@ function WalletAccountCard({
 }) {
   const offsetIndex = Math.max(stackIndex, 0);
   const mobileTranslateY = selected ? 0 : 70 + offsetIndex * 32;
-  const desktopTranslateY = selected ? 0 : 356 + offsetIndex * 44;
+  const desktopTranslateY = selected ? 0 : 312 + offsetIndex * 44;
   const translateX = selected ? 0 : Math.min(offsetIndex + 1, 4) * 5;
   const scale = selected ? 1 : 1 - Math.min(offsetIndex + 1, 5) * 0.025;
   const rotate = selected ? 0 : -Math.min(offsetIndex + 1, 4) * 0.45;
-  const baseColor = account.color ?? "#aeee00";
 
   return (
     <article
@@ -187,7 +186,7 @@ function WalletAccountCard({
       aria-pressed={selected}
       className={cn(
         "absolute inset-x-0 top-0 h-60 cursor-pointer overflow-hidden rounded-[1.65rem] border p-4 shadow-[0_22px_50px_rgba(18,18,18,0.28)] outline-none transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] [transform:translate3d(var(--card-x),var(--mobile-card-y),0)_scale(var(--card-scale))_rotate(var(--card-rotate))] focus-visible:ring-4 focus-visible:ring-primary/40 sm:rounded-[2rem] sm:p-5 sm:[transform:translate3d(var(--card-x),var(--desktop-card-y),0)_scale(var(--card-scale))_rotate(var(--card-rotate))]",
-        selected ? "sm:h-[28rem]" : "sm:h-80",
+        selected ? "sm:h-[24rem]" : "sm:h-80",
         selected
           ? "border-white/20 text-white"
           : "border-black/10 text-[#111214] hover:brightness-105",
@@ -206,10 +205,6 @@ function WalletAccountCard({
       } as React.CSSProperties}
       tabIndex={0}
     >
-      <span
-        className="absolute right-6 top-0 h-7 w-24 -translate-y-2 rounded-t-[1.15rem] border border-white/20 border-b-0 sm:right-8 sm:h-9 sm:w-28 sm:-translate-y-3 sm:rounded-t-[1.35rem]"
-        style={{ background: baseColor }}
-      />
       <div className="relative z-10 flex h-full flex-col">
         <div className="flex items-start justify-between gap-3 sm:gap-4">
           <div className="flex min-w-0 items-start gap-3">
@@ -310,7 +305,7 @@ function WalletAccountCard({
 
         {selected && isAdmin ? (
           <div
-            className="relative z-20 mt-auto flex shrink-0 gap-2 pt-4 sm:pt-5"
+            className="relative z-20 mt-4 flex shrink-0 gap-2 sm:mt-5"
             onClick={(event) => event.stopPropagation()}
           >
             <Button
@@ -382,10 +377,10 @@ function WalletDeck({
   );
   const desktopStackCount = Math.max(stackedAccounts.length - 1, 0);
   const desktopDeckHeight = Math.max(
-    448,
+    384,
     desktopStackCount === 0
-      ? 448
-      : Math.min(760, 676 + Math.max(desktopStackCount - 1, 0) * 44),
+      ? 384
+      : Math.min(720, 632 + Math.max(desktopStackCount - 1, 0) * 44),
   );
 
   if (accounts.length === 0) {
