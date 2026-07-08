@@ -278,6 +278,7 @@ describe("UX guardrails", () => {
   const settings = read("src/app/settings/settings-client.tsx");
   const appShell = read("src/components/app-shell.tsx");
   const mobileExpenseAction = read("src/components/mobile-expense-action.tsx");
+  const receiptDrafts = read("src/lib/receipt-drafts.ts");
 
   it("keeps mobile amount entry keypad-friendly and PWA-aware", () => {
     assert.match(quickEntry, /inputMode="numeric"/);
@@ -288,17 +289,24 @@ describe("UX guardrails", () => {
   it("lets mobile users start an expense quickly from anywhere", () => {
     assert.match(appShell, /<MobileExpenseAction isSignedIn=\{context\.isSignedIn\}/);
     assert.match(mobileExpenseAction, /href="\/m\/new"/);
+    assert.match(mobileExpenseAction, /직접 쓰기/);
+    assert.match(mobileExpenseAction, /영수증 찍기/);
     assert.match(mobileExpenseAction, /쓰기/);
     assert.match(mobileExpenseAction, /md:hidden/);
     assert.match(mobileExpenseAction, /pathname\.startsWith\("\/m\/new"\)/);
+    assert.match(mobileExpenseAction, /cameraInputRef\.current\?\.click\(\)/);
+    assert.match(mobileExpenseAction, /sessionStorage\.setItem\(\s*receiptDraftStorageKey/);
+    assert.match(mobileExpenseAction, /router\.push\("\/m\/new\?mode=receipt"\)/);
     assert.doesNotMatch(mobileExpenseAction, /bottom-\[/);
   });
 
   it("supports receipt camera drafting before manual review", () => {
+    assert.match(receiptDrafts, /receiptDraftStorageKey/);
     assert.match(quickEntry, /영수증 찍기/);
     assert.match(quickEntry, /accept="image\/\*"/);
     assert.match(quickEntry, /capture="environment"/);
     assert.match(quickEntry, /fetch\("\/api\/ai\/receipt"/);
+    assert.match(quickEntry, /sessionStorage\.getItem\(receiptDraftStorageKey\)/);
     assert.match(quickEntry, /receiptApplied/);
     assert.match(quickEntry, /source"\s*,\s*entryMode === "receipt" && receiptApplied \? "ocr" : "manual"/);
   });

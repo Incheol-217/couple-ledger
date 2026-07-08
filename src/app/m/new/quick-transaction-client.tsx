@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import {
   ArrowRightLeft,
   CalendarClock,
@@ -35,6 +35,11 @@ import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { formatAmountInput } from "@/lib/formatters/money";
+import {
+  receiptDraftStorageKey,
+  type ReceiptDraft,
+  type ReceiptParseResponse,
+} from "@/lib/receipt-drafts";
 import { cn } from "@/lib/utils";
 
 function nowParts() {
@@ -142,26 +147,6 @@ function OptionChip({
 
 type EntryMode = "manual" | "receipt";
 
-type ReceiptDraft = {
-  account_id: string | null;
-  account_name: string | null;
-  amount: number | null;
-  category_id: string | null;
-  category_name: string | null;
-  confidence: number | null;
-  memo: string | null;
-  merchant: string | null;
-  transaction_date: string | null;
-  transaction_time: string | null;
-  warnings: string[];
-};
-
-type ReceiptParseResponse = {
-  ok: boolean;
-  message?: string;
-  receipt?: ReceiptDraft;
-};
-
 export function QuickTransactionClient({
   accounts,
   categories,
@@ -216,6 +201,77 @@ export function QuickTransactionClient({
     (account) => account.id !== accountId,
   );
   const selectedAccount = activeAccounts.find((account) => account.id === accountId);
+
+  useEffect(() => {
+    let isCanceled = false;
+    const rawDraft = window.sessionStorage.getItem(receiptDraftStorageKey);
+
+    if (!rawDraft) {
+      return undefined;
+    }
+
+    window.sessionStorage.removeItem(receiptDraftStorageKey);
+
+    try {
+      const receipt = JSON.parse(rawDraft) as ReceiptDraft;
+
+      queueMicrotask(() => {
+        if (isCanceled) {
+          return;
+        }
+
+        setEntryMode("receipt");
+        setType("expense");
+        setTransferAccountId("");
+        setReceiptFileName("촬영한 영수증");
+        setReceiptError(null);
+
+        if (receipt.amount) {
+          setAmount(formatAmountInput(String(receipt.amount)));
+        }
+
+        if (receipt.account_id) {
+          setAccountId(receipt.account_id);
+        }
+
+        if (receipt.category_id) {
+          setCategoryId(receipt.category_id);
+        }
+
+        if (receipt.merchant) {
+          setMerchant(receipt.merchant);
+        }
+
+        if (receipt.memo) {
+          setMemo(receipt.memo);
+        }
+
+        if (receipt.transaction_date) {
+          setDate(receipt.transaction_date);
+        }
+
+        if (receipt.transaction_time) {
+          setTime(receipt.transaction_time);
+        }
+
+        setReceiptMessage("영수증에서 내용을 채웠어요. 저장 전에 확인해 주세요.");
+        setReceiptApplied(true);
+      });
+    } catch {
+      queueMicrotask(() => {
+        if (isCanceled) {
+          return;
+        }
+
+        setEntryMode("receipt");
+        setReceiptError("영수증 내용을 불러오지 못했어요. 다시 촬영해 주세요.");
+      });
+    }
+
+    return () => {
+      isCanceled = true;
+    };
+  }, []);
 
   function resetForm() {
     const nextNow = nowParts();
