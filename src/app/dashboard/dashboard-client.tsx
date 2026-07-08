@@ -353,38 +353,40 @@ function MainAccountBalanceCard({
   const netFlow = periodInflow - periodOutflow;
 
   return (
-    <section className="overflow-hidden rounded-lg bg-secondary p-3 text-secondary-foreground shadow-[0_24px_60px_rgba(18,18,18,0.2)]">
-      <div className="grid gap-3 lg:grid-cols-[minmax(0,1.35fr)_minmax(260px,0.65fr)]">
-        <div className="rounded-lg bg-primary p-5 text-primary-foreground shadow-[inset_0_-1px_0_rgba(0,0,0,0.12)]">
+    <section className="overflow-hidden rounded-lg bg-secondary p-2 text-secondary-foreground shadow-[0_24px_60px_rgba(18,18,18,0.2)] sm:p-3">
+      <div className="grid gap-2 sm:gap-3 lg:grid-cols-[minmax(0,1.35fr)_minmax(260px,0.65fr)]">
+        <div className="rounded-lg bg-primary p-4 text-primary-foreground shadow-[inset_0_-1px_0_rgba(0,0,0,0.12)] sm:p-5">
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <span className="grid size-10 place-items-center rounded-md bg-primary-foreground/12">
-                  <Landmark className="size-5" aria-hidden="true" />
+                <span className="grid size-9 place-items-center rounded-md bg-primary-foreground/12 sm:size-10">
+                  <Landmark className="size-4 sm:size-5" aria-hidden="true" />
                 </span>
                 <div className="min-w-0">
-                  <p className="truncate text-sm opacity-75">메인 계좌</p>
-                  <h2 className="truncate text-xl font-semibold tracking-normal">
+                  <p className="truncate text-xs opacity-75 sm:text-sm">
+                    메인 계좌
+                  </p>
+                  <h2 className="truncate text-lg font-semibold tracking-normal sm:text-xl">
                     {account.name}
                   </h2>
                 </div>
               </div>
             </div>
-            <span className="shrink-0 rounded-full bg-primary-foreground px-3 py-1 text-xs font-bold text-secondary">
+            <span className="shrink-0 rounded-full bg-primary-foreground px-2.5 py-1 text-[11px] font-bold text-secondary sm:px-3 sm:text-xs">
               {ownerTypeLabels[account.owner_type]}
             </span>
           </div>
 
-          <div className="mt-8">
-            <p className="text-sm opacity-70">현재 잔액</p>
-            <p className="mt-2 break-keep text-4xl font-semibold tracking-normal sm:text-5xl">
+          <div className="mt-5 sm:mt-8">
+            <p className="text-xs opacity-70 sm:text-sm">현재 잔액</p>
+            <p className="mt-2 break-keep text-3xl font-semibold tracking-normal sm:text-5xl">
               {formatMoney(balance)}
             </p>
-            <div className="mt-4 flex flex-wrap items-center gap-2">
-              <span className="rounded-full bg-primary-foreground/14 px-3 py-1 text-xs font-semibold">
+            <div className="mt-3 flex flex-wrap items-center gap-1.5 sm:mt-4 sm:gap-2">
+              <span className="rounded-full bg-primary-foreground/14 px-2.5 py-1 text-[11px] font-semibold sm:px-3 sm:text-xs">
                 {dateRangeLabel}
               </span>
-              <span className="rounded-full bg-primary-foreground/14 px-3 py-1 text-xs font-semibold">
+              <span className="rounded-full bg-primary-foreground/14 px-2.5 py-1 text-[11px] font-semibold sm:px-3 sm:text-xs">
                 기간 흐름 {netFlow >= 0 ? "+" : "-"}
                 {formatMoney(Math.abs(netFlow))}
               </span>
@@ -392,7 +394,7 @@ function MainAccountBalanceCard({
           </div>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
+        <div className="grid grid-cols-3 gap-2 sm:gap-3 lg:grid-cols-1">
           {[
             {
               icon: ArrowDownLeft,
@@ -414,17 +416,21 @@ function MainAccountBalanceCard({
 
             return (
               <div
-                className="rounded-lg border border-white/10 bg-white/[0.06] p-4"
+                className="rounded-lg border border-white/10 bg-white/[0.06] p-3 sm:p-4"
                 key={item.label}
               >
-                <div className="flex items-center justify-between gap-3">
-                  <span className="grid size-9 place-items-center rounded-md bg-primary text-secondary">
+                <div className="flex items-center justify-between gap-2 sm:gap-3">
+                  <span className="grid size-8 place-items-center rounded-md bg-primary text-secondary sm:size-9">
                     <Icon className="size-4" aria-hidden="true" />
                   </span>
-                  <span className="text-xs text-white/45">KRW</span>
+                  <span className="hidden text-xs text-white/45 sm:inline">
+                    KRW
+                  </span>
                 </div>
-                <p className="mt-4 text-xs text-white/55">{item.label}</p>
-                <p className="mt-1 truncate text-lg font-semibold">
+                <p className="mt-3 truncate text-[11px] text-white/55 sm:mt-4 sm:text-xs">
+                  {item.label}
+                </p>
+                <p className="mt-1 truncate text-sm font-semibold sm:text-lg">
                   {formatMoney(item.value)}
                 </p>
               </div>
@@ -459,11 +465,11 @@ function MetricCard({
           "border-primary bg-primary text-primary-foreground",
       )}
     >
-      <CardContent className="flex min-h-36 flex-col justify-between p-4">
-        <div className="flex items-start justify-between gap-3">
+      <CardContent className="flex min-h-28 flex-col justify-between p-3 sm:min-h-36 sm:p-4">
+        <div className="flex items-start justify-between gap-2 sm:gap-3">
           <div
             className={cn(
-              "grid size-10 place-items-center rounded-md",
+              "grid size-8 place-items-center rounded-md sm:size-10",
               emphasis === "dark"
                 ? "bg-primary text-secondary"
                 : emphasis === "primary"
@@ -471,11 +477,11 @@ function MetricCard({
                   : "bg-secondary text-primary",
             )}
           >
-            <Icon className="size-5" aria-hidden="true" />
+            <Icon className="size-4 sm:size-5" aria-hidden="true" />
           </div>
           <span
             className={cn(
-              "rounded-full px-2.5 py-1 text-xs font-semibold",
+              "max-w-[5.5rem] truncate rounded-full px-2 py-0.5 text-[10px] font-semibold sm:max-w-none sm:px-2.5 sm:py-1 sm:text-xs",
               emphasis === "light"
                 ? "bg-muted text-muted-foreground"
                 : "bg-white/12 text-current",
@@ -487,13 +493,13 @@ function MetricCard({
         <div className="min-w-0">
           <p
             className={cn(
-              "text-sm",
+              "text-xs sm:text-sm",
               emphasis === "light" ? "text-muted-foreground" : "opacity-70",
             )}
           >
             {label}
           </p>
-          <p className="mt-2 truncate text-2xl font-semibold tracking-normal">
+          <p className="mt-1 truncate text-xl font-semibold tracking-normal sm:mt-2 sm:text-2xl">
             {value}
           </p>
         </div>
@@ -669,42 +675,42 @@ function AccountSummaryCards({
     <div className={compact ? "grid gap-3" : "grid gap-3 md:grid-cols-2"}>
       {accountSummaries.map((summary) => (
         <div
-          className="min-w-0 overflow-hidden rounded-lg border bg-card p-3 shadow-[0_14px_32px_rgba(18,18,18,0.08)]"
+          className="min-w-0 overflow-hidden rounded-lg border bg-card p-2 shadow-[0_14px_32px_rgba(18,18,18,0.08)] sm:p-3"
           key={summary.account.id}
         >
-          <div className="rounded-lg bg-secondary p-4 text-secondary-foreground">
+          <div className="rounded-lg bg-secondary p-3 text-secondary-foreground sm:p-4">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-xs text-white/50">Account</p>
-                <h3 className="mt-1 truncate text-lg font-semibold">
+                <h3 className="mt-1 truncate text-base font-semibold sm:text-lg">
                   {summary.account.name}
                 </h3>
-                <p className="mt-1 truncate text-sm text-white/55">
+                <p className="mt-1 truncate text-xs text-white/55 sm:text-sm">
                   {accountTypeLabels[summary.account.type]} ·{" "}
                   {ownerTypeLabels[summary.account.owner_type]}
                 </p>
               </div>
-              <Badge className="shrink-0 bg-primary text-secondary">
+              <Badge className="shrink-0 bg-primary text-[11px] text-secondary sm:text-xs">
                 {summary.recentTransactions.length}건
               </Badge>
             </div>
 
-            <div className="mt-7">
+            <div className="mt-5 sm:mt-7">
               <p className="text-xs text-white/50">기간 지출</p>
-              <p className="mt-1 truncate text-2xl font-semibold tracking-normal">
+              <p className="mt-1 truncate text-xl font-semibold tracking-normal sm:text-2xl">
                 {formatMoney(summary.expense)}
               </p>
             </div>
           </div>
 
           <dl className="mt-3 grid grid-cols-2 gap-2 text-sm">
-            <div className="rounded-lg bg-muted/35 px-3 py-3">
+            <div className="rounded-lg bg-muted/35 px-2.5 py-2.5 sm:px-3 sm:py-3">
               <dt className="text-xs text-muted-foreground">고정비 예정</dt>
               <dd className="mt-1 truncate font-semibold">
                 {formatMoney(summary.fixedPlanned)}
               </dd>
             </div>
-            <div className="rounded-lg bg-muted/35 px-3 py-3">
+            <div className="rounded-lg bg-muted/35 px-2.5 py-2.5 sm:px-3 sm:py-3">
               <dt className="text-xs text-muted-foreground">구독비 예정</dt>
               <dd className="mt-1 truncate font-semibold">
                 {formatMoney(summary.subscriptionPlanned)}
@@ -712,7 +718,7 @@ function AccountSummaryCards({
             </div>
           </dl>
 
-          <div className="mt-3 min-w-0 rounded-lg border bg-background/70 p-3">
+          <div className="mt-2 min-w-0 rounded-lg border bg-background/70 p-2.5 sm:mt-3 sm:p-3">
             <p className="mb-2 text-xs text-muted-foreground">최근 거래</p>
             <div className="flex min-w-0 flex-wrap gap-1.5">
               {summary.recentTransactions.length > 0 ? (
@@ -1154,7 +1160,7 @@ export function DashboardClient(props: DashboardClientProps) {
         scheduledOutflow={mainAccountScheduledOutflow}
       />
 
-      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+      <section className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-3 xl:grid-cols-6">
         {[
           {
             emphasis: "dark" as const,
