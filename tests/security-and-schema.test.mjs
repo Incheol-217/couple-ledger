@@ -277,7 +277,7 @@ describe("UX guardrails", () => {
   const appNav = read("src/components/app-nav.tsx");
   const settings = read("src/app/settings/settings-client.tsx");
   const appShell = read("src/components/app-shell.tsx");
-  const mobileExpenseFab = read("src/components/mobile-expense-fab.tsx");
+  const mobileExpenseAction = read("src/components/mobile-expense-action.tsx");
 
   it("keeps mobile amount entry keypad-friendly and PWA-aware", () => {
     assert.match(quickEntry, /inputMode="numeric"/);
@@ -286,11 +286,12 @@ describe("UX guardrails", () => {
   });
 
   it("lets mobile users start an expense quickly from anywhere", () => {
-    assert.match(appShell, /<MobileExpenseFab isSignedIn=\{context\.isSignedIn\}/);
-    assert.match(mobileExpenseFab, /href="\/m\/new"/);
-    assert.match(mobileExpenseFab, /지출 쓰기/);
-    assert.match(mobileExpenseFab, /bottom-\[5\.75rem\]/);
-    assert.match(mobileExpenseFab, /pathname\.startsWith\("\/m\/new"\)/);
+    assert.match(appShell, /<MobileExpenseAction isSignedIn=\{context\.isSignedIn\}/);
+    assert.match(mobileExpenseAction, /href="\/m\/new"/);
+    assert.match(mobileExpenseAction, /쓰기/);
+    assert.match(mobileExpenseAction, /md:hidden/);
+    assert.match(mobileExpenseAction, /pathname\.startsWith\("\/m\/new"\)/);
+    assert.doesNotMatch(mobileExpenseAction, /bottom-\[/);
   });
 
   it("supports receipt camera drafting before manual review", () => {

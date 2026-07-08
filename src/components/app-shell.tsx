@@ -2,7 +2,7 @@ import Link from "next/link";
 import { LogOut, Plus, UserRound } from "lucide-react";
 import { signOutAction } from "@/app/login/actions";
 import { AppNav } from "@/components/app-nav";
-import { MobileExpenseFab } from "@/components/mobile-expense-fab";
+import { MobileExpenseAction } from "@/components/mobile-expense-action";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -48,6 +48,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
           <div className="flex items-center gap-2">
             {context.isSignedIn ? (
               <>
+                <MobileExpenseAction isSignedIn={context.isSignedIn} />
                 <NotificationBell
                   items={notifications.items}
                   unreadCount={notifications.unreadCount}
@@ -93,8 +94,6 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
       <div className="print-hidden pointer-events-none fixed inset-x-0 bottom-4 z-40 md:hidden">
         <AppNav canAccessSettings={canAccessSettings} compact />
       </div>
-
-      <MobileExpenseFab isSignedIn={context.isSignedIn} />
     </div>
   );
 }
