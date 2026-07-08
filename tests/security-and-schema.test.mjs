@@ -362,5 +362,7 @@ describe("UX guardrails", () => {
     assert.match(settings, /<TabsContent/);
     assert.match(settings, /value="shortcuts"/);
     assert.match(settings, /value="secrets"/);
+    assert.match(settings, /text-foreground\/80/);
+    assert.match(settings, /group-aria-selected:text-primary-foreground/);
   });
 });

@@ -108,20 +108,25 @@ export function SettingsClient() {
       className="grid gap-4 lg:grid-cols-[280px_1fr]"
       defaultValue="members"
     >
-      <TabsList className="h-auto w-full flex-col items-stretch gap-1 rounded-lg border bg-card p-1 text-left shadow-sm">
+      <TabsList className="h-auto w-full flex-col items-stretch gap-1 rounded-lg border bg-card p-1 text-left text-foreground shadow-sm">
         {settingsTabs.map((item) => {
           const Icon = item.icon;
 
           return (
             <TabsTrigger
-              className="h-auto w-full justify-start gap-3 rounded-md px-3 py-3 text-left"
+              className="group h-auto w-full justify-start gap-3 rounded-md px-3 py-3 text-left text-foreground/80 hover:bg-muted/45 hover:text-foreground aria-selected:text-primary-foreground"
               key={item.value}
               value={item.value}
             >
-              <Icon className="size-4 shrink-0" aria-hidden="true" />
+              <Icon
+                className="size-4 shrink-0 text-foreground/70 group-aria-selected:text-primary-foreground"
+                aria-hidden="true"
+              />
               <span className="min-w-0">
-                <span className="block font-medium">{item.label}</span>
-                <span className="mt-1 block whitespace-normal text-xs font-normal text-muted-foreground">
+                <span className="block font-medium text-foreground group-aria-selected:text-primary-foreground">
+                  {item.label}
+                </span>
+                <span className="mt-1 block whitespace-normal text-xs font-normal text-muted-foreground group-aria-selected:text-primary-foreground/75">
                   {item.description}
                 </span>
               </span>
