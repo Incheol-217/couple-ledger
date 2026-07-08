@@ -324,6 +324,13 @@ describe("UX guardrails", () => {
     assert.match(accountsClient, /placeholder="1,000,000"/);
   });
 
+  it("keeps wallet account actions visible on desktop", () => {
+    assert.match(accountsClient, /sm:h-\[28rem\]/);
+    assert.match(accountsClient, /356 \+ offsetIndex \* 44/);
+    assert.match(accountsClient, /Math\.min\(760, 676/);
+    assert.match(accountsClient, /relative z-20 mt-auto flex shrink-0/);
+  });
+
   it("keeps the dashboard responsive and chart-backed", () => {
     assert.match(dashboard, /ResponsiveContainer/);
     assert.match(dashboard, /md:grid-cols/);

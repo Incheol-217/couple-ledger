@@ -175,7 +175,7 @@ function WalletAccountCard({
 }) {
   const offsetIndex = Math.max(stackIndex, 0);
   const mobileTranslateY = selected ? 0 : 70 + offsetIndex * 32;
-  const desktopTranslateY = selected ? 0 : 92 + offsetIndex * 44;
+  const desktopTranslateY = selected ? 0 : 356 + offsetIndex * 44;
   const translateX = selected ? 0 : Math.min(offsetIndex + 1, 4) * 5;
   const scale = selected ? 1 : 1 - Math.min(offsetIndex + 1, 5) * 0.025;
   const rotate = selected ? 0 : -Math.min(offsetIndex + 1, 4) * 0.45;
@@ -186,7 +186,8 @@ function WalletAccountCard({
       aria-label={`${account.name} 계좌`}
       aria-pressed={selected}
       className={cn(
-        "absolute inset-x-0 top-0 h-60 cursor-pointer overflow-hidden rounded-[1.65rem] border p-4 shadow-[0_22px_50px_rgba(18,18,18,0.28)] outline-none transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] [transform:translate3d(var(--card-x),var(--mobile-card-y),0)_scale(var(--card-scale))_rotate(var(--card-rotate))] focus-visible:ring-4 focus-visible:ring-primary/40 sm:h-80 sm:rounded-[2rem] sm:p-5 sm:[transform:translate3d(var(--card-x),var(--desktop-card-y),0)_scale(var(--card-scale))_rotate(var(--card-rotate))]",
+        "absolute inset-x-0 top-0 h-60 cursor-pointer overflow-hidden rounded-[1.65rem] border p-4 shadow-[0_22px_50px_rgba(18,18,18,0.28)] outline-none transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] [transform:translate3d(var(--card-x),var(--mobile-card-y),0)_scale(var(--card-scale))_rotate(var(--card-rotate))] focus-visible:ring-4 focus-visible:ring-primary/40 sm:rounded-[2rem] sm:p-5 sm:[transform:translate3d(var(--card-x),var(--desktop-card-y),0)_scale(var(--card-scale))_rotate(var(--card-rotate))]",
+        selected ? "sm:h-[28rem]" : "sm:h-80",
         selected
           ? "border-white/20 text-white"
           : "border-black/10 text-[#111214] hover:brightness-105",
@@ -309,7 +310,7 @@ function WalletAccountCard({
 
         {selected && isAdmin ? (
           <div
-            className="mt-auto flex gap-2 pt-4 sm:mt-4 sm:pt-0"
+            className="relative z-20 mt-auto flex shrink-0 gap-2 pt-4 sm:pt-5"
             onClick={(event) => event.stopPropagation()}
           >
             <Button
@@ -379,9 +380,12 @@ function WalletDeck({
     278,
     Math.min(430, 278 + Math.max(stackedAccounts.length - 1, 0) * 32),
   );
+  const desktopStackCount = Math.max(stackedAccounts.length - 1, 0);
   const desktopDeckHeight = Math.max(
-    430,
-    Math.min(660, 372 + Math.max(stackedAccounts.length - 1, 0) * 44),
+    448,
+    desktopStackCount === 0
+      ? 448
+      : Math.min(760, 676 + Math.max(desktopStackCount - 1, 0) * 44),
   );
 
   if (accounts.length === 0) {
