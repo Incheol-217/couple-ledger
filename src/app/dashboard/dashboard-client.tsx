@@ -19,11 +19,11 @@ import {
 import {
   Bar,
   BarChart,
-  CartesianGrid,
+  Cell,
+  LabelList,
   ResponsiveContainer,
   Tooltip,
   XAxis,
-  YAxis,
 } from "recharts";
 import {
   accountTypeLabels,
@@ -115,6 +115,21 @@ function toAmount(value: number | string) {
 
 function formatMoney(value: number) {
   return moneyFormatter.format(Math.round(value));
+}
+
+function formatCompactMoney(value: number) {
+  const rounded = Math.round(value);
+
+  if (Math.abs(rounded) >= 10000) {
+    return `${numberFormatter.format(Math.round(rounded / 10000))}만`;
+  }
+
+  return numberFormatter.format(rounded);
+}
+
+function formatChartLabel(value: unknown) {
+  const amount = Number(value);
+  return Number.isFinite(amount) ? formatCompactMoney(amount) : "";
 }
 
 function formatShortDate(value: string) {
@@ -513,44 +528,137 @@ function CategoryExpenseChart({ data }: { data: ChartRow[] }) {
     return <EmptyState message="카테고리 지출이 쌓이면 보여드릴게요." />;
   }
 
+  const chartData = data.slice(0, 6).map((item) => ({
+    ...item,
+    shortName: item.name.length > 4 ? `${item.name.slice(0, 4)}…` : item.name,
+  }));
+  const totalExpense = data.reduce((sum, item) => sum + item.amount, 0);
+  const topCategory = data[0];
+  const averageExpense = totalExpense / data.length;
+  const topCategoryShare =
+    totalExpense > 0 ? Math.round((topCategory.amount / totalExpense) * 100) : 0;
+
   return (
-    <div className="h-[320px] w-full">
-      <ResponsiveContainer height="100%" width="100%">
-        <BarChart data={data} layout="vertical" margin={{ left: 8, right: 16 }}>
-          <CartesianGrid horizontal={false} stroke="var(--border)" />
-          <XAxis
-            axisLine={false}
-            tickLine={false}
-            tickFormatter={(value: number) =>
-              `${numberFormatter.format(value / 10000)}만`
-            }
-            type="number"
-          />
-          <YAxis
-            axisLine={false}
-            dataKey="name"
-            tickLine={false}
-            type="category"
-            width={72}
-          />
-          <Tooltip
-            contentStyle={{
-              background: "var(--card)",
-              border: "1px solid var(--border)",
-              borderRadius: "8px",
-              color: "var(--foreground)",
-            }}
-            formatter={(value) => [formatMoney(Number(value ?? 0)), "지출"]}
-            labelStyle={{ color: "var(--foreground)" }}
-          />
-          <Bar
-            dataKey="amount"
-            fill="var(--chart-2)"
-            maxBarSize={34}
-            radius={[0, 6, 6, 0]}
-          />
-        </BarChart>
-      </ResponsiveContainer>
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 rounded-full bg-muted/50 p-1 text-sm font-semibold">
+        <div className="rounded-full bg-primary px-3 py-2 text-center text-primary-foreground">
+          카테고리별
+        </div>
+        <div className="px-3 py-2 text-center text-muted-foreground">
+          전체 분석
+        </div>
+      </div>
+
+      <div className="overflow-hidden rounded-lg bg-background p-4 shadow-[inset_0_0_0_1px_rgba(18,18,18,0.06)]">
+        <div className="flex items-center justify-between gap-3">
+          <span className="grid size-9 place-items-center rounded-full bg-muted text-muted-foreground">
+            <ReceiptText className="size-4" aria-hidden="true" />
+          </span>
+          <div className="min-w-0 text-center">
+            <p className="text-xs text-muted-foreground">이번 기간</p>
+            <h3 className="truncate text-xl font-semibold tracking-normal">
+              {topCategory.name}
+            </h3>
+          </div>
+          <Badge className="bg-primary text-primary-foreground">
+            {topCategoryShare}%
+          </Badge>
+        </div>
+
+        <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
+          {chartData.map((item, index) => (
+            <span
+              className={cn(
+                "shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold",
+                index === 0
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground",
+              )}
+              key={item.name}
+            >
+              {item.name}
+              {index === 0 ? " ×" : null}
+            </span>
+          ))}
+        </div>
+
+        <div className="mt-5 h-[230px] w-full">
+          <ResponsiveContainer height="100%" width="100%">
+            <BarChart
+              data={chartData}
+              margin={{ bottom: 0, left: 0, right: 0, top: 28 }}
+            >
+              <XAxis
+                axisLine={false}
+                dataKey="shortName"
+                interval={0}
+                tick={{ fill: "var(--muted-foreground)", fontSize: 12 }}
+                tickLine={false}
+              />
+              <Tooltip
+                cursor={{ fill: "transparent" }}
+                contentStyle={{
+                  background: "var(--card)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "8px",
+                  color: "var(--foreground)",
+                }}
+                formatter={(value) => [formatMoney(Number(value ?? 0)), "지출"]}
+                labelFormatter={(_, payload) =>
+                  payload?.[0]?.payload?.name ?? "카테고리"
+                }
+                labelStyle={{ color: "var(--foreground)" }}
+              />
+              <Bar dataKey="amount" maxBarSize={42} radius={[10, 10, 10, 10]}>
+                <LabelList
+                  className="fill-muted-foreground text-[11px]"
+                  dataKey="amount"
+                  formatter={formatChartLabel}
+                  position="top"
+                />
+                {chartData.map((item, index) => (
+                  <Cell
+                    fill={index === 0 ? "var(--primary)" : "var(--muted)"}
+                    key={item.name}
+                  />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-3 gap-2">
+        {[
+          {
+            helper: "가장 많이 쓴 곳",
+            label: topCategory.name,
+            value: formatCompactMoney(topCategory.amount),
+          },
+          {
+            helper: "평균 지출",
+            label: "카테고리당",
+            value: formatCompactMoney(averageExpense),
+          },
+          {
+            helper: "비중",
+            label: "전체 지출 중",
+            value: `${topCategoryShare}%`,
+          },
+        ].map((item) => (
+          <div
+            className="min-w-0 rounded-lg border bg-card p-3 shadow-sm"
+            key={item.helper}
+          >
+            <p className="truncate text-lg font-semibold tracking-normal">
+              {item.value}
+            </p>
+            <p className="mt-1 truncate text-xs text-muted-foreground">
+              {item.label}
+            </p>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
