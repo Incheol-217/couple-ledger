@@ -304,13 +304,24 @@ export async function createRecurringTransactions(
       }
 
       if (dueDate !== item.next_due_date) {
-        const { error: updateError } = await supabase
+        const { data: updatedItem, error: updateError } = await supabase
           .from("recurring_items")
           .update({ next_due_date: dueDate })
-          .eq("id", item.id);
+          .eq("id", item.id)
+          .eq("next_due_date", item.next_due_date)
+          .eq("status", "active")
+          .eq("auto_create_transaction", true)
+          .select("id")
+          .maybeSingle();
 
         if (updateError) {
           throw new Error(updateError.message);
+        }
+
+        if (!updatedItem) {
+          throw new Error(
+            "반복비가 실행 중에 변경되어 다음 결제일은 그대로 두었어요.",
+          );
         }
 
         result.updatedRecurringItems.push({

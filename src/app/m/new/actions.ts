@@ -199,6 +199,10 @@ export async function createQuickTransactionAction(
           )
         : null;
 
+    if (type === "transfer" && !confirmedTransferAccountId) {
+      throw new Error("입금 계좌를 선택해 주세요.");
+    }
+
     if (type === "transfer" && confirmedTransferAccountId === confirmedAccountId) {
       throw new Error("돈이 나가는 계좌와 들어오는 계좌를 다르게 골라주세요.");
     }

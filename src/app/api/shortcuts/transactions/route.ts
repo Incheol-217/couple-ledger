@@ -27,6 +27,7 @@ type ShortcutTransactionPayload = {
   merchant?: unknown;
   memo?: unknown;
   spent_at?: unknown;
+  idempotency_key?: unknown;
 };
 
 type AccountMatch = {
@@ -113,6 +114,22 @@ function readAmount(payload: ShortcutTransactionPayload) {
   }
 
   return amount;
+}
+
+function readIdempotencyKey(
+  payload: ShortcutTransactionPayload,
+  request: NextRequest,
+) {
+  const value =
+    readOptionalText(payload, "idempotency_key") ??
+    request.headers.get("x-idempotency-key")?.trim() ??
+    null;
+
+  if (value && value.length > 200) {
+    throw apiError("idempotency_key는 200자 이하로 보내주세요.");
+  }
+
+  return value;
 }
 
 function readTransactionType(payload: ShortcutTransactionPayload) {
@@ -303,6 +320,26 @@ async function findOrCreateCategoryByName({
   return (created as CategoryMatch).id;
 }
 
+async function findExistingShortcutTransaction(
+  supabase: ReturnType<typeof createAdminClient>,
+  householdId: string,
+  idempotencyKey: string,
+) {
+  const { data, error } = await supabase
+    .from("transactions")
+    .select("id, transaction_date, amount, type, source")
+    .eq("household_id", householdId)
+    .eq("source", "shortcut")
+    .eq("external_id", idempotencyKey)
+    .maybeSingle();
+
+  if (error) {
+    throw apiError(error.message, 500);
+  }
+
+  return data;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const payload = await readPayload(request);
@@ -324,10 +361,28 @@ export async function POST(request: NextRequest) {
     const accountName = readText(payload, "account");
     const transferAccountName = readOptionalText(payload, "transfer_account");
     const categoryName = readText(payload, "category");
+    const idempotencyKey = readIdempotencyKey(payload, request);
     const { occurredAt, transactionDate } = readSpentAt(payload);
     const supabase = createAdminClient();
 
     await assertHouseholdMember(supabase, householdId, userId);
+
+    if (idempotencyKey) {
+      const existingTransaction = await findExistingShortcutTransaction(
+        supabase,
+        householdId,
+        idempotencyKey,
+      );
+
+      if (existingTransaction) {
+        return NextResponse.json({
+          duplicate: true,
+          message: "이미 저장된 거래예요.",
+          ok: true,
+          transaction: existingTransaction,
+        });
+      }
+    }
 
     const accountId = await findAccountByName(
       supabase,
@@ -373,6 +428,7 @@ export async function POST(request: NextRequest) {
         occurred_at: occurredAt,
         merchant: readOptionalText(payload, "merchant"),
         memo: readOptionalText(payload, "memo"),
+        external_id: idempotencyKey,
         metadata: {
           imported_from: "ios_shortcuts",
         },
@@ -380,7 +436,24 @@ export async function POST(request: NextRequest) {
       .select("id, transaction_date, amount, type, source")
       .single();
 
-    if (error) {
+    if (error?.code === "23505" && idempotencyKey) {
+      const existingTransaction = await findExistingShortcutTransaction(
+        supabase,
+        householdId,
+        idempotencyKey,
+      );
+
+      if (existingTransaction) {
+        return NextResponse.json({
+          duplicate: true,
+          message: "이미 저장된 거래예요.",
+          ok: true,
+          transaction: existingTransaction,
+        });
+      }
+    }
+
+    if (error || !transaction) {
       throw apiError(error.message, 500);
     }
 

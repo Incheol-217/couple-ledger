@@ -1,9 +1,20 @@
 import { revalidatePath } from "next/cache";
 import { NextRequest, NextResponse } from "next/server";
+import { timingSafeEqual } from "node:crypto";
 import { createRecurringTransactions } from "@/lib/jobs/create-recurring-transactions";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+
+function secureCompare(left: string, right: string) {
+  const leftBuffer = Buffer.from(left);
+  const rightBuffer = Buffer.from(right);
+
+  return (
+    leftBuffer.length === rightBuffer.length &&
+    timingSafeEqual(leftBuffer, rightBuffer)
+  );
+}
 
 function isAuthorized(request: NextRequest) {
   const secret = process.env.JOB_SECRET;
@@ -15,9 +26,9 @@ function isAuthorized(request: NextRequest) {
   const authorization = request.headers.get("authorization");
   const bearerToken = authorization?.replace(/^Bearer\s+/i, "").trim();
 
-  return (
-    bearerToken === secret || request.headers.get("x-job-secret") === secret
-  );
+  const providedSecret = bearerToken || request.headers.get("x-job-secret")?.trim();
+
+  return Boolean(providedSecret && secureCompare(providedSecret, secret));
 }
 
 async function readJsonBody(request: NextRequest) {

@@ -1,15 +1,16 @@
 # Couple Budget
 
-부부가 함께 쓰는 공동 가계부 v1 초기 프로젝트입니다.
+부부가 함께 거래를 기록하고 계좌, 반복비, 예산, 소비 흐름을 확인하는 공동 가계부입니다.
 
 ## 포함된 구성
 
 - Next.js App Router
 - TypeScript
 - Tailwind CSS
-- shadcn/ui 준비 설정
-- Supabase browser/server client helper
-- 기본 라우트
+- Supabase Auth, Postgres, RLS 기반 household 데이터 격리
+- 모바일 빠른 거래 입력과 영수증 인식 초안
+- 계좌, 구독비/고정비, 대시보드, 보고서, 알림
+- OpenAI 소비 조언과 iOS Shortcuts webhook
 
 ## 실행 방법
 
@@ -38,6 +39,8 @@ Supabase CLI를 사용한다면 migration 적용도 함께 확인합니다.
 supabase db push
 ```
 
+Vercel에 새 migration이 자동 적용되지는 않습니다. 배포 전에 Supabase SQL Editor 또는 Supabase CLI로 `supabase/migrations`의 파일을 이름순으로 적용해 주세요.
+
 ## 환경변수
 
 `.env.local`에 아래 값을 채워 넣습니다.
@@ -63,7 +66,7 @@ ADMIN_PASSWORD=
 ADMIN_NAME=관리자
 ```
 
-지금 단계에서는 Supabase와 OpenAI 기능을 실제로 호출하지 않으므로, 화면 확인만 할 때는 비워둬도 됩니다.
+Supabase 연결 기능을 사용하려면 URL, anon key, service role key를 모두 넣어야 합니다. `SUPABASE_SERVICE_ROLE_KEY`, `OPENAI_API_KEY`, 각종 secret은 브라우저에 노출되는 `NEXT_PUBLIC_` 이름으로 만들면 안 됩니다.
 
 `JOB_SECRET`은 서버 작업 API를 수동 호출할 때 쓰는 비밀값입니다. 운영 환경에서는 반드시 설정해 주세요.
 
@@ -157,6 +160,8 @@ curl -X POST http://localhost:3000/api/shortcuts/transactions \
 
 카테고리는 이름으로 찾고 없으면 생성합니다. 계좌는 활성 계좌 이름으로 찾으며, 같은 이름의 활성 계좌가 여러 개 있으면 저장하지 않습니다.
 
+단축어 재시도로 같은 거래가 두 번 저장되는 일을 막으려면 요청마다 고유한 `idempotency_key`를 본문에 넣거나 `x-idempotency-key` 헤더로 보내세요. 같은 household에서 같은 키를 다시 보내면 기존 거래를 반환합니다.
+
 ## shadcn/ui 컴포넌트 추가
 
 `components.json`과 `@/*` alias가 준비되어 있습니다. 새 컴포넌트는 아래처럼 추가합니다.
@@ -165,8 +170,9 @@ curl -X POST http://localhost:3000/api/shortcuts/transactions \
 npx shadcn@latest add input card dialog select tabs
 ```
 
-## 다음 구현 후보
+## 배포 전 확인
 
-- Supabase Auth 로그인 화면
-- 거래 목록과 계좌별 필터
-- 대시보드에서 AI 조언 생성 버튼 연결
+1. Supabase migration을 모두 적용합니다.
+2. Vercel 환경변수를 Production과 Preview 환경에 맞게 등록합니다.
+3. 새 배포를 실행한 뒤 로그인, 거래 저장, 계좌 조회를 확인합니다.
+4. `JOB_SECRET`, `SHORTCUTS_WEBHOOK_SECRET`, `SETUP_SECRET`은 서로 다른 긴 임의 문자열을 사용합니다.

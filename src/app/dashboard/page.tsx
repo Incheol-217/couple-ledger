@@ -42,6 +42,7 @@ type MembershipRow = {
 type BalanceTransactionRow = {
   account_id: string;
   amount: number | string;
+  transaction_date: string;
   transfer_account_id: string | null;
   type: "expense" | "income" | "transfer";
 };
@@ -325,13 +326,22 @@ function plannedOccurrencesForRange(
 function buildAccountBalances(
   accounts: AccountRow[],
   balanceTransactions: BalanceTransactionRow[],
+  today: string,
 ): DashboardAccountBalance[] {
+  const accountsById = new Map(accounts.map((account) => [account.id, account]));
   const balances = new Map<string, number>(
     accounts.map((account) => [
       account.id,
-      Number(account.opening_balance) || 0,
+      account.opening_balance_as_of <= today
+        ? Number(account.opening_balance) || 0
+        : 0,
     ]),
   );
+
+  function appliesToAccount(accountId: string, transactionDate: string) {
+    const account = accountsById.get(accountId);
+    return Boolean(account && transactionDate >= account.opening_balance_as_of);
+  }
 
   balanceTransactions.forEach((transaction) => {
     const amount = Number(transaction.amount);
@@ -341,6 +351,10 @@ function buildAccountBalances(
     }
 
     if (transaction.type === "income") {
+      if (!appliesToAccount(transaction.account_id, transaction.transaction_date)) {
+        return;
+      }
+
       balances.set(
         transaction.account_id,
         (balances.get(transaction.account_id) ?? 0) + amount,
@@ -349,6 +363,10 @@ function buildAccountBalances(
     }
 
     if (transaction.type === "expense") {
+      if (!appliesToAccount(transaction.account_id, transaction.transaction_date)) {
+        return;
+      }
+
       balances.set(
         transaction.account_id,
         (balances.get(transaction.account_id) ?? 0) - amount,
@@ -356,12 +374,20 @@ function buildAccountBalances(
       return;
     }
 
-    balances.set(
-      transaction.account_id,
-      (balances.get(transaction.account_id) ?? 0) - amount,
-    );
+    if (appliesToAccount(transaction.account_id, transaction.transaction_date)) {
+      balances.set(
+        transaction.account_id,
+        (balances.get(transaction.account_id) ?? 0) - amount,
+      );
+    }
 
-    if (transaction.transfer_account_id) {
+    if (
+      transaction.transfer_account_id &&
+      appliesToAccount(
+        transaction.transfer_account_id,
+        transaction.transaction_date,
+      )
+    ) {
       balances.set(
         transaction.transfer_account_id,
         (balances.get(transaction.transfer_account_id) ?? 0) + amount,
@@ -483,6 +509,7 @@ async function getDashboardData(
     recurringResult,
     adviceResult,
     balanceTransactionsResult,
+    existingRecurringTransactionsResult,
   ] = await Promise.all([
     supabase
       .from("accounts")
@@ -538,8 +565,16 @@ async function getDashboardData(
       .limit(3),
     supabase
       .from("transactions")
-      .select("account_id, transfer_account_id, type, amount")
-      .eq("household_id", household.id),
+      .select("account_id, transfer_account_id, type, amount, transaction_date")
+      .eq("household_id", household.id)
+      .lte("transaction_date", today),
+    supabase
+      .from("transactions")
+      .select("recurring_item_id, transaction_date")
+      .eq("household_id", household.id)
+      .not("recurring_item_id", "is", null)
+      .gte("transaction_date", plannedRangeStart)
+      .lte("transaction_date", plannedRangeEnd),
   ]);
 
   const recurringItems =
@@ -548,7 +583,7 @@ async function getDashboardData(
   const transactions =
     (transactionsResult.data ?? []) as unknown as DashboardTransactionRow[];
   const existingRecurringTransactionKeys = new Set(
-    transactions
+    (existingRecurringTransactionsResult.data ?? [])
       .filter((transaction) => transaction.recurring_item_id)
       .map(
         (transaction) =>
@@ -571,6 +606,7 @@ async function getDashboardData(
     accountBalances: buildAccountBalances(
       accounts,
       (balanceTransactionsResult.data ?? []) as unknown as BalanceTransactionRow[],
+      today,
     ),
     adviceLogs: (adviceResult.data ?? []) as unknown as AiAdviceLogRow[],
     budgets: (budgetsResult.data ?? []) as unknown as DashboardBudgetRow[],
@@ -583,7 +619,8 @@ async function getDashboardData(
       budgetsResult.error?.message ??
       recurringResult.error?.message ??
       adviceResult.error?.message ??
-      balanceTransactionsResult.error?.message,
+      balanceTransactionsResult.error?.message ??
+      existingRecurringTransactionsResult.error?.message,
     filters,
     household,
     isConfigured: true,

@@ -42,9 +42,11 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
             </span>
             <span>공동 가계부</span>
           </Link>
-          <div className="hidden md:block">
-            <AppNav canAccessSettings={canAccessSettings} />
-          </div>
+          {context.isSignedIn ? (
+            <div className="hidden md:block">
+              <AppNav canAccessSettings={canAccessSettings} />
+            </div>
+          ) : null}
           <div className="flex items-center gap-2">
             {context.isSignedIn ? (
               <>
@@ -89,11 +91,15 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </header>
 
-      <main className="pb-20 md:pb-0">{children}</main>
+      <main className={context.isSignedIn ? "pb-20 md:pb-0" : undefined}>
+        {children}
+      </main>
 
-      <div className="print-hidden pointer-events-none fixed inset-x-0 bottom-4 z-40 md:hidden">
-        <AppNav canAccessSettings={canAccessSettings} compact />
-      </div>
+      {context.isSignedIn ? (
+        <div className="print-hidden pointer-events-none fixed inset-x-0 bottom-4 z-40 md:hidden">
+          <AppNav canAccessSettings={canAccessSettings} compact />
+        </div>
+      ) : null}
     </div>
   );
 }

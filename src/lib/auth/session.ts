@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 
 export type CurrentUserContext = {
@@ -51,7 +52,7 @@ function normalizeHousehold(row: MembershipRow | null) {
   };
 }
 
-export async function getCurrentUserContext(): Promise<CurrentUserContext> {
+export const getCurrentUserContext = cache(async (): Promise<CurrentUserContext> => {
   if (!hasSupabaseAuthEnv()) {
     return {
       displayName: null,
@@ -122,4 +123,4 @@ export async function getCurrentUserContext(): Promise<CurrentUserContext> {
     role: membership?.role ?? null,
     userId: user.id,
   };
-}
+});

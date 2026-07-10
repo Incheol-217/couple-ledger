@@ -33,6 +33,9 @@ function selectFieldsAfterFrom(source, tableName) {
 
 describe("Supabase schema and RLS", () => {
   const migrations = readMigrations();
+  const permissionHardening = read(
+    "supabase/migrations/20260710120000_harden_household_permissions.sql",
+  );
   const householdTables = [
     "households",
     "household_members",
@@ -102,6 +105,27 @@ describe("Supabase schema and RLS", () => {
     assert.match(migrations, /actor_user_id = auth\.uid\(\)/);
     assert.match(migrations, /user_id = auth\.uid\(\)/);
     assert.match(migrations, /public\.is_household_member\(event\.household_id\)/);
+  });
+
+  it("keeps administrator operations protected at the database boundary", () => {
+    assert.match(permissionHardening, /public\.is_household_owner\(id\)/);
+    assert.match(permissionHardening, /Owners can create accounts/);
+    assert.match(permissionHardening, /Owners can update accounts/);
+    assert.match(permissionHardening, /Owners can delete accounts/);
+    assert.match(permissionHardening, /Owners can update household members/);
+    assert.match(permissionHardening, /prevent_last_household_owner_removal/);
+  });
+
+  it("keeps transaction attribution immutable and transfers complete", () => {
+    assert.match(permissionHardening, /prevent_transaction_attribution_change/);
+    assert.match(
+      permissionHardening,
+      /new\.user_id is distinct from old\.user_id/,
+    );
+    assert.match(permissionHardening, /new\.source is distinct from old\.source/);
+    assert.match(permissionHardening, /transactions_transfer_accounts_check/);
+    assert.match(permissionHardening, /transfer_account_id is not null/);
+    assert.match(permissionHardening, /transfer_account_id <> account_id/);
   });
 });
 
@@ -174,6 +198,17 @@ describe("iOS Shortcuts webhook security", () => {
   it("stores shortcut-origin transactions explicitly", () => {
     assert.match(shortcutRoute, /source:\s*"shortcut"/);
   });
+
+  it("deduplicates webhook retries when an idempotency key is provided", () => {
+    assert.match(shortcutRoute, /idempotency_key/);
+    assert.match(shortcutRoute, /x-idempotency-key/);
+    assert.match(shortcutRoute, /findExistingShortcutTransaction/);
+    assert.match(shortcutRoute, /duplicate:\s*true/);
+    assert.match(
+      readMigrations(),
+      /transactions_source_external_unique_idx/,
+    );
+  });
 });
 
 describe("Login and role access", () => {
@@ -230,9 +265,16 @@ describe("Login and role access", () => {
     assert.match(accountsClient, /볼 수만 있어요/);
   });
 
+  it("requires a destination account for transfers on the server", () => {
+    assert.match(quickAction, /type === "transfer" && !confirmedTransferAccountId/);
+    assert.match(quickAction, /입금 계좌를 선택해 주세요/);
+  });
+
   it("sends first visits to login and signed-in visits to dashboard", () => {
     assert.match(homePage, /redirect\("\/login"\)/);
     assert.match(homePage, /redirect\("\/dashboard"\)/);
+    assert.match(appShell, /context\.isSignedIn \? \(/);
+    assert.match(appShell, /<AppNav canAccessSettings=\{canAccessSettings\} compact \/>/);
   });
 
   it("supports auto login without storing the password in app storage", () => {
@@ -281,6 +323,13 @@ describe("UX guardrails", () => {
   const appShell = read("src/components/app-shell.tsx");
   const mobileExpenseAction = read("src/components/mobile-expense-action.tsx");
   const receiptDrafts = read("src/lib/receipt-drafts.ts");
+  const transactionsPage = read("src/app/transactions/page.tsx");
+  const jobRoute = read(
+    "src/app/api/jobs/create-recurring-transactions/route.ts",
+  );
+  const recurringJob = read("src/lib/jobs/create-recurring-transactions.ts");
+  const packageJson = JSON.parse(read("package.json"));
+  const nextConfig = read("next.config.ts");
 
   it("keeps mobile amount entry keypad-friendly and PWA-aware", () => {
     assert.match(quickEntry, /inputMode="numeric"/);
@@ -344,6 +393,33 @@ describe("UX guardrails", () => {
     assert.match(dashboard, /생활비통장/);
     assert.match(dashboardPage, /Number\(account\.opening_balance\) \|\| 0/);
     assert.match(dashboardPage, /buildAccountBalances\(\s*accounts,/);
+    assert.match(dashboardPage, /account\.opening_balance_as_of <= today/);
+    assert.match(dashboardPage, /existingRecurringTransactionsResult/);
+  });
+
+  it("shows real household transactions on mobile and desktop", () => {
+    assert.match(transactionsPage, /\.from\("transactions"\)/);
+    assert.match(transactionsPage, /\.eq\("household_id", context\.householdId\)/);
+    assert.match(transactionsPage, /md:hidden/);
+    assert.match(transactionsPage, /hidden overflow-hidden.*md:block/);
+    assert.match(transactionsPage, /memberNames/);
+  });
+
+  it("hardens recurring job execution and package installs", () => {
+    assert.match(jobRoute, /timingSafeEqual/);
+    assert.match(recurringJob, /\.eq\("next_due_date", item\.next_due_date\)/);
+    assert.match(recurringJob, /if \(!updatedItem\)/);
+
+    for (const version of [
+      ...Object.values(packageJson.dependencies),
+      ...Object.values(packageJson.devDependencies),
+    ]) {
+      assert.notEqual(version, "latest");
+    }
+
+    assert.match(nextConfig, /poweredByHeader:\s*false/);
+    assert.match(nextConfig, /X-Content-Type-Options/);
+    assert.match(nextConfig, /Permissions-Policy/);
   });
 
   it("provides printable household reports", () => {
