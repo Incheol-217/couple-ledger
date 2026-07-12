@@ -29,9 +29,9 @@ const navItems: NavItem[] = [
   { href: "/dashboard", label: "대시보드", icon: LayoutDashboard, primary: true },
   { href: "/transactions", label: "내역", icon: ReceiptText, primary: true },
   { href: "/budgets", label: "예산", icon: PiggyBank, primary: true },
-  { href: "/goals", label: "저축", icon: Target, primary: true },
+  { href: "/accounts", label: "계좌", icon: WalletCards, primary: true },
+  { href: "/goals", label: "저축", icon: Target, primary: false },
   { href: "/reports", label: "보고서", icon: FileText, primary: false },
-  { href: "/accounts", label: "계좌", icon: WalletCards, primary: false },
   { href: "/recurring", label: "고정비", icon: CalendarClock, primary: false },
   { href: "/settings", label: "설정", icon: Settings, primary: false },
 ];
