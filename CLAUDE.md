@@ -1,3 +1,12 @@
+# CLAUDE.md
+
+> ⚠️ **이 문서는 `README.md`와 동일한 내용을 유지합니다.**
+> **`README.md`가 원본(single source of truth)** 이며, CLAUDE.md는 그 사본입니다.
+> 한쪽을 수정하면 반드시 다른 쪽도 똑같이 맞춰 주세요. (Claude Code는 이 프로젝트에서
+> 작업할 때 README.md를 우선 참조하고, 변경 시 두 파일을 함께 갱신합니다.)
+
+---
+
 # Couple Budget
 
 부부가 함께 거래를 기록하고 계좌, 반복 결제, 예산, 소비 흐름을 확인하는 공동 가계부입니다.
