@@ -9,6 +9,7 @@ import {
   PiggyBank,
   ReceiptText,
   Settings,
+  Target,
   WalletCards,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -18,6 +19,7 @@ const navItems = [
   { href: "/transactions", label: "내역", icon: ReceiptText },
   { href: "/reports", label: "보고서", icon: FileText },
   { href: "/budgets", label: "예산", icon: PiggyBank },
+  { href: "/goals", label: "저축", icon: Target },
   { href: "/accounts", label: "계좌", icon: WalletCards },
   { href: "/recurring", label: "고정비", icon: CalendarClock },
   { href: "/settings", label: "설정", icon: Settings },

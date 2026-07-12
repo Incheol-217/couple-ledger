@@ -19,6 +19,7 @@
 - Supabase Auth, Postgres, RLS 기반 household 데이터 격리
 - 모바일 빠른 거래 입력과 영수증 인식 초안
 - 계좌, 구독비/고정비, 대시보드, 보고서, 알림
+- 카테고리·계좌별 예산과 공동 저축 목표
 - 확인 필요한 거래와 곧 나갈 돈 캘린더
 - OpenAI 소비 조언과 iOS Shortcuts webhook
 
@@ -109,6 +110,7 @@ curl -X POST https://YOUR_VERCEL_DOMAIN/api/setup/login-accounts \
 - `/transactions`
 - `/reports`
 - `/budgets`
+- `/goals`
 - `/accounts`
 - `/recurring`
 - `/settings`
