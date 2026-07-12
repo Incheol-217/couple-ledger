@@ -1,10 +1,10 @@
 import { PageHeader } from "@/components/page-header";
+import { getCurrentUserContext, hasSupabaseAuthEnv } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 import { ReportsClient } from "./reports-client";
 import {
   reportPeriods,
   type ReportBudgetRow,
-  type ReportHousehold,
   type ReportMember,
   type ReportPageData,
   type ReportPeriod,
@@ -20,20 +20,6 @@ type ReportsPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
-type MembershipRow = {
-  household_id: string;
-  households:
-    | {
-        id: string;
-        name: string;
-      }
-    | {
-        id: string;
-        name: string;
-      }[]
-    | null;
-};
-
 type MemberRow = {
   user_id: string;
   member_label: "husband" | "wife" | null;
@@ -47,13 +33,6 @@ type ProfileRow = {
 
 const TIME_ZONE = "Asia/Seoul";
 const MAX_PLANNED_OCCURRENCES_PER_ITEM = 60;
-
-function hasSupabaseEnv() {
-  return Boolean(
-    process.env.NEXT_PUBLIC_SUPABASE_URL &&
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-  );
-}
 
 function firstParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
@@ -188,21 +167,6 @@ function dateRangeForPeriod(
   };
 }
 
-function normalizeHousehold(row: MembershipRow | null): ReportHousehold | null {
-  if (!row) {
-    return null;
-  }
-
-  const household = Array.isArray(row.households)
-    ? row.households[0]
-    : row.households;
-
-  return {
-    id: household?.id ?? row.household_id,
-    name: household?.name ?? "공동 가계부",
-  };
-}
-
 function nextRecurringDate(item: RecurringItemRow, dueDate: string) {
   const interval = item.billing_interval || 1;
 
@@ -283,7 +247,7 @@ async function getReportData(
   range: ReportRange,
   today: string,
 ): Promise<ReportPageData> {
-  if (!hasSupabaseEnv()) {
+  if (!hasSupabaseAuthEnv()) {
     return {
       accounts: [],
       adviceLogs: [],
@@ -301,12 +265,10 @@ async function getReportData(
     };
   }
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // 레이아웃에서 이미 계산한 사용자/가계부 컨텍스트를 재사용해요.
+  const context = await getCurrentUserContext();
 
-  if (!user) {
+  if (!context.isSignedIn) {
     return {
       accounts: [],
       adviceLogs: [],
@@ -324,34 +286,10 @@ async function getReportData(
     };
   }
 
-  const { data: membership, error: membershipError } = await supabase
-    .from("household_members")
-    .select("household_id, households(id, name)")
-    .eq("user_id", user.id)
-    .order("joined_at", { ascending: true })
-    .limit(1)
-    .maybeSingle();
-
-  if (membershipError) {
-    return {
-      accounts: [],
-      adviceLogs: [],
-      budgets: [],
-      categories: [],
-      errorMessage: membershipError.message,
-      household: null,
-      isConfigured: true,
-      isSignedIn: true,
-      members: [],
-      plannedOccurrences: [],
-      range,
-      recurringItems: [],
-      today,
-      transactions: [],
-    };
-  }
-
-  const household = normalizeHousehold(membership as MembershipRow | null);
+  const supabase = await createClient();
+  const household = context.householdId
+    ? { id: context.householdId, name: context.householdName ?? "공동 가계부" }
+    : null;
 
   if (!household) {
     return {

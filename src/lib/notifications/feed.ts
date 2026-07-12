@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { hasSupabaseAuthEnv } from "@/lib/auth/session";
+import { getCurrentUserContext, hasSupabaseAuthEnv } from "@/lib/auth/session";
 
 export type NotificationFeedItem = {
   actorName: string;
@@ -65,34 +65,22 @@ export async function getNotificationFeed(): Promise<NotificationFeed> {
     return { items: [], unreadCount: 0 };
   }
 
+  // 레이아웃에서 이미 계산한 사용자 컨텍스트를 재사용해 중복 조회를 줄여요.
+  const context = await getCurrentUserContext();
+
+  if (!context.isSignedIn || !context.userId || !context.householdId) {
+    return { items: [], unreadCount: 0 };
+  }
+
+  const householdId = context.householdId;
+  const userId = context.userId;
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { items: [], unreadCount: 0 };
-  }
-
-  const { data: membership } = await supabase
-    .from("household_members")
-    .select("household_id, member_label, role")
-    .eq("user_id", user.id)
-    .order("joined_at", { ascending: true })
-    .limit(1)
-    .maybeSingle();
-
-  const currentMembership = membership as MembershipRow | null;
-
-  if (!currentMembership?.household_id) {
-    return { items: [], unreadCount: 0 };
-  }
 
   const { data: eventData, error: eventError } = await supabase
     .from("notification_events")
     .select("id, event_type, title, body, actor_user_id, created_at")
-    .eq("household_id", currentMembership.household_id)
-    .neq("actor_user_id", user.id)
+    .eq("household_id", householdId)
+    .neq("actor_user_id", userId)
     .order("created_at", { ascending: false })
     .limit(20);
 
@@ -114,7 +102,7 @@ export async function getNotificationFeed(): Promise<NotificationFeed> {
     supabase
       .from("notification_reads")
       .select("event_id")
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .in("event_id", eventIds),
     actorIds.length > 0
       ? supabase.from("profiles").select("id, display_name").in("id", actorIds)
@@ -123,7 +111,7 @@ export async function getNotificationFeed(): Promise<NotificationFeed> {
       ? supabase
           .from("household_members")
           .select("user_id, household_id, member_label, role")
-          .eq("household_id", currentMembership.household_id)
+          .eq("household_id", householdId)
           .in("user_id", actorIds)
       : Promise.resolve({ data: [] }),
   ]);

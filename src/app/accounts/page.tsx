@@ -1,47 +1,11 @@
 import { PageHeader } from "@/components/page-header";
+import { getCurrentUserContext, hasSupabaseAuthEnv } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 import { AccountsClient } from "./accounts-client";
-import type { AccountRow, HouseholdOption } from "./types";
-
-function hasSupabaseEnv() {
-  return Boolean(
-    process.env.NEXT_PUBLIC_SUPABASE_URL &&
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-  );
-}
-
-type MembershipRow = {
-  household_id: string;
-  role: "owner" | "member";
-  households:
-    | {
-        id: string;
-        name: string;
-      }
-    | {
-        id: string;
-        name: string;
-      }[]
-    | null;
-};
-
-function normalizeHousehold(row: MembershipRow | null): HouseholdOption | null {
-  if (!row) {
-    return null;
-  }
-
-  const household = Array.isArray(row.households)
-    ? row.households[0]
-    : row.households;
-
-  return {
-    id: household?.id ?? row.household_id,
-    name: household?.name ?? "공동 가계부",
-  };
-}
+import type { AccountRow } from "./types";
 
 async function getAccountsPageData() {
-  if (!hasSupabaseEnv()) {
+  if (!hasSupabaseAuthEnv()) {
     return {
       accounts: [] as AccountRow[],
       errorMessage: undefined,
@@ -52,12 +16,10 @@ async function getAccountsPageData() {
     };
   }
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // 레이아웃에서 이미 계산한 사용자/가계부 컨텍스트를 재사용해요.
+  const context = await getCurrentUserContext();
 
-  if (!user) {
+  if (!context.isSignedIn) {
     return {
       accounts: [] as AccountRow[],
       errorMessage: undefined,
@@ -68,26 +30,10 @@ async function getAccountsPageData() {
     };
   }
 
-  const { data: membership, error: membershipError } = await supabase
-    .from("household_members")
-    .select("household_id, role, households(id, name)")
-    .eq("user_id", user.id)
-    .order("joined_at", { ascending: true })
-    .limit(1)
-    .maybeSingle();
-
-  if (membershipError) {
-    return {
-      accounts: [] as AccountRow[],
-      errorMessage: membershipError.message,
-      household: null,
-      isConfigured: true,
-      isAdmin: false,
-      isSignedIn: true,
-    };
-  }
-
-  const household = normalizeHousehold(membership as MembershipRow | null);
+  const supabase = await createClient();
+  const household = context.householdId
+    ? { id: context.householdId, name: context.householdName ?? "공동 가계부" }
+    : null;
 
   if (!household) {
     return {
@@ -114,7 +60,7 @@ async function getAccountsPageData() {
     accounts: (accounts ?? []) as AccountRow[],
     errorMessage: accountsError?.message,
     household,
-    isAdmin: membership?.role === "owner",
+    isAdmin: context.isAdmin,
     isConfigured: true,
     isSignedIn: true,
   };

@@ -1,4 +1,5 @@
 import { PageHeader } from "@/components/page-header";
+import { getCurrentUserContext, hasSupabaseAuthEnv } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 import { DashboardClient } from "./dashboard-client";
 import {
@@ -10,7 +11,6 @@ import {
   type DashboardBudgetRow,
   type DashboardDateRange,
   type DashboardFilters,
-  type DashboardHousehold,
   type DashboardPageData,
   type DashboardTransactionRow,
   type ExpenseTypeFilter,
@@ -25,20 +25,6 @@ type DashboardPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
-type MembershipRow = {
-  household_id: string;
-  households:
-    | {
-        id: string;
-        name: string;
-      }
-    | {
-        id: string;
-        name: string;
-      }[]
-    | null;
-};
-
 type BalanceTransactionRow = {
   account_id: string;
   amount: number | string;
@@ -49,13 +35,6 @@ type BalanceTransactionRow = {
 
 const TIME_ZONE = "Asia/Seoul";
 const MAX_PLANNED_OCCURRENCES_PER_ITEM = 60;
-
-function hasSupabaseEnv() {
-  return Boolean(
-    process.env.NEXT_PUBLIC_SUPABASE_URL &&
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-  );
-}
 
 function firstParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
@@ -144,21 +123,6 @@ function maxDate(...dates: string[]) {
 
 function minDate(...dates: string[]) {
   return dates.reduce((earliest, date) => (date < earliest ? date : earliest));
-}
-
-function normalizeHousehold(row: MembershipRow | null): DashboardHousehold | null {
-  if (!row) {
-    return null;
-  }
-
-  const household = Array.isArray(row.households)
-    ? row.households[0]
-    : row.households;
-
-  return {
-    id: household?.id ?? row.household_id,
-    name: household?.name ?? "공동 가계부",
-  };
 }
 
 function normalizePeriod(value: string | undefined): PeriodFilter {
@@ -406,7 +370,7 @@ async function getDashboardData(
   dateRange: DashboardDateRange,
   today: string,
 ): Promise<DashboardPageData> {
-  if (!hasSupabaseEnv()) {
+  if (!hasSupabaseAuthEnv()) {
     return {
       accounts: [],
       accountBalances: [],
@@ -425,12 +389,10 @@ async function getDashboardData(
     };
   }
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // 레이아웃에서 이미 계산한 사용자/가계부 컨텍스트를 재사용해요.
+  const context = await getCurrentUserContext();
 
-  if (!user) {
+  if (!context.isSignedIn) {
     return {
       accounts: [],
       accountBalances: [],
@@ -449,35 +411,10 @@ async function getDashboardData(
     };
   }
 
-  const { data: membership, error: membershipError } = await supabase
-    .from("household_members")
-    .select("household_id, households(id, name)")
-    .eq("user_id", user.id)
-    .order("joined_at", { ascending: true })
-    .limit(1)
-    .maybeSingle();
-
-  if (membershipError) {
-    return {
-      accounts: [],
-      accountBalances: [],
-      adviceLogs: [],
-      budgets: [],
-      categories: [],
-      dateRange,
-      errorMessage: membershipError.message,
-      filters,
-      household: null,
-      isConfigured: true,
-      isSignedIn: true,
-      plannedOccurrences: [],
-      recurringItems: [],
-      today,
-      transactions: [],
-    };
-  }
-
-  const household = normalizeHousehold(membership as MembershipRow | null);
+  const supabase = await createClient();
+  const household = context.householdId
+    ? { id: context.householdId, name: context.householdName ?? "공동 가계부" }
+    : null;
 
   if (!household) {
     return {

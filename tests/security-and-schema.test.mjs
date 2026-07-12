@@ -316,7 +316,7 @@ describe("Login and role access", () => {
     assert.match(appShell, /getNotificationFeed/);
     assert.match(notificationBell, /unreadCount/);
     assert.match(notificationBell, /markNotificationsReadAction/);
-    assert.match(notificationFeed, /\.neq\("actor_user_id", user\.id\)/);
+    assert.match(notificationFeed, /\.neq\("actor_user_id", userId\)/);
   });
 
   it("records notifications for partner transactions and admin setting changes", () => {

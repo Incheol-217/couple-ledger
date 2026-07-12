@@ -1,7 +1,10 @@
+import { cache } from "react";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
-export async function createClient() {
+// 요청 하나 안에서는 같은 클라이언트를 재사용해요. cookies()가 요청 단위라
+// React cache도 요청 단위로 초기화되므로 세션이 섞일 일은 없어요.
+export const createClient = cache(async () => {
   const cookieStore = await cookies();
 
   return createServerClient(
@@ -25,4 +28,4 @@ export async function createClient() {
       },
     },
   );
-}
+});

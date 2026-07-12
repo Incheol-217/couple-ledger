@@ -1,50 +1,10 @@
 import { PageHeader } from "@/components/page-header";
+import { getCurrentUserContext, hasSupabaseAuthEnv } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 import { BudgetsClient } from "./budgets-client";
-import type {
-  BudgetExpenseRow,
-  BudgetHousehold,
-  BudgetPageData,
-  BudgetRow,
-} from "./types";
+import type { BudgetExpenseRow, BudgetPageData, BudgetRow } from "./types";
 import type { AccountRow } from "@/app/accounts/types";
 import type { CategoryRow } from "@/app/m/new/types";
-
-function hasSupabaseEnv() {
-  return Boolean(
-    process.env.NEXT_PUBLIC_SUPABASE_URL &&
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-  );
-}
-
-type MembershipRow = {
-  household_id: string;
-  households:
-    | {
-        id: string;
-        name: string;
-      }
-    | {
-        id: string;
-        name: string;
-      }[]
-    | null;
-};
-
-function normalizeHousehold(row: MembershipRow | null): BudgetHousehold | null {
-  if (!row) {
-    return null;
-  }
-
-  const household = Array.isArray(row.households)
-    ? row.households[0]
-    : row.households;
-
-  return {
-    id: household?.id ?? row.household_id,
-    name: household?.name ?? "공동 가계부",
-  };
-}
 
 const emptyData: BudgetPageData = {
   accounts: [],
@@ -61,41 +21,26 @@ function startOfYearString() {
 }
 
 async function getBudgetsPageData(): Promise<BudgetPageData> {
-  if (!hasSupabaseEnv()) {
+  if (!hasSupabaseAuthEnv()) {
     return emptyData;
   }
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // 레이아웃에서 이미 계산한 사용자/가계부 컨텍스트를 재사용해요.
+  const context = await getCurrentUserContext();
 
-  if (!user) {
+  if (!context.isSignedIn) {
     return { ...emptyData, isConfigured: true, isSignedIn: false };
   }
 
-  const { data: membership, error: membershipError } = await supabase
-    .from("household_members")
-    .select("household_id, households(id, name)")
-    .eq("user_id", user.id)
-    .order("joined_at", { ascending: true })
-    .limit(1)
-    .maybeSingle();
-
-  if (membershipError) {
-    return {
-      ...emptyData,
-      errorMessage: membershipError.message,
-      isConfigured: true,
-      isSignedIn: true,
-    };
-  }
-
-  const household = normalizeHousehold(membership as MembershipRow | null);
-
-  if (!household) {
+  if (!context.householdId) {
     return { ...emptyData, isConfigured: true, isSignedIn: true };
   }
+
+  const household = {
+    id: context.householdId,
+    name: context.householdName ?? "공동 가계부",
+  };
+  const supabase = await createClient();
 
   const [accountsResult, categoriesResult, budgetsResult] = await Promise.all([
     supabase
