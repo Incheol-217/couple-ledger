@@ -214,9 +214,9 @@ export default async function RecurringPage() {
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
       <PageHeader
-        eyebrow="반복비"
+        eyebrow="고정비"
         title="구독비와 고정비"
-        description="매달 나가는 돈을 결제일 기준으로 정리해요."
+        description="정기적으로 나가는 돈을 결제일 기준으로 정리해요."
       />
 
       <RecurringClient {...data} />

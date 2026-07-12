@@ -42,7 +42,7 @@ function readMoney(formData: FormData, key: string) {
   const amount = Number(value);
 
   if (!Number.isFinite(amount) || amount < 0) {
-    throw new Error("등록 잔액은 0원 이상으로 입력해 주세요.");
+    throw new Error("처음 잔액은 0원 이상으로 입력해 주세요.");
   }
 
   return amount;
@@ -56,7 +56,7 @@ function readDateOrToday(formData: FormData, key: string) {
   }
 
   if (value) {
-    throw new Error("잔액 기준일을 다시 확인해 주세요.");
+    throw new Error("잔액을 확인한 날을 다시 확인해 주세요.");
   }
 
   return new Date().toISOString().slice(0, 10);
@@ -66,7 +66,7 @@ function readAccountType(formData: FormData): AccountType {
   const value = readText(formData, "type");
 
   if (!accountTypes.includes(value as AccountType)) {
-    throw new Error("계좌 종류를 다시 선택해 주세요.");
+    throw new Error("계좌 종류를 다시 골라주세요.");
   }
 
   return value as AccountType;
@@ -76,7 +76,7 @@ function readOwnerType(formData: FormData): OwnerType {
   const value = readText(formData, "owner_type");
 
   if (!ownerTypes.includes(value as OwnerType)) {
-    throw new Error("소유 구분을 다시 선택해 주세요.");
+    throw new Error("사용자를 다시 골라주세요.");
   }
 
   return value as OwnerType;
@@ -136,7 +136,7 @@ async function validateWithdrawalAccount(
   }
 
   if (accountId && defaultWithdrawalAccountId === accountId) {
-    throw new Error("카드값이 빠져나갈 계좌로 같은 카드를 고를 수 없어요.");
+    throw new Error("카드값이 빠지는 계좌는 이 카드와 다르게 골라주세요.");
   }
 
   const { data, error } = await supabase
@@ -147,11 +147,11 @@ async function validateWithdrawalAccount(
     .maybeSingle();
 
   if (error || !data) {
-    throw new Error("카드값이 빠져나갈 계좌를 찾을 수 없어요.");
+    throw new Error("카드값이 빠지는 계좌를 찾을 수 없어요.");
   }
 
   if (!data.is_active || data.type === "card") {
-    throw new Error("카드가 아닌 사용 중인 계좌를 골라주세요.");
+    throw new Error("카드가 아닌 계좌를 골라주세요.");
   }
 
   return defaultWithdrawalAccountId;

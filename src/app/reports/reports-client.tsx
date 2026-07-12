@@ -63,8 +63,8 @@ const periodLabels: Record<ReportPeriod, string> = {
 const sourceLabels: Record<string, string> = {
   api: "API",
   csv: "CSV",
-  manual: "수동",
-  ocr: "OCR",
+  manual: "직접",
+  ocr: "영수증",
   recurring: "자동",
   shortcut: "단축어",
 };
@@ -127,7 +127,7 @@ function accountName(accountsById: Map<string, AccountRow>, accountId: string | 
     return "-";
   }
 
-  return accountsById.get(accountId)?.name ?? "알 수 없는 계좌";
+  return accountsById.get(accountId)?.name ?? "계좌";
 }
 
 function adviceLines(body: string) {
@@ -152,9 +152,9 @@ function friendlyAdviceLine({
   }
 
   if (upcomingTotal > 0) {
-    return `이번 기간에 남은 예정 지출은 ${formatMoney(
+    return `이번 기간에 나갈 돈이 ${formatMoney(
       upcomingTotal,
-    )}이에요. 미리 빼두면 마음이 한결 편해집니다.`;
+    )} 남아 있어요. 미리 빼두면 마음이 한결 편해져요.`;
   }
 
   return "현재 흐름은 차분해 보여요. 작은 변동비만 꾸준히 기록하면 다음 보고서가 더 또렷해집니다.";
@@ -257,7 +257,7 @@ function ReportToolbar({
   return (
     <div className="print-hidden flex items-center justify-between gap-3 rounded-full border bg-card px-4 py-3 shadow-sm">
       <div className="min-w-0">
-        <p className="truncate text-sm font-medium">보고서 필터</p>
+        <p className="truncate text-sm font-medium">보고서 조건</p>
         <p className="mt-0.5 truncate text-xs text-muted-foreground">
           {range.label}
         </p>
@@ -334,7 +334,7 @@ function ReportToolbar({
           type="button"
         >
           <Printer className="size-4" aria-hidden="true" />
-          <span className="sr-only">인쇄 / PDF 저장</span>
+          <span className="sr-only">인쇄 또는 PDF 저장</span>
         </Button>
       </div>
     </div>
@@ -349,7 +349,7 @@ function UpcomingRecurringTable({
   occurrences: ReportRecurringOccurrence[];
 }) {
   if (occurrences.length === 0) {
-    return <EmptyReportState message="선택한 기간에 남은 예정 결제가 없어요." />;
+    return <EmptyReportState message="선택한 기간에 결제 예정이 생기면 보여요." />;
   }
 
   return (
@@ -533,7 +533,7 @@ export function ReportsClient(props: ReportsClientProps) {
               {household.name} 소비 보고서
             </h2>
             <p className="mt-2 text-sm text-muted-foreground">
-              {range.label} · 생성일 {generatedAt}
+              {range.label} · 만든 날 {generatedAt}
             </p>
           </div>
           <Badge className="w-fit" variant="secondary">
@@ -554,29 +554,29 @@ export function ReportsClient(props: ReportsClientProps) {
 
       <section className="grid break-inside-avoid gap-3 md:grid-cols-3 xl:grid-cols-6">
         {[
-          { label: "총 지출", value: formatMoney(totalExpense), helper: "발생 기준" },
-          { label: "총 수입", value: formatMoney(totalIncome), helper: "입금 기준" },
+          { label: "총 지출", value: formatMoney(totalExpense), helper: "쓴 금액" },
+          { label: "총 수입", value: formatMoney(totalIncome), helper: "들어온 돈" },
           {
             label: "순흐름",
             value: formatMoney(totalIncome - totalExpense),
-            helper: "수입 - 지출",
+            helper: "수입에서 지출을 뺀 금액",
           },
           {
             label: "남은 예산",
             value: formatMoney(remainingBudget),
-            helper: budgetTotal > 0 ? `예산 ${formatMoney(budgetTotal)}` : "예산 없음",
+            helper: budgetTotal > 0 ? `예산 ${formatMoney(budgetTotal)}` : "예산을 정할 수 있어요",
           },
           {
             label: "고정비",
             value: formatMoney(actualFixedExpense + plannedFixedExpense),
-            helper: "쓴 돈 + 나갈 돈",
+            helper: "쓴 돈과 나갈 돈",
           },
           {
             label: "구독비",
             value: formatMoney(
               actualSubscriptionExpense + plannedSubscriptionExpense,
             ),
-            helper: "쓴 돈 + 나갈 돈",
+            helper: "쓴 돈과 나갈 돈",
           },
         ].map((metric) => (
           <Card className="break-inside-avoid" key={metric.label}>
@@ -598,7 +598,7 @@ export function ReportsClient(props: ReportsClientProps) {
           <CardHeader>
             <CardTitle>지출 구성</CardTitle>
             <CardDescription>
-              변동비, 고정비, 구독비를 나눠 봐요.
+              지출을 세 가지로 나눠 봐요.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -742,7 +742,7 @@ export function ReportsClient(props: ReportsClientProps) {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <CalendarDays className="size-5" aria-hidden="true" />
-              예정 반복비
+              예정 결제
             </CardTitle>
             <CardDescription>
               아직 거래로 저장되지 않은 예정 결제예요.
@@ -828,7 +828,7 @@ export function ReportsClient(props: ReportsClientProps) {
                     className="h-24 text-center text-muted-foreground"
                     colSpan={7}
                   >
-                    선택한 기간에 기록된 거래가 없어요.
+                    선택한 기간에 거래가 생기면 보여요.
                   </TableCell>
                 </TableRow>
               )}
@@ -847,7 +847,7 @@ export function ReportsClient(props: ReportsClientProps) {
           <CardHeader>
             <CardTitle>AI 조언 원문</CardTitle>
             <CardDescription>
-              가장 최근 AI 소비 조언이에요.
+              최근 AI 소비 조언이에요.
             </CardDescription>
           </CardHeader>
           <CardContent>

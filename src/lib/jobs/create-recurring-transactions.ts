@@ -320,7 +320,7 @@ export async function createRecurringTransactions(
 
         if (!updatedItem) {
           throw new Error(
-            "반복비가 실행 중에 변경되어 다음 결제일은 그대로 두었어요.",
+            "반복 결제가 실행 중에 바뀌어서 다음 결제일은 그대로 두었어요.",
           );
         }
 

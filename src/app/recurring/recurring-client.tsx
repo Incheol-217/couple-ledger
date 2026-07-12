@@ -264,7 +264,7 @@ function RecurringForm({
     <Card>
       <CardHeader>
         <CardTitle>
-          {mode === "create" ? "반복비 추가하기" : "반복비 고치기"}
+          {mode === "create" ? "반복 결제 추가하기" : "반복 결제 고치기"}
         </CardTitle>
         <CardDescription>
           다음 결제일과 결제 계좌를 정해요.
@@ -393,7 +393,7 @@ function RecurringForm({
                 id="recurring-category"
                 name="category_id"
               >
-                <option value="">선택하지 않기</option>
+                <option value="">선택 안 함</option>
                 {categories.map((category) => (
                   <option key={category.id} value={category.id}>
                     {category.name}
@@ -409,7 +409,7 @@ function RecurringForm({
                 id="recurring-payer"
                 name="payer_user_id"
               >
-                <option value="">선택하지 않기</option>
+                <option value="">선택 안 함</option>
                 {members.map((member) => (
                   <option key={member.user_id} value={member.user_id}>
                     {member.label}
@@ -437,7 +437,7 @@ function RecurringForm({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="reminder-days">며칠 전에 알려줄까요?</Label>
+              <Label htmlFor="reminder-days">며칠 전에 알려드릴까요?</Label>
               <Input
                 defaultValue={item?.reminder_days_before ?? 3}
                 id="reminder-days"
@@ -471,7 +471,7 @@ function RecurringForm({
             <span>
               <span className="font-medium">결제일에 거래로 저장하기</span>
               <span className="mt-1 block text-muted-foreground">
-                켜두면 결제일에 반복 거래를 자동으로 만들어요.
+                켜두면 결제일에 거래 내역이 자동으로 생겨요.
               </span>
             </span>
           </label>
@@ -540,7 +540,7 @@ function StatusActionButton({
         ) : (
           <RotateCcw className="size-4" aria-hidden="true" />
         )}
-        {status === "paused" ? "멈추기" : status === "canceled" ? "취소하기" : "다시 켜기"}
+        {status === "paused" ? "잠시 멈추기" : status === "canceled" ? "끝내기" : "다시 켜기"}
       </Button>
     </form>
   );
@@ -590,7 +590,7 @@ export function RecurringClient({
         <CardHeader>
           <CardTitle>Supabase 설정을 확인해 주세요</CardTitle>
           <CardDescription>
-            `.env.local`에 Supabase URL과 anon key를 넣으면 반복비를 볼 수 있어요.
+            `.env.local`에 Supabase URL과 anon key를 넣으면 반복 결제를 볼 수 있어요.
           </CardDescription>
         </CardHeader>
       </Card>
@@ -603,7 +603,7 @@ export function RecurringClient({
         <CardHeader>
           <CardTitle>로그인해 주세요</CardTitle>
           <CardDescription>
-            로그인하면 함께 쓰는 반복비만 보여요.
+            로그인하면 함께 쓰는 반복 결제를 볼 수 있어요.
           </CardDescription>
         </CardHeader>
       </Card>
@@ -616,7 +616,7 @@ export function RecurringClient({
         <CardHeader>
           <CardTitle>공동 가계부를 연결해 주세요</CardTitle>
           <CardDescription>
-            멤버 연결을 마치면 반복비를 추가할 수 있어요.
+            멤버 연결을 마치면 반복 결제를 추가할 수 있어요.
           </CardDescription>
         </CardHeader>
       </Card>
@@ -629,7 +629,7 @@ export function RecurringClient({
         <CardHeader>
           <CardTitle>결제 계좌를 먼저 추가해 주세요</CardTitle>
           <CardDescription>
-            계좌나 카드를 추가하면 반복비를 등록할 수 있어요.
+            계좌나 카드를 추가하면 반복 결제를 등록할 수 있어요.
           </CardDescription>
         </CardHeader>
       </Card>
@@ -654,7 +654,7 @@ export function RecurringClient({
       <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         <Card>
           <CardContent className="p-4">
-            <p className="text-sm text-muted-foreground">월 구독비</p>
+            <p className="text-sm text-muted-foreground">한 달 구독비</p>
             <p className="mt-2 text-xl font-semibold">
               {formatMoney(summary.monthlySubscriptionTotal)}
             </p>
@@ -662,7 +662,7 @@ export function RecurringClient({
         </Card>
         <Card>
           <CardContent className="p-4">
-            <p className="text-sm text-muted-foreground">월 고정비</p>
+            <p className="text-sm text-muted-foreground">한 달 고정비</p>
             <p className="mt-2 text-xl font-semibold">
               {formatMoney(summary.monthlyFixedTotal)}
             </p>
@@ -670,7 +670,7 @@ export function RecurringClient({
         </Card>
         <Card>
           <CardContent className="p-4">
-            <p className="text-sm text-muted-foreground">연간 구독비 환산</p>
+            <p className="text-sm text-muted-foreground">1년 구독비</p>
             <p className="mt-2 text-xl font-semibold">
               {formatMoney(summary.annualSubscriptionTotal)}
             </p>
@@ -678,7 +678,7 @@ export function RecurringClient({
         </Card>
         <Card>
           <CardContent className="p-4">
-            <p className="text-sm text-muted-foreground">이번 달 남은 예정</p>
+            <p className="text-sm text-muted-foreground">이번 달 남은 결제</p>
             <p className="mt-2 text-xl font-semibold">
               {formatMoney(summary.remainingThisMonth)}
             </p>
@@ -697,9 +697,9 @@ export function RecurringClient({
       {summary.nextSevenDays.length > 0 ? (
         <Card>
           <CardHeader>
-            <CardTitle>다음 7일 결제 예정</CardTitle>
+            <CardTitle>다음 7일 결제</CardTitle>
             <CardDescription>
-              곧 결제될 항목이에요.
+              곧 나갈 항목이에요.
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
@@ -753,7 +753,7 @@ export function RecurringClient({
 
       <section className="space-y-4">
         <div
-          aria-label="반복 항목 종류"
+          aria-label="반복 결제 종류"
           className="grid grid-cols-2 rounded-lg border bg-muted p-1"
           role="tablist"
         >
@@ -846,15 +846,15 @@ export function RecurringClient({
                         <dd>{getPayerName(members, item.payer_user_id)}</dd>
                       </div>
                       <div className="flex justify-between gap-4">
-                        <dt className="text-muted-foreground">자동 저장</dt>
+                        <dt className="text-muted-foreground">거래 저장</dt>
                         <dd className="inline-flex items-center gap-1">
                           {item.auto_create_transaction ? (
                             <>
                               <Check className="size-4 text-primary" aria-hidden="true" />
-                              켜짐
+                              자동
                             </>
                           ) : (
-                            "꺼짐"
+                            "직접"
                           )}
                         </dd>
                       </div>
@@ -920,10 +920,10 @@ export function RecurringClient({
                 />
                 <div>
                   <p className="font-medium">
-                    추가한 {recurringKindLabels[activeTab]}가 없어요
+                    {recurringKindLabels[activeTab]}를 추가하면 여기에 보여요
                   </p>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    반복 결제가 생기면 여기서 볼 수 있어요.
+                    매달 나가는 돈을 추가해 보세요.
                   </p>
                 </div>
                 <Button onClick={() => openCreate(activeTab)} type="button">

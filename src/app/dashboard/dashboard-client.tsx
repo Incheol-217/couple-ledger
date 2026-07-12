@@ -232,7 +232,7 @@ function selectedAccounts(accounts: AccountRow[], filter: AccountFilter) {
 }
 
 function accountName(accountsById: Map<string, AccountRow>, accountId: string) {
-  return accountsById.get(accountId)?.name ?? "알 수 없는 계좌";
+  return accountsById.get(accountId)?.name ?? "계좌";
 }
 
 function normalizedAccountName(account: AccountRow) {
@@ -362,7 +362,7 @@ function MainAccountBalanceCard({
   scheduledOutflow: number;
 }) {
   if (!account) {
-    return <EmptyState message="메인으로 보여줄 계좌를 추가해 주세요." />;
+    return <EmptyState message="메인 계좌를 추가하면 잔액을 보여드릴게요." />;
   }
 
   const netFlow = periodInflow - periodOutflow;
@@ -525,7 +525,7 @@ function MetricCard({
 
 function CategoryExpenseChart({ data }: { data: ChartRow[] }) {
   if (data.length === 0) {
-    return <EmptyState message="카테고리 지출이 쌓이면 보여드릴게요." />;
+    return <EmptyState message="카테고리별 지출이 생기면 보여드릴게요." />;
   }
 
   const chartData = data.slice(0, 6).map((item) => ({
@@ -841,7 +841,7 @@ function AccountSummaryCards({
                 ))
               ) : (
                 <span className="text-sm text-muted-foreground">
-                  최근 거래가 없어요
+                  최근 거래가 생기면 보여요
                 </span>
               )}
             </div>
@@ -1099,26 +1099,26 @@ export function DashboardClient(props: DashboardClientProps) {
 
     if (totalIncome > 0 && totalExpense > totalIncome) {
       return {
-        body: "선택한 기간에는 지출이 수입보다 커요. 다음 7일에 나갈 돈부터 확인해 보세요.",
+        body: "선택한 기간에는 지출이 수입보다 조금 커요. 다음 7일에 나갈 돈부터 함께 확인해요.",
         severity: "warning" as const,
-        title: "현금흐름 주의",
+        title: "현금흐름을 확인해요",
       };
     }
 
     if (currentMonthRemainingTotal > 0) {
       return {
-        body: `이번 달에 남은 반복비는 ${formatMoney(
+        body: `이번 달에 나갈 돈이 ${formatMoney(
           currentMonthRemainingTotal,
-        )}이에요. 이 금액을 먼저 빼두면 남은 돈이 더 또렷해져요.`,
+        )} 남아 있어요. 먼저 빼두면 쓸 수 있는 돈이 더 또렷해져요.`,
         severity: "info" as const,
-        title: "예정 지출을 확인해요",
+        title: "곧 나갈 돈을 확인해요",
       };
     }
 
     return {
       body: "흐름이 차분해 보여요. 거래가 더 쌓이면 고정비와 변동비를 나눠 볼게요.",
       severity: "info" as const,
-      title: "흐름 안정",
+      title: "흐름이 안정적이에요",
     };
   })();
   const topAdviceLine = makeFriendlyAdviceLine(generatedAdvice);
@@ -1159,7 +1159,7 @@ export function DashboardClient(props: DashboardClientProps) {
           </p>
         </div>
         <FilterSheet
-          description="보고 싶은 기간과 계좌를 골라요."
+          description="기간과 계좌를 골라요."
           summary={dateRange.label}
         >
           <div className="grid gap-4">
@@ -1272,35 +1272,35 @@ export function DashboardClient(props: DashboardClientProps) {
         {[
           {
             emphasis: "dark" as const,
-            helper: "발생 기준",
+            helper: "쓴 금액",
             icon: TrendingDown,
             label: "총 지출",
             value: formatMoney(totalExpense),
           },
           {
             emphasis: "primary" as const,
-            helper: "입금 거래",
+            helper: "들어온 돈",
             icon: TrendingUp,
             label: "총 수입",
             value: formatMoney(totalIncome),
           },
           {
             emphasis: "light" as const,
-            helper: budgetTotal > 0 ? `예산 ${formatMoney(budgetTotal)}` : "예산 없음",
+            helper: budgetTotal > 0 ? `예산 ${formatMoney(budgetTotal)}` : "예산을 정할 수 있어요",
             icon: PiggyBank,
             label: "남은 예산",
             value: formatMoney(remainingBudget),
           },
           {
             emphasis: "light" as const,
-            helper: "쓴 돈 + 나갈 돈",
+            helper: "쓴 돈과 나갈 돈",
             icon: CalendarCheck2,
             label: "고정비 합계",
             value: formatMoney(actualFixedExpense + plannedFixedExpense),
           },
           {
             emphasis: "light" as const,
-            helper: "쓴 돈 + 나갈 돈",
+            helper: "쓴 돈과 나갈 돈",
             icon: Repeat2,
             label: "구독비 합계",
             value: formatMoney(
@@ -1309,7 +1309,7 @@ export function DashboardClient(props: DashboardClientProps) {
           },
           {
             emphasis: "light" as const,
-            helper: "반복비 제외",
+            helper: "고정비·구독비 제외",
             icon: ReceiptText,
             label: "변동비 합계",
             value: formatMoney(variableExpense),
@@ -1331,7 +1331,7 @@ export function DashboardClient(props: DashboardClientProps) {
           <CardHeader>
             <CardTitle>카테고리별 지출</CardTitle>
             <CardDescription>
-              많이 쓴 카테고리부터 보여요.
+              많이 쓴 순서로 보여요.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -1420,7 +1420,7 @@ export function DashboardClient(props: DashboardClientProps) {
               <div>
                 <CardTitle>계좌별 요약</CardTitle>
                 <CardDescription>
-                  계좌별로 쓴 돈과 곧 나갈 돈을 봐요.
+                  계좌별 지출과 곧 나갈 돈을 봐요.
                 </CardDescription>
               </div>
               <Badge variant="secondary">{visibleAccounts.length}개</Badge>
@@ -1452,9 +1452,9 @@ export function DashboardClient(props: DashboardClientProps) {
 
         <Card>
           <CardHeader>
-            <CardTitle>곧 나갈 반복비</CardTitle>
+            <CardTitle>곧 나갈 돈</CardTitle>
             <CardDescription>
-              다음 7일과 이번 달 남은 결제예요.
+              다음 결제 일정을 봐요.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">
@@ -1465,7 +1465,7 @@ export function DashboardClient(props: DashboardClientProps) {
               </div>
               <div className="space-y-2">
                 {nextSevenOccurrences.length === 0 ? (
-                  <EmptyState message="다음 7일에는 예정된 결제가 없어요." />
+                  <EmptyState message="다음 7일 안에 결제가 생기면 보여요." />
                 ) : (
                   nextSevenOccurrences.map((occurrence) => (
                     <div
@@ -1504,7 +1504,7 @@ export function DashboardClient(props: DashboardClientProps) {
               </div>
               <div className="space-y-2">
                 {currentMonthRemainingOccurrences.length === 0 ? (
-                  <EmptyState message="이번 달에 남은 예정 결제가 없어요." />
+                  <EmptyState message="이번 달 남은 결제가 생기면 보여요." />
                 ) : (
                   currentMonthRemainingOccurrences.map((occurrence) => (
                     <div

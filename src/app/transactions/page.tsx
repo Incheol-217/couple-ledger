@@ -39,9 +39,9 @@ const typeLabels = {
 const sourceLabels: Record<TransactionRow["source"], string> = {
   api: "API",
   csv: "CSV",
-  manual: "직접 입력",
+  manual: "직접",
   ocr: "영수증",
-  recurring: "자동 생성",
+  recurring: "자동",
   shortcut: "단축어",
 };
 
@@ -168,7 +168,7 @@ export default async function TransactionsPage() {
       <PageHeader
         eyebrow="거래"
         title="거래 내역"
-        description="직접 쓴 거래와 단축어, 반복비 기록을 함께 확인해요."
+        description="직접 쓴 내역, 단축어 내역, 자동 기록을 함께 봐요."
         action={
           <Button asChild>
             <Link href="/m/new">
@@ -192,7 +192,7 @@ export default async function TransactionsPage() {
         </section>
       ) : !context.householdId ? (
         <section className="rounded-lg border bg-card p-6 text-sm text-muted-foreground">
-          연결된 공동 가계부가 없어요. 관리자에게 구성원 연결을 확인해 달라고 해주세요.
+          공동 가계부 연결이 필요해요. 관리자에게 멤버 연결을 확인해 달라고 해주세요.
         </section>
       ) : errorMessage ? (
         <section className="rounded-lg border border-destructive/25 bg-destructive/10 p-4 text-sm text-destructive">
@@ -201,9 +201,9 @@ export default async function TransactionsPage() {
       ) : transactions.length === 0 ? (
         <section className="grid min-h-56 place-items-center rounded-lg border border-dashed bg-card px-6 text-center">
           <div>
-            <p className="font-semibold">아직 기록한 거래가 없어요</p>
+            <p className="font-semibold">첫 거래를 기다리고 있어요</p>
             <p className="mt-2 text-sm text-muted-foreground">
-              첫 거래를 쓰면 날짜순으로 여기에 모여요.
+              거래를 쓰면 날짜순으로 여기에 모여요.
             </p>
             <Button asChild className="mt-4">
               <Link href="/m/new">첫 거래 쓰기</Link>

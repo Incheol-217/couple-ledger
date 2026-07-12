@@ -128,7 +128,7 @@ export default async function AccountsPage() {
       <PageHeader
         eyebrow="계좌"
         title="계좌"
-        description="계좌와 카드를 등록하고, 잔액과 표시 순서를 정리해요."
+        description="계좌와 카드를 추가하고, 처음 잔액과 순서를 정해요."
       />
 
       <AccountsClient {...data} />

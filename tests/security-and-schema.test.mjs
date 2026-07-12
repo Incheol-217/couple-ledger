@@ -156,14 +156,14 @@ describe("AI spending advice privacy", () => {
   });
 
   it("keeps advice out of investment, loan, tax, and legal guidance", () => {
-    assert.match(aiRoute, /투자, 대출, 세금, 법률 조언은 하지 않습니다/);
+    assert.match(aiRoute, /투자, 대출, 세금, 법률 조언은 하지 않아요/);
   });
 
   it("extracts receipt drafts without sending unnecessary sensitive fields back", () => {
     assert.match(receiptRoute, /input_image/);
     assert.match(receiptRoute, /OPENAI_API_KEY/);
     assert.match(receiptRoute, /카드번호, 승인번호, 사업자번호/);
-    assert.match(receiptRoute, /원문 OCR 전체를 넣지 않습니다/);
+    assert.match(receiptRoute, /원문 OCR 전체를 넣지 않아요/);
     assert.match(receiptRoute, /friendlyOpenAIError/);
     assert.match(receiptRoute, /OpenAI 사용 한도가 부족해/);
     assert.match(receiptRoute, /\.eq\("type", "expense"\)/);
@@ -261,8 +261,8 @@ describe("Login and role access", () => {
     assert.match(accountActions, /관리자 계정으로 계좌를 바꿀 수 있어요/);
     assert.match(accountActions, /opening_balance/);
     assert.match(accountsClient, /관리자 계정으로 계좌를 추가할 수 있어요/);
-    assert.match(accountsClient, /등록 잔액/);
-    assert.match(accountsClient, /볼 수만 있어요/);
+    assert.match(accountsClient, /처음 잔액/);
+    assert.match(accountsClient, /보기만 가능해요/);
   });
 
   it("requires a destination account for transfers on the server", () => {
@@ -348,7 +348,7 @@ describe("UX guardrails", () => {
     assert.match(mobileExpenseAction, /cameraInputRef\.current\?\.click\(\)/);
     assert.match(mobileExpenseAction, /sessionStorage\.setItem\(\s*receiptDraftStorageKey/);
     assert.match(mobileExpenseAction, /router\.push\("\/m\/new\?mode=receipt"\)/);
-    assert.match(mobileExpenseAction, /직접 쓰기로 기록하기/);
+    assert.match(mobileExpenseAction, /직접 쓰기/);
     assert.doesNotMatch(mobileExpenseAction, /bottom-\[/);
   });
 
@@ -359,7 +359,7 @@ describe("UX guardrails", () => {
     assert.match(quickEntry, /capture="environment"/);
     assert.match(quickEntry, /fetch\("\/api\/ai\/receipt"/);
     assert.match(quickEntry, /sessionStorage\.getItem\(receiptDraftStorageKey\)/);
-    assert.match(quickEntry, /직접 쓰기로 기록하기/);
+    assert.match(quickEntry, /직접 쓰기/);
     assert.match(quickEntry, /receiptApplied/);
     assert.match(quickEntry, /source"\s*,\s*entryMode === "receipt" && receiptApplied \? "ocr" : "manual"/);
   });
@@ -428,7 +428,7 @@ describe("UX guardrails", () => {
     assert.match(reportPage, /\.eq\("household_id", household\.id\)/);
     assert.match(reportPage, /user_id/);
     assert.match(reports, /window\.print\(\)/);
-    assert.match(reports, /인쇄 \/ PDF 저장/);
+    assert.match(reports, /인쇄 또는 PDF 저장/);
     assert.match(reports, /AI 소비 조언/);
   });
 

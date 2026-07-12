@@ -85,7 +85,7 @@ function getWithdrawalName(accounts: AccountRow[], id: string | null) {
 function readableAccountId(account: AccountRow) {
   return account.masked_identifier
     ? `•••• ${account.masked_identifier}`
-    : "별칭 없음";
+    : "별칭 입력 전";
 }
 
 function formatAccountBalance(value: AccountRow["opening_balance"]) {
@@ -244,7 +244,7 @@ function WalletAccountCard({
               selected ? "text-white/58" : "text-black/55",
             )}
           >
-            {account.institution_name ?? "기관 없음"}
+            {account.institution_name ?? "-"}
           </p>
           <p className="mt-1 font-mono text-xs tracking-normal sm:text-sm">
             {readableAccountId(account)}
@@ -263,7 +263,7 @@ function WalletAccountCard({
               selected ? "text-white/58" : "text-black/55",
             )}
           >
-            등록 잔액
+            처음 잔액
           </p>
         </div>
 
@@ -282,7 +282,9 @@ function WalletAccountCard({
             </p>
           </div>
           <div className="rounded-[1.15rem] bg-white/14 p-3 backdrop-blur">
-            <p className={cn("text-xs", selected ? "text-white/56" : "")}>기본 출금</p>
+            <p className={cn("text-xs", selected ? "text-white/56" : "")}>
+              빠져나갈 계좌
+            </p>
             <p className="mt-1 truncate text-sm font-semibold">
               {account.type === "card"
                 ? getWithdrawalName(accounts, account.default_withdrawal_account_id)
@@ -484,7 +486,7 @@ function WalletDeck({
               </dd>
             </div>
             <div className="flex items-center justify-between gap-4 rounded-[1rem] bg-white/10 px-3 py-2">
-              <dt className="text-white/58">소유</dt>
+              <dt className="text-white/58">사용자</dt>
               <dd className="font-medium">
                 {selectedAccount
                   ? ownerTypeLabels[selectedAccount.owner_type]
@@ -492,7 +494,7 @@ function WalletDeck({
               </dd>
             </div>
             <div className="flex items-center justify-between gap-4 rounded-[1rem] bg-white/10 px-3 py-2">
-              <dt className="text-white/58">등록 잔액</dt>
+              <dt className="text-white/58">처음 잔액</dt>
               <dd className="font-medium">
                 {selectedAccount
                   ? formatAccountBalance(selectedAccount.opening_balance)
@@ -500,13 +502,13 @@ function WalletDeck({
               </dd>
             </div>
             <div className="flex items-center justify-between gap-4 rounded-[1rem] bg-white/10 px-3 py-2">
-              <dt className="text-white/58">잔액 기준일</dt>
+              <dt className="text-white/58">잔액을 확인한 날</dt>
               <dd className="font-medium">
                 {selectedAccount?.opening_balance_as_of ?? "-"}
               </dd>
             </div>
             <div className="flex items-center justify-between gap-4 rounded-[1rem] bg-white/10 px-3 py-2">
-              <dt className="text-white/58">카드 출금</dt>
+              <dt className="text-white/58">카드값 계좌</dt>
               <dd className="truncate font-medium">
                 {selectedAccount?.type === "card"
                   ? getWithdrawalName(
@@ -519,7 +521,7 @@ function WalletDeck({
           </dl>
 
           <div className="mt-5 rounded-[1rem] bg-primary px-3 py-2 text-sm font-semibold text-secondary">
-            사용 중인 계좌 {accounts.length}개
+            지금 쓰는 계좌 {accounts.length}개
           </div>
         </aside>
       </div>
@@ -578,7 +580,7 @@ function AccountForm({
       <CardHeader>
         <CardTitle>{mode === "create" ? "계좌 추가하기" : "계좌 고치기"}</CardTitle>
         <CardDescription>
-          통장에 들어있는 돈도 함께 적어주세요.
+          지금 들어있는 돈도 함께 적어주세요.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -622,7 +624,7 @@ function AccountForm({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="owner-type">소유 구분</Label>
+              <Label htmlFor="owner-type">사용자</Label>
               <Select
                 defaultValue={selectedAccount?.owner_type ?? "shared"}
                 id="owner-type"
@@ -659,7 +661,7 @@ function AccountForm({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="opening-balance">등록 잔액</Label>
+              <Label htmlFor="opening-balance">처음 잔액</Label>
               <Input
                 autoComplete="off"
                 defaultValue={formatAccountBalanceInput(
@@ -675,7 +677,7 @@ function AccountForm({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="opening-balance-as-of">잔액 기준일</Label>
+              <Label htmlFor="opening-balance-as-of">잔액을 확인한 날</Label>
               <Input
                 defaultValue={
                   selectedAccount?.opening_balance_as_of ?? todayString()
@@ -727,7 +729,7 @@ function AccountForm({
                 id="default-withdrawal-account"
                 name="default_withdrawal_account_id"
               >
-                <option value="">선택하지 않기</option>
+                <option value="">선택 안 함</option>
                 {withdrawalAccounts.map((account) => (
                   <option key={account.id} value={account.id}>
                     {account.name} · {accountTypeLabels[account.type]}
@@ -895,7 +897,7 @@ export function AccountsClient({
           </Button>
         ) : (
           <Badge className="w-fit" variant="secondary">
-            볼 수만 있어요
+            보기만 가능해요
           </Badge>
         )}
       </div>
@@ -950,13 +952,13 @@ export function AccountsClient({
         <CardHeader>
           <CardTitle>계좌 보기</CardTitle>
           <CardDescription>
-            등록한 계좌와 카드를 한눈에 볼 수 있어요.
+            등록한 계좌와 카드를 한눈에 봐요.
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-3">
           {accounts.length === 0 ? (
             <div className="flex min-h-28 items-center justify-center rounded-md border border-dashed text-sm text-muted-foreground">
-              추가한 계좌가 없어요.
+              계좌를 추가하면 여기에 보여요.
             </div>
           ) : (
             accounts.map((account, index) => (
@@ -991,13 +993,13 @@ export function AccountsClient({
                     </span>
                   </div>
                   <div className="flex justify-between gap-3">
-                    <span className="shrink-0 text-muted-foreground">등록 잔액</span>
+                    <span className="shrink-0 text-muted-foreground">처음 잔액</span>
                     <span className="truncate font-medium">
                       {formatAccountBalance(account.opening_balance)}
                     </span>
                   </div>
                   <div className="flex justify-between gap-3">
-                    <span className="shrink-0 text-muted-foreground">카드 출금</span>
+                    <span className="shrink-0 text-muted-foreground">카드값 계좌</span>
                     <span className="truncate">
                       {account.type === "card"
                         ? getWithdrawalName(
@@ -1103,8 +1105,8 @@ export function AccountsClient({
           <CardTitle>계좌 목록</CardTitle>
           <CardDescription>
             {isAdmin
-              ? "위아래 버튼으로 보이는 순서를 바꿀 수 있어요."
-              : "관리자 계정으로 로그인하면 계좌를 추가하거나 순서를 바꿀 수 있어요."}
+              ? "위아래 버튼으로 보이는 순서를 바꿔요."
+              : "관리자 계정으로 계좌를 추가하거나 순서를 바꿀 수 있어요."}
           </CardDescription>
         </CardHeader>
         <CardContent className="overflow-x-auto">
@@ -1113,9 +1115,9 @@ export function AccountsClient({
               <TableRow>
                 <TableHead>계좌</TableHead>
                 <TableHead>타입</TableHead>
-                <TableHead>소유</TableHead>
-                <TableHead className="text-right">등록 잔액</TableHead>
-                <TableHead>기본 출금</TableHead>
+                <TableHead>사용자</TableHead>
+                <TableHead className="text-right">처음 잔액</TableHead>
+                <TableHead>카드값 계좌</TableHead>
                 <TableHead>상태</TableHead>
                 <TableHead className="text-right">관리</TableHead>
               </TableRow>
@@ -1132,7 +1134,7 @@ export function AccountsClient({
                       <div className="min-w-0">
                         <p className="truncate font-medium">{account.name}</p>
                         <p className="truncate text-xs text-muted-foreground">
-                          {account.institution_name ?? "기관 없음"}
+                          {account.institution_name ?? "-"}
                           {account.masked_identifier
                             ? ` · ${account.masked_identifier}`
                             : ""}
@@ -1256,7 +1258,7 @@ export function AccountsClient({
                       </div>
                     ) : (
                       <span className="block text-right text-sm text-muted-foreground">
-                        볼 수만 있어요
+                        보기만 가능해요
                       </span>
                     )}
                   </TableCell>
@@ -1268,7 +1270,7 @@ export function AccountsClient({
                     className="h-32 text-center text-muted-foreground"
                     colSpan={7}
                   >
-                    추가한 계좌가 없어요.
+                    계좌를 추가하면 여기에 보여요.
                   </TableCell>
                 </TableRow>
               ) : null}

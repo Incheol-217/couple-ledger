@@ -524,7 +524,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
       <PageHeader
         eyebrow="보고서"
         title="보고서"
-        description="수입과 지출 흐름을 PDF로 남길 수 있어요."
+        description="수입과 지출 흐름을 PDF로 저장해요."
       />
 
       <ReportsClient {...data} />

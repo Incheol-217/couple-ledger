@@ -658,7 +658,7 @@ export default async function DashboardPage({
       <PageHeader
         eyebrow="대시보드"
         title="월간 대시보드"
-        description="지출과 계좌 흐름, 곧 나갈 돈을 한눈에 봐요."
+        description="지출, 계좌 흐름, 곧 나갈 돈을 한곳에서 봐요."
       />
 
       <DashboardClient {...data} />

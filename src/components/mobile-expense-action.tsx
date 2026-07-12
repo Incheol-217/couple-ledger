@@ -109,7 +109,7 @@ export function MobileExpenseAction({ isSignedIn }: { isSignedIn: boolean }) {
             <span>
               직접 쓰기
               <span className="mt-0.5 block text-xs font-normal text-muted-foreground">
-                입력 화면으로 이동해요
+                입력 화면으로 가요
               </span>
             </span>
           </Link>
@@ -125,7 +125,7 @@ export function MobileExpenseAction({ isSignedIn }: { isSignedIn: boolean }) {
             <span>
               영수증 찍기
               <span className="mt-0.5 block text-xs font-normal text-muted-foreground">
-                카메라를 바로 열어요
+                카메라가 열려요
               </span>
             </span>
           </button>
@@ -139,7 +139,7 @@ export function MobileExpenseAction({ isSignedIn }: { isSignedIn: boolean }) {
                 href="/m/new"
                 onClick={() => setIsOpen(false)}
               >
-                직접 쓰기로 기록하기
+                직접 쓰기
               </Link>
             </div>
           ) : null}

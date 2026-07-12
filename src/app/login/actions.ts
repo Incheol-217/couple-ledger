@@ -53,7 +53,7 @@ export async function signInAction(
   if (error) {
     return {
       ok: false,
-      message: "로그인 정보가 맞지 않습니다.",
+      message: "이메일이나 비밀번호를 다시 확인해 주세요.",
     };
   }
 

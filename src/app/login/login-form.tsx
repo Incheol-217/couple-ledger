@@ -169,10 +169,10 @@ export function LoginForm({
       <div className="rounded-lg border bg-muted/30 p-4 text-sm leading-6 text-muted-foreground">
         <div className="mb-2 flex items-center gap-2 font-medium text-foreground">
           <LockKeyhole className="size-4" aria-hidden="true" />
-          계정을 먼저 만들어주세요
+          계정을 먼저 만들어요
         </div>
-        관리자, 남편, 아내 계정은 초기 설정 API로 한 번만 만들면 돼요.
-        그다음부터는 각자 이메일과 비밀번호로 로그인해요.
+        초기 설정 API를 한 번 실행하면 관리자, 남편, 아내 계정이 만들어져요.
+        그다음부터 각자 이메일과 비밀번호로 로그인해요.
       </div>
     </div>
   );

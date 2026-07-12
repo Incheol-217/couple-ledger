@@ -497,7 +497,7 @@ export function QuickTransactionClient({
         <div>
           <p className="text-sm font-medium">기록 방법</p>
           <p className="mt-1 text-sm leading-6 text-muted-foreground">
-            직접 쓰거나 영수증 사진으로 먼저 채울 수 있어요.
+            직접 입력하거나 영수증으로 채워요.
           </p>
         </div>
         <div className="grid grid-cols-2 gap-2">
@@ -521,7 +521,7 @@ export function QuickTransactionClient({
                   : "text-muted-foreground",
               )}
             >
-              금액부터 입력해요
+              금액부터 쓸게요
             </span>
           </button>
           <button
@@ -544,7 +544,7 @@ export function QuickTransactionClient({
                   : "text-muted-foreground",
               )}
             >
-              사진으로 자동 채워요
+              사진으로 채워요
             </span>
           </button>
         </div>
@@ -564,10 +564,10 @@ export function QuickTransactionClient({
                 <ReceiptText className="size-6 text-primary" />
               )}
               <span className="text-sm font-medium">
-                {isReceiptPending ? "영수증을 읽고 있어요" : "영수증 촬영하기"}
+                {isReceiptPending ? "영수증을 읽고 있어요" : "영수증 찍기"}
               </span>
               <span className="text-xs leading-5 text-muted-foreground">
-                iPhone에서는 카메라가 바로 열려요.
+                iPhone에서는 카메라가 열려요.
               </span>
             </Label>
             <input
@@ -581,7 +581,7 @@ export function QuickTransactionClient({
             />
             {receiptFileName ? (
               <p className="truncate text-xs text-muted-foreground">
-                선택한 사진: {receiptFileName}
+                사진: {receiptFileName}
               </p>
             ) : null}
             {receiptMessage ? (
@@ -601,7 +601,7 @@ export function QuickTransactionClient({
                   type="button"
                   variant="outline"
                 >
-                  직접 쓰기로 기록하기
+                  직접 쓰기
                 </Button>
               </div>
             ) : null}
@@ -636,7 +636,7 @@ export function QuickTransactionClient({
         <div className="flex items-center justify-between gap-3">
           <p className="text-sm font-medium">구분</p>
           <Badge variant="secondary">
-            {household.name} · 내 이름으로 기록돼요
+            {household.name} · 내 이름으로 저장돼요
           </Badge>
         </div>
         <div className="grid grid-cols-3 gap-2">
@@ -661,7 +661,7 @@ export function QuickTransactionClient({
         <div className="flex items-center gap-2">
           <WalletCards className="size-4 text-primary" aria-hidden="true" />
           <p className="text-sm font-medium">
-            {type === "transfer" ? "돈이 나가는 계좌" : "계좌 또는 카드"}
+            {type === "transfer" ? "나가는 계좌" : "계좌 또는 카드"}
           </p>
         </div>
         <div className="grid gap-2">
@@ -705,7 +705,7 @@ export function QuickTransactionClient({
             onChange={(event) => setTransferAccountId(event.target.value)}
             value={transferAccountId}
           >
-            <option value="">선택하지 않기</option>
+            <option value="">선택 안 함</option>
             {selectableTransferAccounts.map((account) => (
               <option key={account.id} value={account.id}>
                 {account.name} · {accountTypeLabels[account.type]}
@@ -734,7 +734,7 @@ export function QuickTransactionClient({
           </div>
         ) : (
           <div className="rounded-md border bg-muted/40 px-3 py-3 text-sm text-muted-foreground">
-            저장할 수 있는 카테고리가 없어요.
+            카테고리를 추가하면 여기서 고를 수 있어요.
           </div>
         )}
         <Select
@@ -742,7 +742,7 @@ export function QuickTransactionClient({
           onChange={(event) => setCategoryId(event.target.value)}
           value={categoryId}
         >
-          <option value="">카테고리 없이 저장</option>
+          <option value="">카테고리 없이 저장하기</option>
           {visibleCategories.map((category) => (
             <option key={category.id} value={category.id}>
               {category.name}
@@ -772,7 +772,7 @@ export function QuickTransactionClient({
             id="memo"
             name="memo_display"
             onChange={(event) => setMemo(event.target.value)}
-            placeholder="남겨둘 내용"
+            placeholder="기억할 내용"
             rows={3}
             value={memo}
           />

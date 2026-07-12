@@ -1,6 +1,6 @@
 # Couple Budget
 
-부부가 함께 거래를 기록하고 계좌, 반복비, 예산, 소비 흐름을 확인하는 공동 가계부입니다.
+부부가 함께 거래를 기록하고 계좌, 반복 결제, 예산, 소비 흐름을 확인하는 공동 가계부입니다.
 
 ## 포함된 구성
 
@@ -68,7 +68,7 @@ ADMIN_NAME=관리자
 
 Supabase 연결 기능을 사용하려면 URL, anon key, service role key를 모두 넣어야 합니다. `SUPABASE_SERVICE_ROLE_KEY`, `OPENAI_API_KEY`, 각종 secret은 브라우저에 노출되는 `NEXT_PUBLIC_` 이름으로 만들면 안 됩니다.
 
-`JOB_SECRET`은 서버 작업 API를 수동 호출할 때 쓰는 비밀값입니다. 운영 환경에서는 반드시 설정해 주세요.
+`JOB_SECRET`은 서버 작업 API를 직접 호출할 때 쓰는 비밀값입니다. 운영 환경에서는 반드시 설정해 주세요.
 
 `OPENAI_MODEL`은 AI 소비 조언 생성에 사용할 모델입니다. 필요하면 운영 환경에서 다른 모델로 바꿀 수 있습니다.
 
@@ -101,7 +101,7 @@ curl -X POST https://YOUR_VERCEL_DOMAIN/api/setup/login-accounts \
 - `/recurring`
 - `/settings`
 
-## 반복 거래 자동 생성 수동 실행
+## 반복 거래 직접 만들기
 
 `recurring_items`에서 오늘까지 결제일이 도래한 active 항목을 찾아 `transactions`에 `source=recurring`으로 저장합니다.
 
@@ -122,7 +122,7 @@ curl -X POST http://localhost:3000/api/jobs/create-recurring-transactions \
 
 ## AI 소비 조언 생성
 
-로그인된 사용자의 household 데이터를 월간 집계로 요약해 OpenAI에 전달하고, 생성된 조언을 `ai_advice_logs`에 저장합니다. 원본 거래 전체, 계좌번호, 카드번호, 상점명은 전달하지 않습니다.
+로그인된 사용자의 household 데이터를 월간 집계로 요약해 OpenAI에 전달하고, 생성된 조언을 `ai_advice_logs`에 저장합니다. 원본 거래 전체, 계좌번호, 카드번호, 상점명은 전달하지 않아요.
 
 ```bash
 curl -X POST http://localhost:3000/api/ai/spending-advice \
@@ -158,7 +158,7 @@ curl -X POST http://localhost:3000/api/shortcuts/transactions \
   }'
 ```
 
-카테고리는 이름으로 찾고 없으면 생성합니다. 계좌는 활성 계좌 이름으로 찾으며, 같은 이름의 활성 계좌가 여러 개 있으면 저장하지 않습니다.
+카테고리는 이름으로 찾고 없으면 만듭니다. 계좌는 활성 계좌 이름으로 찾으며, 같은 이름의 활성 계좌가 여러 개 있으면 저장하지 않아요.
 
 단축어 재시도로 같은 거래가 두 번 저장되는 일을 막으려면 요청마다 고유한 `idempotency_key`를 본문에 넣거나 `x-idempotency-key` 헤더로 보내세요. 같은 household에서 같은 키를 다시 보내면 기존 거래를 반환합니다.
 

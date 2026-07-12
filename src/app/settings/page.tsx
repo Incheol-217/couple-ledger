@@ -68,7 +68,7 @@ export default async function SettingsPage() {
           </CardHeader>
           <CardContent className="grid gap-4 text-sm text-muted-foreground">
             <p>
-              설정은 관리자 계정에서 바꿔요. 남편/아내 계정은 거래 입력과 조회를 할 수 있어요.
+              설정은 관리자 계정에서 바꿔요. 남편과 아내 계정은 거래를 쓰고 볼 수 있어요.
             </p>
             <div className="flex flex-wrap gap-2">
               <Button asChild>

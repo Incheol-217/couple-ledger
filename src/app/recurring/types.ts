@@ -70,5 +70,5 @@ export const billingCycleLabels: Record<BillingCycle, string> = {
 export const recurringStatusLabels: Record<RecurringStatus, string> = {
   active: "사용 중",
   paused: "멈춤",
-  canceled: "취소",
+  canceled: "끝남",
 };

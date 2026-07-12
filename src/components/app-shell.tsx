@@ -67,7 +67,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
                 <Button asChild className="hidden md:inline-flex">
                   <Link href="/m/new">
                     <Plus className="size-4" aria-hidden="true" />
-                    지출 쓰기
+                    거래 쓰기
                   </Link>
                 </Button>
                 <form action={signOutAction}>

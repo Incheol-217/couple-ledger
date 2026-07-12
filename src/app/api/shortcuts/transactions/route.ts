@@ -83,7 +83,7 @@ async function readPayload(request: NextRequest) {
   try {
     return (await request.json()) as ShortcutTransactionPayload;
   } catch {
-    throw apiError("요청 본문을 JSON 형식으로 보내주세요.");
+    throw apiError("요청 본문은 JSON으로 보내주세요.");
   }
 }
 
@@ -156,13 +156,13 @@ function readSpentAt(payload: ShortcutTransactionPayload) {
   const parsed = new Date(spentAt);
 
   if (Number.isNaN(parsed.getTime())) {
-    throw apiError("spent_at은 ISO 날짜와 시간 형식으로 보내주세요.");
+    throw apiError("spent_at은 ISO 날짜와 시간으로 보내주세요.");
   }
 
   const dateOnly = spentAt.match(/^\d{4}-\d{2}-\d{2}/)?.[0];
 
   if (!dateOnly) {
-    throw apiError("spent_at은 YYYY-MM-DD로 시작하는 ISO 날짜와 시간이어야 해요.");
+    throw apiError("spent_at은 YYYY-MM-DD로 시작해야 해요.");
   }
 
   return {
@@ -206,7 +206,7 @@ async function assertHouseholdMember(
   }
 
   if (!data) {
-    throw apiError("household_id와 user_id에 맞는 멤버를 찾을 수 없어요.", 403);
+    throw apiError("household_id와 user_id가 맞는 멤버를 찾을 수 없어요.", 403);
   }
 }
 
@@ -242,7 +242,7 @@ async function findAccountByName(
 
   if (accounts.length > 1) {
     throw apiError(
-      `${label} '${accountName}'이 여러 개예요. 단축어에서 더 정확한 계좌명을 보내주세요.`,
+      `${label} '${accountName}'이 여러 개예요. 단축어에서 정확한 계좌명을 보내주세요.`,
       409,
     );
   }

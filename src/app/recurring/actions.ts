@@ -51,7 +51,7 @@ function readKind(formData: FormData): RecurringKind {
   const value = readText(formData, "kind");
 
   if (!recurringKinds.includes(value as RecurringKind)) {
-    throw new Error("반복비 종류를 다시 선택해 주세요.");
+    throw new Error("반복 결제 종류를 다시 골라주세요.");
   }
 
   return value as RecurringKind;
@@ -61,7 +61,7 @@ function readBillingCycle(formData: FormData): BillingCycle {
   const value = readText(formData, "billing_cycle");
 
   if (!billingCycles.includes(value as BillingCycle)) {
-    throw new Error("결제 주기를 다시 선택해 주세요.");
+    throw new Error("결제 주기를 다시 골라주세요.");
   }
 
   return value as BillingCycle;
@@ -71,7 +71,7 @@ function readStatus(formData: FormData): RecurringStatus {
   const value = readText(formData, "status") || "active";
 
   if (!recurringStatuses.includes(value as RecurringStatus)) {
-    throw new Error("상태를 다시 선택해 주세요.");
+    throw new Error("상태를 다시 골라주세요.");
   }
 
   return value as RecurringStatus;
@@ -108,7 +108,7 @@ async function assertCurrentMember(householdId: string) {
     .maybeSingle();
 
   if (error || !data) {
-    throw new Error("이 가계부의 반복비를 바꿀 수 없어요.");
+    throw new Error("이 가계부의 반복 결제만 바꿀 수 있어요.");
   }
 
   return { supabase, user };
@@ -191,7 +191,7 @@ function toPayload(formData: FormData) {
   const reminderDaysBefore = readNumber(formData, "reminder_days_before", 3);
 
   if (!name) {
-    throw new Error("반복비 이름을 입력해 주세요.");
+    throw new Error("반복 결제 이름을 입력해 주세요.");
   }
 
   if (amount <= 0) {
@@ -280,18 +280,18 @@ export async function createRecurringItemAction(
         category_id: categoryId,
         kind: payload.kind,
       },
-      title: "반복비 설정이 바뀌었어요",
+      title: "반복 결제를 추가했어요",
     });
 
     revalidatePath("/recurring");
     revalidatePath("/dashboard");
     revalidatePath("/", "layout");
-    return { ok: true, message: "반복비를 추가했어요." };
+    return { ok: true, message: "반복 결제를 추가했어요." };
   } catch (error) {
     return {
       ok: false,
       message:
-        error instanceof Error ? error.message : "반복비를 추가하지 못했어요.",
+        error instanceof Error ? error.message : "반복 결제를 추가하지 못했어요.",
     };
   }
 }
@@ -304,7 +304,7 @@ export async function updateRecurringItemAction(
     const itemId = readText(formData, "recurring_item_id");
 
     if (!itemId) {
-      throw new Error("수정할 반복비를 찾을 수 없어요.");
+      throw new Error("고칠 반복 결제를 찾을 수 없어요.");
     }
 
     const { supabase, user } = await assertCurrentMember(householdId);
@@ -364,18 +364,18 @@ export async function updateRecurringItemAction(
         kind: payload.kind,
         recurring_item_id: itemId,
       },
-      title: "반복비 설정이 바뀌었어요",
+      title: "반복 결제를 고쳤어요",
     });
 
     revalidatePath("/recurring");
     revalidatePath("/dashboard");
     revalidatePath("/", "layout");
-    return { ok: true, message: "반복비를 수정했어요." };
+    return { ok: true, message: "반복 결제를 저장했어요." };
   } catch (error) {
     return {
       ok: false,
       message:
-        error instanceof Error ? error.message : "반복비를 수정하지 못했어요.",
+        error instanceof Error ? error.message : "반복 결제를 저장하지 못했어요.",
     };
   }
 }
@@ -389,7 +389,7 @@ export async function updateRecurringStatusAction(
     const status = readStatus(formData);
 
     if (!itemId) {
-      throw new Error("상태를 바꿀 반복비를 찾을 수 없어요.");
+      throw new Error("상태를 바꿀 반복 결제를 찾을 수 없어요.");
     }
 
     const { supabase, user } = await assertCurrentMember(householdId);
@@ -419,7 +419,7 @@ export async function updateRecurringStatusAction(
 
     await createNotificationEvent(supabase, {
       actorUserId: user.id,
-      body: `'${item?.name ?? "반복비"}' 상태가 ${recurringStatusLabels[status]}로 바뀌었어요.`,
+      body: `'${item?.name ?? "반복 결제"}' 상태가 ${recurringStatusLabels[status]}로 바뀌었어요.`,
       eventType: "recurring_status_changed",
       householdId,
       metadata: {
@@ -427,7 +427,7 @@ export async function updateRecurringStatusAction(
         recurring_item_id: itemId,
         status,
       },
-      title: "반복비 설정이 바뀌었어요",
+      title: "반복 결제 상태가 바뀌었어요",
     });
 
     revalidatePath("/recurring");
@@ -437,10 +437,10 @@ export async function updateRecurringStatusAction(
       ok: true,
       message:
         status === "paused"
-          ? "반복비를 잠시 멈췄어요."
+          ? "반복 결제를 잠시 멈췄어요."
           : status === "canceled"
-            ? "반복비를 취소했어요."
-            : "반복비를 다시 켰어요.",
+            ? "반복 결제를 끝냈어요."
+            : "반복 결제를 다시 켰어요.",
     };
   } catch (error) {
     return {

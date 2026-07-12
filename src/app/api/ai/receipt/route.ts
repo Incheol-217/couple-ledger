@@ -170,18 +170,18 @@ function friendlyOpenAIError(
     rawMessage.includes("billing") ||
     rawMessage.includes("insufficient_quota")
   ) {
-    return "OpenAI 사용 한도가 부족해 영수증을 읽지 못했어요. OpenAI 결제와 사용량을 확인한 뒤 다시 시도해 주세요.";
+    return "OpenAI 사용 한도가 부족해 영수증을 읽지 못했어요. 결제와 사용량을 확인한 뒤 다시 시도해 주세요.";
   }
 
   if (responseStatus === 401 || rawMessage.includes("api key")) {
-    return "OpenAI API key를 확인해 주세요. Vercel 환경변수 OPENAI_API_KEY가 올바른지 봐주세요.";
+    return "OpenAI API key를 확인해 주세요. Vercel의 OPENAI_API_KEY 값이 올바른지 봐주세요.";
   }
 
   if (responseStatus === 429) {
-    return "요청이 잠시 많아 영수증을 읽지 못했어요. 잠시 후 다시 시도해 주세요.";
+    return "요청이 많아 영수증을 읽지 못했어요. 잠시 후 다시 시도해 주세요.";
   }
 
-  return "영수증을 읽지 못했어요. 직접 쓰기로 기록해 주세요.";
+  return "영수증을 읽지 못했어요. 직접 쓰기로 저장해 주세요.";
 }
 
 function receiptPrompt(
@@ -190,11 +190,11 @@ function receiptPrompt(
 ) {
   return [
     "사진 속 영수증을 읽고 가계부 입력값을 JSON으로만 반환해 주세요.",
-    "총 결제금액만 amount에 넣고, 할인 전 금액이나 적립 금액은 사용하지 않습니다.",
+    "총 결제금액만 amount에 넣고, 할인 전 금액이나 적립 금액은 쓰지 않아요.",
     "카테고리는 아래 카테고리 이름 중 가장 알맞은 하나를 고릅니다. 확실하지 않으면 null로 둡니다.",
     "계좌나 카드는 아래 계좌 이름 중 명확히 보일 때만 고릅니다. 확실하지 않으면 null로 둡니다.",
-    "카드번호, 승인번호, 사업자번호, 주소, 전화번호, 품목 전체 목록 같은 민감하거나 불필요한 정보는 추출하지 않습니다.",
-    "memo에는 필요한 경우 짧은 참고만 넣고, 원문 OCR 전체를 넣지 않습니다.",
+    "카드번호, 승인번호, 사업자번호, 주소, 전화번호, 품목 전체 목록 같은 민감하거나 불필요한 정보는 추출하지 않아요.",
+    "memo에는 필요한 경우 짧은 참고만 넣고, 원문 OCR 전체를 넣지 않아요.",
     `카테고리 목록: ${categories.map((category) => category.name).join(", ") || "없음"}`,
     `계좌 목록: ${accounts.map((account) => account.name).join(", ") || "없음"}`,
   ].join("\n");
@@ -212,7 +212,7 @@ async function getReceiptContext() {
   } = await supabase.auth.getUser();
 
   if (userError || !user) {
-    throw new ReceiptError("로그인 후 영수증을 읽을 수 있어요.", 401);
+    throw new ReceiptError("로그인하면 영수증을 읽을 수 있어요.", 401);
   }
 
   const { data: membership, error: membershipError } = await supabase

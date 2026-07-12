@@ -38,7 +38,7 @@ function readTransactionType(formData: FormData): TransactionType {
   const value = readText(formData, "type");
 
   if (!transactionTypes.includes(value as TransactionType)) {
-    throw new Error("거래 구분을 다시 선택해 주세요.");
+    throw new Error("거래 구분을 다시 골라주세요.");
   }
 
   return value as TransactionType;
@@ -204,7 +204,7 @@ export async function createQuickTransactionAction(
     }
 
     if (type === "transfer" && confirmedTransferAccountId === confirmedAccountId) {
-      throw new Error("돈이 나가는 계좌와 들어오는 계좌를 다르게 골라주세요.");
+      throw new Error("나가는 계좌와 들어오는 계좌를 다르게 골라주세요.");
     }
 
     const confirmedCategoryId = await assertCategory(
@@ -249,7 +249,7 @@ export async function createQuickTransactionAction(
         transfer_account_id: confirmedTransferAccountId,
         type,
       },
-      title: "새 거래가 올라왔어요",
+      title: "새 거래를 기록했어요",
     });
 
     revalidatePath("/m/new");
