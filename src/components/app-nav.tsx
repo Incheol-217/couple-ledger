@@ -53,7 +53,8 @@ export function AppNav({
     (item) => item.href !== "/settings" || canAccessSettings,
   );
 
-  // 데스크톱 헤더: 공간이 넉넉하므로 모든 탭을 한 줄로 노출해요.
+  // 데스크톱 헤더: 모든 탭을 한 줄로 노출하되, 라벨이 세로로 꺾이지 않게
+  // 중간 폭에서는 아이콘만 보여주고 넓은 화면에서 라벨을 함께 보여줘요.
   if (!compact) {
     return (
       <nav className="flex items-center gap-1 rounded-full border border-secondary/15 bg-secondary p-1 shadow-[0_12px_28px_rgba(18,18,18,0.16)]">
@@ -64,16 +65,18 @@ export function AppNav({
           return (
             <Link
               className={cn(
-                "inline-flex h-9 items-center justify-center gap-2 rounded-full px-3 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/45",
+                "inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-full px-3 text-sm font-medium whitespace-nowrap transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/45",
                 active
                   ? "bg-primary text-primary-foreground shadow-[inset_0_-1px_0_rgba(0,0,0,0.12)]"
                   : "text-secondary-foreground/72 hover:bg-secondary-foreground/10 hover:text-secondary-foreground",
               )}
               href={item.href}
               key={item.href}
+              title={item.label}
             >
               <Icon className="size-4" aria-hidden="true" />
-              <span>{item.label}</span>
+              <span className="hidden xl:inline">{item.label}</span>
+              <span className="sr-only xl:hidden">{item.label}</span>
             </Link>
           );
         })}

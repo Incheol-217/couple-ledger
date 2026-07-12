@@ -36,7 +36,10 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
     <div className="min-h-svh">
       <header className="print-hidden sticky top-0 z-40 bg-background/85 backdrop-blur-xl">
         <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
-          <Link className="flex items-center gap-2 font-semibold" href="/">
+          <Link
+            className="flex shrink-0 items-center gap-2 font-semibold whitespace-nowrap"
+            href="/"
+          >
             <span className="grid size-8 place-items-center rounded-md bg-secondary text-sm text-primary">
               B
             </span>
