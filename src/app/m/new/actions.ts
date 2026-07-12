@@ -11,6 +11,7 @@ import {
   transactionTypes,
   type TransactionType,
 } from "./types";
+import { reviewDraftForTransaction } from "@/lib/transactions/review";
 
 export type QuickTransactionActionResult = {
   ok: boolean;
@@ -213,6 +214,12 @@ export async function createQuickTransactionAction(
       categoryId,
       type,
     );
+    const reviewDraft = reviewDraftForTransaction({
+      amount,
+      categoryId: confirmedCategoryId,
+      source,
+      type,
+    });
 
     const { error } = await supabase.from("transactions").insert({
       household_id: householdId,
@@ -228,6 +235,10 @@ export async function createQuickTransactionAction(
       occurred_at: readOccurredAt(formData, transactionDate, transactionTime),
       merchant: readNullableText(formData, "merchant"),
       memo: readNullableText(formData, "memo"),
+      review_reason: reviewDraft.review_reason,
+      review_requested_by:
+        reviewDraft.review_status === "needs_review" ? user.id : null,
+      review_status: reviewDraft.review_status,
     });
 
     if (error) {
@@ -245,6 +256,7 @@ export async function createQuickTransactionAction(
         account_id: confirmedAccountId,
         amount,
         category_id: confirmedCategoryId,
+        review_status: reviewDraft.review_status,
         source,
         transfer_account_id: confirmedTransferAccountId,
         type,

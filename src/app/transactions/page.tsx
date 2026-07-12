@@ -1,5 +1,13 @@
 import Link from "next/link";
-import { ArrowDownLeft, ArrowLeftRight, ArrowUpRight, Plus } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowDownLeft,
+  ArrowLeftRight,
+  ArrowUpRight,
+  CheckCircle2,
+  Plus,
+} from "lucide-react";
+import { markTransactionReviewedAction } from "./actions";
 import { PageHeader } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -24,6 +32,10 @@ type TransactionRow = {
   id: string;
   merchant: string | null;
   memo: string | null;
+  review_reason: string | null;
+  review_status: "none" | "needs_review" | "reviewed";
+  reviewed_at: string | null;
+  reviewed_by: string | null;
   source: "manual" | "shortcut" | "recurring" | "csv" | "ocr" | "api";
   transaction_date: string;
   type: "expense" | "income" | "transfer";
@@ -101,7 +113,7 @@ export default async function TransactionsPage() {
         supabase
           .from("transactions")
           .select(
-            "id, account_id, category_id, type, source, amount, transaction_date, merchant, memo, user_id, created_at",
+            "id, account_id, category_id, type, source, amount, transaction_date, merchant, memo, user_id, review_status, review_reason, reviewed_by, reviewed_at, created_at",
           )
           .eq("household_id", context.householdId)
           .order("transaction_date", { ascending: false })
@@ -162,6 +174,9 @@ export default async function TransactionsPage() {
       profilesResult.error?.message ??
       null;
   }
+  const reviewNeededTransactions = transactions.filter(
+    (transaction) => transaction.review_status === "needs_review",
+  );
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
@@ -212,6 +227,73 @@ export default async function TransactionsPage() {
         </section>
       ) : (
         <>
+          {reviewNeededTransactions.length > 0 ? (
+            <section className="rounded-lg border border-primary/30 bg-primary/10 p-4 shadow-sm">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-start gap-3">
+                  <span className="grid size-10 shrink-0 place-items-center rounded-md bg-primary text-primary-foreground">
+                    <AlertTriangle className="size-5" aria-hidden="true" />
+                  </span>
+                  <div>
+                    <h2 className="font-semibold">확인 필요한 거래</h2>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      큰 금액, 영수증 인식, 카테고리 미확인 거래를 함께 확인해요.
+                    </p>
+                  </div>
+                </div>
+                <Badge className="w-fit" variant="secondary">
+                  {reviewNeededTransactions.length.toLocaleString("ko-KR")}건
+                </Badge>
+              </div>
+
+              <div className="mt-4 grid gap-2">
+                {reviewNeededTransactions.slice(0, 5).map((transaction) => (
+                  <div
+                    className="grid gap-3 rounded-md border bg-card p-3 sm:grid-cols-[1fr_auto] sm:items-center"
+                    key={`review-${transaction.id}`}
+                  >
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="truncate text-sm font-semibold">
+                          {transaction.merchant ||
+                            categoryNames.get(transaction.category_id ?? "") ||
+                            typeLabels[transaction.type]}
+                        </p>
+                        <Badge variant="outline">확인 필요</Badge>
+                      </div>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {displayDate(transaction.transaction_date)} ·{" "}
+                        {accountNames.get(transaction.account_id) ?? "계좌"} ·{" "}
+                        {displayAmount(transaction)}
+                      </p>
+                      {transaction.review_reason ? (
+                        <p className="mt-2 text-sm text-muted-foreground">
+                          {transaction.review_reason}
+                        </p>
+                      ) : null}
+                    </div>
+                    <form action={markTransactionReviewedAction}>
+                      <input
+                        name="household_id"
+                        type="hidden"
+                        value={context.householdId ?? ""}
+                      />
+                      <input
+                        name="transaction_id"
+                        type="hidden"
+                        value={transaction.id}
+                      />
+                      <Button className="w-full sm:w-auto" size="sm" type="submit">
+                        <CheckCircle2 className="size-4" aria-hidden="true" />
+                        확인 완료
+                      </Button>
+                    </form>
+                  </div>
+                ))}
+              </div>
+            </section>
+          ) : null}
+
           <section className="grid gap-2 md:hidden">
             {transactions.map((transaction) => {
               const Icon = typeIcon(transaction.type);
@@ -250,6 +332,11 @@ export default async function TransactionsPage() {
                       <Badge variant="secondary">
                         {sourceLabels[transaction.source] ?? "기타"}
                       </Badge>
+                      {transaction.review_status === "needs_review" ? (
+                        <Badge variant="outline">확인 필요</Badge>
+                      ) : transaction.review_status === "reviewed" ? (
+                        <Badge variant="outline">확인 완료</Badge>
+                      ) : null}
                       <span className="text-xs text-muted-foreground">
                         {transaction.user_id
                           ? memberNames.get(transaction.user_id) ?? "멤버"
@@ -280,7 +367,18 @@ export default async function TransactionsPage() {
                   <TableRow key={transaction.id}>
                     <TableCell>{displayDate(transaction.transaction_date)}</TableCell>
                     <TableCell className="max-w-56 truncate font-medium">
-                      {transaction.merchant || transaction.memo || typeLabels[transaction.type]}
+                      <span>
+                        {transaction.merchant || transaction.memo || typeLabels[transaction.type]}
+                      </span>
+                      {transaction.review_status === "needs_review" ? (
+                        <Badge className="ml-2" variant="outline">
+                          확인 필요
+                        </Badge>
+                      ) : transaction.review_status === "reviewed" ? (
+                        <Badge className="ml-2" variant="outline">
+                          확인 완료
+                        </Badge>
+                      ) : null}
                     </TableCell>
                     <TableCell>
                       {accountNames.get(transaction.account_id) ?? "-"}

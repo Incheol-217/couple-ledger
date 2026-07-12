@@ -1,11 +1,14 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowDownLeft,
   ArrowUpRight,
+  AlertTriangle,
   CalendarCheck2,
+  CalendarDays,
   Landmark,
   PiggyBank,
   ReceiptText,
@@ -159,6 +162,13 @@ function monthEnd(value: string) {
   );
 }
 
+function monthStart(value: string) {
+  const date = parseDateOnly(value);
+  return formatDateOnly(
+    new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1)),
+  );
+}
+
 function diffDays(from: string, to: string) {
   const msPerDay = 24 * 60 * 60 * 1000;
   return Math.round(
@@ -182,6 +192,33 @@ function dueLabel(today: string, dueDate: string) {
   }
 
   return `${distance}일 후`;
+}
+
+function monthCalendarDays(today: string) {
+  const start = monthStart(today);
+  const end = monthEnd(today);
+  const startDate = parseDateOnly(start);
+  const endDate = parseDateOnly(end);
+  const leadingEmptyDays = startDate.getUTCDay();
+  const dayCount = endDate.getUTCDate();
+  const days: Array<string | null> = Array.from(
+    { length: leadingEmptyDays },
+    () => null,
+  );
+
+  for (let day = 1; day <= dayCount; day += 1) {
+    days.push(
+      formatDateOnly(
+        new Date(Date.UTC(startDate.getUTCFullYear(), startDate.getUTCMonth(), day)),
+      ),
+    );
+  }
+
+  while (days.length % 7 !== 0) {
+    days.push(null);
+  }
+
+  return days;
 }
 
 function transactionSortValue(transaction: DashboardTransactionRow) {
@@ -852,6 +889,144 @@ function AccountSummaryCards({
   );
 }
 
+function UpcomingMoneyCalendar({
+  accountsById,
+  occurrences,
+  today,
+}: {
+  accountsById: Map<string, AccountRow>;
+  occurrences: PlannedRecurringOccurrence[];
+  today: string;
+}) {
+  const start = monthStart(today);
+  const end = monthEnd(today);
+  const monthOccurrences = occurrences.filter(
+    (occurrence) => occurrence.due_date >= start && occurrence.due_date <= end,
+  );
+  const byDate = new Map<string, PlannedRecurringOccurrence[]>();
+
+  monthOccurrences.forEach((occurrence) => {
+    byDate.set(occurrence.due_date, [
+      ...(byDate.get(occurrence.due_date) ?? []),
+      occurrence,
+    ]);
+  });
+
+  const total = monthOccurrences.reduce(
+    (sum, occurrence) => sum + occurrence.amount,
+    0,
+  );
+  const [, month] = today.split("-").map(Number);
+
+  return (
+    <section className="rounded-lg border bg-muted/20 p-3">
+      <div className="mb-3 flex items-start justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <span className="grid size-8 place-items-center rounded-md bg-secondary text-primary">
+            <CalendarDays className="size-4" aria-hidden="true" />
+          </span>
+          <div>
+            <h2 className="text-sm font-semibold">{month}월 결제 달력</h2>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              이번 달 예정 {monthOccurrences.length.toLocaleString("ko-KR")}건
+            </p>
+          </div>
+        </div>
+        <Badge variant="secondary">{formatMoney(total)}</Badge>
+      </div>
+
+      <div className="grid grid-cols-7 gap-1 text-center text-[11px] text-muted-foreground">
+        {["일", "월", "화", "수", "목", "금", "토"].map((day) => (
+          <div className="py-1" key={day}>
+            {day}
+          </div>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-7 gap-1">
+        {monthCalendarDays(today).map((date, index) => {
+          const dayOccurrences = date ? byDate.get(date) ?? [] : [];
+          const dayTotal = dayOccurrences.reduce(
+            (sum, occurrence) => sum + occurrence.amount,
+            0,
+          );
+          const isToday = date === today;
+          const isPastDue = Boolean(date && date < today && dayOccurrences.length > 0);
+
+          return (
+            <div
+              className={cn(
+                "min-h-16 rounded-md border bg-card p-1.5 text-left text-xs",
+                !date && "border-transparent bg-transparent",
+                isToday && "border-primary ring-2 ring-primary/20",
+                isPastDue && "border-destructive/30 bg-destructive/5",
+              )}
+              key={date ?? `empty-${index}`}
+            >
+              {date ? (
+                <>
+                  <div className="flex items-center justify-between gap-1">
+                    <span className="font-medium">
+                      {Number(date.slice(-2))}
+                    </span>
+                    {dayOccurrences.length > 0 ? (
+                      <span
+                        className={cn(
+                          "size-2 rounded-full",
+                          isPastDue ? "bg-destructive" : "bg-primary",
+                        )}
+                      />
+                    ) : null}
+                  </div>
+                  {dayOccurrences.length > 0 ? (
+                    <div className="mt-2 space-y-1">
+                      <p className="truncate font-semibold">
+                        {formatCompactMoney(dayTotal)}원
+                      </p>
+                      <p className="truncate text-[10px] leading-4 text-muted-foreground">
+                        {dayOccurrences[0].name}
+                        {dayOccurrences.length > 1
+                          ? ` 외 ${dayOccurrences.length - 1}건`
+                          : ""}
+                      </p>
+                    </div>
+                  ) : null}
+                </>
+              ) : null}
+            </div>
+          );
+        })}
+      </div>
+
+      {monthOccurrences.length > 0 ? (
+        <div className="mt-3 grid gap-2">
+          {monthOccurrences.slice(0, 3).map((occurrence) => (
+            <div
+              className="flex items-center justify-between gap-3 rounded-md bg-card px-3 py-2 text-sm"
+              key={`calendar-${occurrence.id}`}
+            >
+              <div className="min-w-0">
+                <p className="truncate font-medium">{occurrence.name}</p>
+                <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                  {formatShortDate(occurrence.due_date)} ·{" "}
+                  {accountName(accountsById, occurrence.account_id)}
+                </p>
+              </div>
+              <p className="shrink-0 font-semibold">
+                {formatMoney(occurrence.amount)}
+              </p>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="mt-3 rounded-md border border-dashed bg-card px-4 py-6 text-center text-sm text-muted-foreground">
+          이번 달 결제 예정이 생기면 달력에 보여요.
+        </div>
+      )}
+    </section>
+  );
+}
+
 export function DashboardClient(props: DashboardClientProps) {
   const {
     accounts,
@@ -948,6 +1123,9 @@ export function DashboardClient(props: DashboardClientProps) {
 
   const expenseTransactions = filteredTransactions.filter(
     (transaction) => transaction.type === "expense",
+  );
+  const reviewNeededTransactions = transactions.filter(
+    (transaction) => transaction.review_status === "needs_review",
   );
 
   const plannedForSelection = plannedOccurrences.filter(
@@ -1148,6 +1326,26 @@ export function DashboardClient(props: DashboardClientProps) {
             {errorMessage}
           </CardContent>
         </Card>
+      ) : null}
+
+      {reviewNeededTransactions.length > 0 ? (
+        <Link
+          className="flex items-center justify-between gap-3 rounded-lg border border-primary/30 bg-card px-4 py-3 text-sm shadow-sm transition hover:border-primary/60"
+          href="/transactions"
+        >
+          <span className="flex min-w-0 items-center gap-3">
+            <span className="grid size-9 shrink-0 place-items-center rounded-md bg-primary text-primary-foreground">
+              <AlertTriangle className="size-4" aria-hidden="true" />
+            </span>
+            <span className="min-w-0">
+              <span className="block font-semibold">확인 필요한 거래</span>
+              <span className="mt-0.5 block truncate text-xs text-muted-foreground">
+                함께 봐야 할 거래가 {reviewNeededTransactions.length.toLocaleString("ko-KR")}건 있어요.
+              </span>
+            </span>
+          </span>
+          <Badge variant="secondary">보러 가기</Badge>
+        </Link>
       ) : null}
 
       <div className="flex items-center justify-between gap-3 rounded-full border bg-card px-4 py-3 shadow-sm">
@@ -1458,6 +1656,12 @@ export function DashboardClient(props: DashboardClientProps) {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">
+            <UpcomingMoneyCalendar
+              accountsById={accountsById}
+              occurrences={plannedOccurrences}
+              today={today}
+            />
+
             <div>
               <div className="mb-3 flex items-center justify-between gap-3">
                 <h2 className="text-sm font-medium">다음 7일 예정</h2>

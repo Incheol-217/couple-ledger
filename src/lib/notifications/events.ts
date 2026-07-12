@@ -1,5 +1,6 @@
 export type NotificationEventType =
   | "transaction_created"
+  | "transaction_reviewed"
   | "account_created"
   | "account_updated"
   | "account_deactivated"

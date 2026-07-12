@@ -11,6 +11,7 @@ import {
   formatWonForNotification,
 } from "@/lib/notifications/events";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { reviewDraftForTransaction } from "@/lib/transactions/review";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -411,6 +412,12 @@ export async function POST(request: NextRequest) {
       type,
       userId,
     });
+    const reviewDraft = reviewDraftForTransaction({
+      amount,
+      categoryId,
+      source: "shortcut",
+      type,
+    });
 
     const { data: transaction, error } = await supabase
       .from("transactions")
@@ -432,6 +439,10 @@ export async function POST(request: NextRequest) {
         metadata: {
           imported_from: "ios_shortcuts",
         },
+        review_reason: reviewDraft.review_reason,
+        review_requested_by:
+          reviewDraft.review_status === "needs_review" ? userId : null,
+        review_status: reviewDraft.review_status,
       })
       .select("id, transaction_date, amount, type, source")
       .single();
@@ -466,6 +477,7 @@ export async function POST(request: NextRequest) {
         account_id: accountId,
         amount,
         category_id: categoryId,
+        review_status: reviewDraft.review_status,
         source: "shortcut",
         transaction_id: transaction.id,
         transfer_account_id: transferAccountId,

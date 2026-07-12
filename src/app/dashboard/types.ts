@@ -64,6 +64,8 @@ export type DashboardTransactionRow = {
   occurred_at: string | null;
   merchant: string | null;
   memo: string | null;
+  review_reason: string | null;
+  review_status: "none" | "needs_review" | "reviewed";
   created_at: string;
 };
 

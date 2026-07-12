@@ -127,6 +127,16 @@ describe("Supabase schema and RLS", () => {
     assert.match(permissionHardening, /transfer_account_id is not null/);
     assert.match(permissionHardening, /transfer_account_id <> account_id/);
   });
+
+  it("keeps transaction review fields inside the household boundary", () => {
+    assert.match(migrations, /review_status text not null default 'none'/);
+    assert.match(migrations, /transactions_review_status_check/);
+    assert.match(migrations, /transactions_household_review_idx/);
+    assert.match(migrations, /normalize_transaction_review_fields/);
+    assert.match(migrations, /transactions\.review_requested_by/);
+    assert.match(migrations, /transactions\.reviewed_by/);
+    assert.match(migrations, /public\.assert_user_belongs_to_household\(/);
+  });
 });
 
 describe("AI spending advice privacy", () => {
@@ -197,6 +207,7 @@ describe("iOS Shortcuts webhook security", () => {
 
   it("stores shortcut-origin transactions explicitly", () => {
     assert.match(shortcutRoute, /source:\s*"shortcut"/);
+    assert.match(shortcutRoute, /review_status: reviewDraft\.review_status/);
   });
 
   it("deduplicates webhook retries when an idempotency key is provided", () => {
@@ -228,6 +239,8 @@ describe("Login and role access", () => {
   const notificationEvents = read("src/lib/notifications/events.ts");
   const recurringActions = read("src/app/recurring/actions.ts");
   const shortcutRoute = read("src/app/api/shortcuts/transactions/route.ts");
+  const transactionActions = read("src/app/transactions/actions.ts");
+  const reviewHelper = read("src/lib/transactions/review.ts");
 
   it("protects initial account setup with a setup secret", () => {
     assert.match(setupRoute, /SETUP_SECRET/);
@@ -247,6 +260,18 @@ describe("Login and role access", () => {
     assert.match(quickAction, /user_id:\s*user\.id/);
     assert.match(quickAction, /readTransactionSource\(formData\)/);
     assert.match(quickAction, /\n\s*source,\n/);
+    assert.match(quickAction, /review_status: reviewDraft\.review_status/);
+  });
+
+  it("marks risky transactions for household review and lets members complete review", () => {
+    assert.match(quickAction, /reviewDraftForTransaction/);
+    assert.match(shortcutRoute, /reviewDraftForTransaction/);
+    assert.match(reviewHelper, /REVIEW_AMOUNT_THRESHOLD = 100_000/);
+    assert.match(reviewHelper, /review_status: "needs_review"/);
+    assert.match(transactionActions, /markTransactionReviewedAction/);
+    assert.match(transactionActions, /\.eq\("review_status", "needs_review"\)/);
+    assert.match(transactionActions, /review_status:\s*"reviewed"/);
+    assert.match(transactionActions, /eventType:\s*"transaction_reviewed"/);
   });
 
   it("keeps settings behind admin access", () => {
@@ -296,9 +321,11 @@ describe("Login and role access", () => {
 
   it("records notifications for partner transactions and admin setting changes", () => {
     assert.match(notificationEvents, /transaction_created/);
+    assert.match(notificationEvents, /transaction_reviewed/);
     assert.match(quickAction, /createNotificationEvent/);
     assert.match(quickAction, /eventType:\s*"transaction_created"/);
     assert.match(shortcutRoute, /eventType:\s*"transaction_created"/);
+    assert.match(transactionActions, /eventType:\s*"transaction_reviewed"/);
     assert.match(accountActions, /eventType:\s*"account_created"/);
     assert.match(accountActions, /eventType:\s*"account_updated"/);
     assert.match(accountActions, /eventType:\s*"account_deactivated"/);
@@ -391,6 +418,10 @@ describe("UX guardrails", () => {
     assert.match(dashboard, /makeFriendlyAdviceLine/);
     assert.match(dashboard, /MainAccountBalanceCard/);
     assert.match(dashboard, /생활비통장/);
+    assert.match(dashboard, /UpcomingMoneyCalendar/);
+    assert.match(dashboard, /monthCalendarDays/);
+    assert.match(dashboard, /CalendarDays/);
+    assert.match(dashboard, /확인 필요한 거래/);
     assert.match(dashboardPage, /Number\(account\.opening_balance\) \|\| 0/);
     assert.match(dashboardPage, /buildAccountBalances\(\s*accounts,/);
     assert.match(dashboardPage, /account\.opening_balance_as_of <= today/);
@@ -403,6 +434,9 @@ describe("UX guardrails", () => {
     assert.match(transactionsPage, /md:hidden/);
     assert.match(transactionsPage, /hidden overflow-hidden.*md:block/);
     assert.match(transactionsPage, /memberNames/);
+    assert.match(transactionsPage, /review_status/);
+    assert.match(transactionsPage, /확인 필요한 거래/);
+    assert.match(transactionsPage, /markTransactionReviewedAction/);
   });
 
   it("hardens recurring job execution and package installs", () => {

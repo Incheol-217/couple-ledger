@@ -533,7 +533,7 @@ async function getDashboardData(
     supabase
       .from("transactions")
       .select(
-        "id, household_id, account_id, transfer_account_id, category_id, recurring_item_id, type, source, amount, currency_code, transaction_date, occurred_at, merchant, memo, created_at",
+        "id, household_id, account_id, transfer_account_id, category_id, recurring_item_id, type, source, amount, currency_code, transaction_date, occurred_at, merchant, memo, review_status, review_reason, created_at",
       )
       .eq("household_id", household.id)
       .gte("transaction_date", dateRange.start)
