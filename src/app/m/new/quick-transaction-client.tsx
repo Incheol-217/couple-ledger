@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import {
   ArrowRightLeft,
@@ -184,6 +185,7 @@ export function QuickTransactionClient({
   const [result, setResult] = useState<QuickTransactionActionResult | null>(null);
   const [isPending, startTransition] = useTransition();
   const [isReceiptPending, startReceiptTransition] = useTransition();
+  const router = useRouter();
 
   const visibleCategories = useMemo(
     () => categories.filter((category) => category.type === type),
@@ -420,6 +422,8 @@ export function QuickTransactionClient({
 
       if (actionResult.ok) {
         resetForm();
+        // 저장이 끝나면 거래를 쓰기 직전 화면으로 돌아가요.
+        router.back();
       }
     });
   }
