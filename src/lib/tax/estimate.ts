@@ -9,6 +9,25 @@ export type CardUsage = {
   checkCash: number;
 };
 
+// 결제수단별 상세 사용액 (체크카드와 현금영수증을 따로 보여줄 때)
+export type MethodUsage = {
+  credit: number; // 신용카드 (15%)
+  check: number; // 체크카드 (30%)
+  cash: number; // 현금영수증 (30%)
+};
+
+export type MethodBreakdownRow = {
+  method: keyof MethodUsage;
+  used: number;
+  rate: number;
+  // 문턱 차감 후 이 결제수단이 만드는 공제액 (한도 적용 전)
+  deduction: number;
+};
+
+export type DetailedCardDeductionResult = CardDeductionResult & {
+  rows: MethodBreakdownRow[];
+};
+
 export type CardDeductionResult = {
   // 총급여의 25% 문턱
   threshold: number;
@@ -103,6 +122,41 @@ export function cardDeduction(salary: number, usage: CardUsage): CardDeductionRe
     deduction,
     remainingToThreshold: 0,
   };
+}
+
+// 결제수단별 상세 분해까지 계산하는 버전.
+// 문턱(총급여 25%)은 공제율이 낮은 신용카드 → 체크카드 → 현금 순으로 차감해요.
+export function cardDeductionDetailed(
+  salary: number,
+  usage: MethodUsage,
+): DetailedCardDeductionResult {
+  const base = cardDeduction(salary, {
+    credit: usage.credit,
+    checkCash: usage.check + usage.cash,
+  });
+
+  const order: Array<{ method: keyof MethodUsage; rate: number }> = [
+    { method: "credit", rate: CREDIT_RATE },
+    { method: "check", rate: CHECK_CASH_RATE },
+    { method: "cash", rate: CHECK_CASH_RATE },
+  ];
+
+  let remainingThreshold = base.threshold;
+  const rows: MethodBreakdownRow[] = order.map(({ method, rate }) => {
+    const used = usage[method];
+    const consumed = Math.min(used, remainingThreshold);
+    remainingThreshold -= consumed;
+    const over = used - consumed;
+
+    return {
+      method,
+      used,
+      rate,
+      deduction: salary > 0 ? over * rate : 0,
+    };
+  });
+
+  return { ...base, rows };
 }
 
 // 공제액이 실제로 줄여주는 세금(지방소득세 포함) 추정.

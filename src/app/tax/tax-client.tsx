@@ -21,10 +21,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatAmountInput } from "@/lib/formatters/money";
 import {
-  cardDeduction,
+  cardDeductionDetailed,
   estimatedTaxBase,
   estimatedTaxSavings,
   marginalRate,
+  type MethodUsage,
 } from "@/lib/tax/estimate";
 import { cn } from "@/lib/utils";
 
@@ -52,6 +53,27 @@ function salaryFor(profiles: TaxProfileRow[], label: "husband" | "wife") {
   return profile ? toNumber(profile.annual_salary) : 0;
 }
 
+// 총급여를 직접 입력했으면 그 값을, 아니면 올해 기록된 수입 합계를 사용해요.
+function effectiveSalary(manual: number, income: number) {
+  return manual > 0
+    ? { salary: manual, auto: false }
+    : { salary: Math.round(income), auto: true };
+}
+
+function usageOf(member: MemberSpending): MethodUsage {
+  return {
+    credit: member.own.credit + member.sharedShare.credit,
+    check: member.own.check + member.sharedShare.check,
+    cash: member.own.cash + member.sharedShare.cash,
+  };
+}
+
+const methodLabels: Record<keyof MethodUsage, string> = {
+  credit: "신용카드",
+  check: "체크카드",
+  cash: "현금영수증",
+};
+
 function resultClassName(result: TaxActionResult | null) {
   if (!result) {
     return "hidden";
@@ -65,16 +87,17 @@ function resultClassName(result: TaxActionResult | null) {
 function MemberEstimateCard({
   member,
   salary,
+  salaryAuto,
 }: {
   member: MemberSpending;
   salary: number;
+  salaryAuto: boolean;
 }) {
-  const credit = member.own.credit + member.sharedShare.credit;
-  const checkCash = member.own.checkCash + member.sharedShare.checkCash;
+  const usage = usageOf(member);
   const excluded = member.own.excluded + member.sharedShare.excluded;
-  const totalEligible = credit + checkCash;
+  const totalEligible = usage.credit + usage.check + usage.cash;
 
-  const result = cardDeduction(salary, { credit, checkCash });
+  const result = cardDeductionDetailed(salary, usage);
   const savings = estimatedTaxSavings(salary, result.deduction);
   const thresholdPercent =
     result.threshold > 0
@@ -94,6 +117,7 @@ function MemberEstimateCard({
             <CardDescription className="mt-2">
               {memberLabels[member.label]} · 총급여{" "}
               {salary > 0 ? formatMoney(salary) : "미입력"}
+              {salary > 0 && salaryAuto ? " (올해 수입 기록 기준)" : ""}
             </CardDescription>
           </div>
         </div>
@@ -101,7 +125,8 @@ function MemberEstimateCard({
       <CardContent className="space-y-5">
         {salary <= 0 ? (
           <p className="rounded-md border bg-muted/30 px-3 py-3 text-sm text-muted-foreground">
-            아래에서 총급여를 입력하면 공제 예상액을 계산해 드려요.
+            올해 기록된 수입이 없어요. 수입을 기록하거나 아래에서 총급여를
+            직접 입력하면 자동으로 계산해 드려요.
           </p>
         ) : (
           <>
@@ -175,20 +200,45 @@ function MemberEstimateCard({
           </>
         )}
 
-        <dl className="grid gap-2 text-sm">
-          <div className="flex justify-between gap-4">
-            <dt className="text-muted-foreground">신용카드 사용액 (15%)</dt>
-            <dd>{formatMoney(credit)}</dd>
-          </div>
-          <div className="flex justify-between gap-4">
-            <dt className="text-muted-foreground">현금영수증 사용액 (30%)</dt>
-            <dd>{formatMoney(checkCash)}</dd>
-          </div>
-          <div className="flex justify-between gap-4">
-            <dt className="text-muted-foreground">계좌이체 등 공제 제외</dt>
-            <dd>{formatMoney(excluded)}</dd>
-          </div>
-        </dl>
+        <div className="overflow-hidden rounded-lg border">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b bg-muted/40 text-left text-xs text-muted-foreground">
+                <th className="px-3 py-2 font-medium">결제수단</th>
+                <th className="px-3 py-2 text-right font-medium">사용액</th>
+                <th className="px-3 py-2 text-right font-medium">공제율</th>
+                <th className="px-3 py-2 text-right font-medium">공제 기여</th>
+              </tr>
+            </thead>
+            <tbody>
+              {result.rows.map((row) => (
+                <tr className="border-b last:border-b-0" key={row.method}>
+                  <td className="px-3 py-2">{methodLabels[row.method]}</td>
+                  <td className="px-3 py-2 text-right">
+                    {formatMoney(row.used)}
+                  </td>
+                  <td className="px-3 py-2 text-right text-muted-foreground">
+                    {Math.round(row.rate * 100)}%
+                  </td>
+                  <td
+                    className={cn(
+                      "px-3 py-2 text-right",
+                      row.deduction > 0 ? "font-medium text-primary" : "",
+                    )}
+                  >
+                    {formatMoney(row.deduction)}
+                  </td>
+                </tr>
+              ))}
+              <tr className="bg-muted/30 text-muted-foreground">
+                <td className="px-3 py-2">계좌이체 등 공제 제외</td>
+                <td className="px-3 py-2 text-right">{formatMoney(excluded)}</td>
+                <td className="px-3 py-2 text-right">-</td>
+                <td className="px-3 py-2 text-right">-</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </CardContent>
     </Card>
   );
@@ -207,19 +257,28 @@ export function TaxClient({
   const [isPending, startTransition] = useTransition();
 
   const totals = useMemo(() => {
-    const husbandSalary = salaryFor(profiles, "husband");
-    const wifeSalary = salaryFor(profiles, "wife");
+    const manualHusband = salaryFor(profiles, "husband");
+    const manualWife = salaryFor(profiles, "wife");
 
-    const savingsTotal = members.reduce((sum, member) => {
-      const salary = member.label === "husband" ? husbandSalary : wifeSalary;
-      const deduction = cardDeduction(salary, {
-        credit: member.own.credit + member.sharedShare.credit,
-        checkCash: member.own.checkCash + member.sharedShare.checkCash,
-      });
-      return sum + estimatedTaxSavings(salary, deduction.deduction);
-    }, 0);
+    const perMember = members.map((member) => {
+      const manual = member.label === "husband" ? manualHusband : manualWife;
+      const { salary, auto } = effectiveSalary(manual, member.income);
+      const deduction = cardDeductionDetailed(salary, usageOf(member));
 
-    return { husbandSalary, wifeSalary, savingsTotal };
+      return {
+        label: member.label,
+        salary,
+        auto,
+        savings: estimatedTaxSavings(salary, deduction.deduction),
+      };
+    });
+
+    return {
+      manualHusband,
+      manualWife,
+      perMember,
+      savingsTotal: perMember.reduce((sum, row) => sum + row.savings, 0),
+    };
   }, [members, profiles]);
 
   function submit(formData: FormData) {
@@ -304,7 +363,8 @@ export function TaxClient({
         <CardHeader>
           <CardTitle>총급여 입력</CardTitle>
           <CardDescription>
-            세전 연봉(총급여)을 입력하면 공제 문턱과 한도를 계산해요.
+            비워두면 올해 기록된 수입 합계로 자동 계산하고, 입력하면 그 값을
+            우선으로 써요.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -315,8 +375,8 @@ export function TaxClient({
               <Input
                 autoComplete="off"
                 defaultValue={
-                  totals.husbandSalary > 0
-                    ? formatAmountInput(String(totals.husbandSalary))
+                  totals.manualHusband > 0
+                    ? formatAmountInput(String(totals.manualHusband))
                     : ""
                 }
                 id="salary-husband"
@@ -332,8 +392,8 @@ export function TaxClient({
               <Input
                 autoComplete="off"
                 defaultValue={
-                  totals.wifeSalary > 0
-                    ? formatAmountInput(String(totals.wifeSalary))
+                  totals.manualWife > 0
+                    ? formatAmountInput(String(totals.manualWife))
                     : ""
                 }
                 id="salary-wife"
@@ -355,17 +415,20 @@ export function TaxClient({
       </Card>
 
       <section className="grid gap-4 lg:grid-cols-2">
-        {members.map((member) => (
-          <MemberEstimateCard
-            key={member.label}
-            member={member}
-            salary={
-              member.label === "husband"
-                ? totals.husbandSalary
-                : totals.wifeSalary
-            }
-          />
-        ))}
+        {members.map((member) => {
+          const row = totals.perMember.find(
+            (candidate) => candidate.label === member.label,
+          );
+
+          return (
+            <MemberEstimateCard
+              key={member.label}
+              member={member}
+              salary={row?.salary ?? 0}
+              salaryAuto={row?.auto ?? false}
+            />
+          );
+        })}
       </section>
 
       <div className="flex gap-3 rounded-lg border bg-muted/30 p-4 text-sm text-muted-foreground">
@@ -376,9 +439,10 @@ export function TaxClient({
             등 다른 공제와 전통시장·대중교통 추가한도는 반영하지 않아요.
           </p>
           <p>
-            카드 계좌는 신용카드(15%), 현금 계좌는 현금영수증(30%)으로
-            가정하고, 계좌이체 지출은 공제 대상에서 빼요. 공용 계좌 지출은
-            절반씩 나눠 계산해요.
+            신용카드 계좌는 15%, 체크카드·현금 계좌는 30% 공제율로 계산하고,
+            계좌이체 지출은 공제 대상에서 빼요. 공용 계좌의 지출과 수입은
+            절반씩 나눠 계산해요. 총급여를 비워두면 올해 기록된 수입 합계를
+            대신 사용해요(연중에는 실제 연봉보다 적게 잡힐 수 있어요).
           </p>
         </div>
       </div>

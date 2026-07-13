@@ -17,9 +17,10 @@ type AccountLite = {
   owner_type: "shared" | "husband" | "wife";
 };
 
-type ExpenseLite = {
+type TransactionLite = {
   account_id: string;
   amount: number | string;
+  type: "income" | "expense";
 };
 
 type MemberRow = {
@@ -42,7 +43,7 @@ const emptyData: TaxPageData = {
 };
 
 function emptySpending(): SpendingByMethod {
-  return { credit: 0, checkCash: 0, excluded: 0 };
+  return { credit: 0, check: 0, cash: 0, excluded: 0 };
 }
 
 function toNumber(value: number | string) {
@@ -50,15 +51,19 @@ function toNumber(value: number | string) {
   return Number.isFinite(amount) ? amount : 0;
 }
 
-// 결제수단 매핑: card→신용카드 15%, check_card·cash→체크카드/현금영수증 30%,
+// 결제수단 매핑: card→신용카드 15%, check_card→체크카드 30%, cash→현금영수증 30%,
 // 나머지→공제 제외(계좌이체 등)
 function bucketFor(accountType: AccountLite["type"]): keyof SpendingByMethod {
   if (accountType === "card") {
     return "credit";
   }
 
-  if (accountType === "check_card" || accountType === "cash") {
-    return "checkCash";
+  if (accountType === "check_card") {
+    return "check";
+  }
+
+  if (accountType === "cash") {
+    return "cash";
   }
 
   return "excluded";
@@ -96,9 +101,9 @@ async function getTaxPageData(): Promise<TaxPageData> {
         .eq("household_id", household.id),
       supabase
         .from("transactions")
-        .select("account_id, amount")
+        .select("account_id, amount, type")
         .eq("household_id", household.id)
-        .eq("type", "expense")
+        .in("type", ["expense", "income"])
         .gte("transaction_date", yearStart)
         .lte("transaction_date", yearEnd),
       supabase
@@ -112,28 +117,37 @@ async function getTaxPageData(): Promise<TaxPageData> {
     ]);
 
   const accounts = (accountsResult.data ?? []) as AccountLite[];
-  const expenses = (expensesResult.data ?? []) as ExpenseLite[];
+  const rows = (expensesResult.data ?? []) as TransactionLite[];
   const memberRows = (membersResult.data ?? []) as MemberRow[];
 
   const accountById = new Map(accounts.map((account) => [account.id, account]));
 
-  // 명의별(남편/아내/공용) × 결제수단별 합계
+  // 명의별(남편/아내/공용) × 결제수단별 지출 합계 + 명의별 수입 합계
   const totals: Record<"husband" | "wife" | "shared", SpendingByMethod> = {
     husband: emptySpending(),
     wife: emptySpending(),
     shared: emptySpending(),
   };
+  const incomeTotals: Record<"husband" | "wife" | "shared", number> = {
+    husband: 0,
+    wife: 0,
+    shared: 0,
+  };
 
-  for (const expense of expenses) {
-    const account = accountById.get(expense.account_id);
+  for (const row of rows) {
+    const account = accountById.get(row.account_id);
 
     if (!account) {
       continue;
     }
 
-    totals[account.owner_type][bucketFor(account.type)] += toNumber(
-      expense.amount,
-    );
+    if (row.type === "income") {
+      incomeTotals[account.owner_type] += toNumber(row.amount);
+    } else {
+      totals[account.owner_type][bucketFor(account.type)] += toNumber(
+        row.amount,
+      );
+    }
   }
 
   // 멤버 표시 이름
@@ -161,9 +175,10 @@ async function getTaxPageData(): Promise<TaxPageData> {
       const row = labeledMembers.find((member) => member.member_label === label);
       const sharedShare = emptySpending();
 
-      // 공용 계좌 지출은 절반씩 나눠서 잡아요.
+      // 공용 계좌 지출·수입은 절반씩 나눠서 잡아요.
       sharedShare.credit = totals.shared.credit / 2;
-      sharedShare.checkCash = totals.shared.checkCash / 2;
+      sharedShare.check = totals.shared.check / 2;
+      sharedShare.cash = totals.shared.cash / 2;
       sharedShare.excluded = totals.shared.excluded / 2;
 
       return {
@@ -172,6 +187,7 @@ async function getTaxPageData(): Promise<TaxPageData> {
           (row ? nameById.get(row.user_id) : null) ?? memberLabels[label],
         own: totals[label],
         sharedShare,
+        income: incomeTotals[label] + incomeTotals.shared / 2,
       };
     },
   );
