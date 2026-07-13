@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import {
   Archive,
   ArrowDown,
@@ -409,7 +409,7 @@ function WalletDeck({
   }
 
   return (
-    <section className="overflow-hidden rounded-[1.75rem] bg-[#111214] p-3 text-white shadow-[0_24px_70px_rgba(18,18,18,0.22)] sm:rounded-[2rem] sm:p-6">
+    <section className="isolate overflow-hidden rounded-[1.75rem] bg-[#111214] p-3 text-white shadow-[0_24px_70px_rgba(18,18,18,0.22)] sm:rounded-[2rem] sm:p-6">
       <div className="mb-4 flex flex-col gap-3 sm:mb-5 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-sm text-white/58">Wallet</p>
@@ -547,6 +547,12 @@ function AccountForm({
   const [color, setColor] = useState(selectedAccount?.color ?? suggestedColors[0]);
   const [result, setResult] = useState<AccountActionResult | null>(null);
   const [isPending, startTransition] = useTransition();
+  const formRef = useRef<HTMLDivElement>(null);
+
+  // 수정/추가 버튼이 페이지 아래쪽에 있어서, 폼이 열리면 폼 위치로 스크롤해요.
+  useEffect(() => {
+    formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, []);
   const withdrawalAccounts = useMemo(
     () =>
       accounts.filter(
@@ -577,7 +583,8 @@ function AccountForm({
   }
 
   return (
-    <Card>
+    <div className="scroll-mt-20" ref={formRef}>
+      <Card>
       <CardHeader>
         <CardTitle>{mode === "create" ? "계좌 추가하기" : "계좌 고치기"}</CardTitle>
         <CardDescription>
@@ -754,7 +761,8 @@ function AccountForm({
           </div>
         </form>
       </CardContent>
-    </Card>
+      </Card>
+    </div>
   );
 }
 
@@ -928,6 +936,7 @@ export function AccountsClient({
         <AccountForm
           accounts={accounts}
           householdId={household.id}
+          key={`${mode}-${selectedAccount?.id ?? "new"}`}
           mode={mode}
           onDone={closeForm}
           selectedAccount={selectedAccount}
