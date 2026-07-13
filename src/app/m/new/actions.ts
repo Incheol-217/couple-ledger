@@ -6,6 +6,7 @@ import {
   createNotificationEvent,
   formatWonForNotification,
 } from "@/lib/notifications/events";
+import { logTransactionToNotion } from "@/lib/notion/transaction-log";
 import { createClient } from "@/lib/supabase/server";
 import {
   transactionTypeLabels,
@@ -271,6 +272,21 @@ export async function createQuickTransactionAction(
         accountId: confirmedAccountId,
         categoryId: confirmedCategoryId,
         transactionDate,
+      });
+    }
+
+    if (type === "income" || type === "expense") {
+      await logTransactionToNotion(supabase, {
+        householdId,
+        userId: user.id,
+        type,
+        amount,
+        transactionDate,
+        accountId: confirmedAccountId,
+        categoryId: confirmedCategoryId,
+        merchant: readNullableText(formData, "merchant"),
+        memo: readNullableText(formData, "memo"),
+        source,
       });
     }
 

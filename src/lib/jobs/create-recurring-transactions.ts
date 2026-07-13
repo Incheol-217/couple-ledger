@@ -1,4 +1,5 @@
 import { maybeCreateBudgetAlerts } from "@/lib/budgets/alerts";
+import { logTransactionToNotion } from "@/lib/notion/transaction-log";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 const SUPPORTED_BILLING_CYCLES = ["monthly", "yearly", "weekly"] as const;
@@ -304,6 +305,19 @@ export async function createRecurringTransactions(
               accountId: item.account_id,
               categoryId: item.category_id,
               transactionDate: dueDate,
+            });
+
+            await logTransactionToNotion(supabase, {
+              householdId: item.household_id,
+              userId: item.payer_user_id,
+              type: "expense",
+              amount: Number(item.amount) || 0,
+              transactionDate: dueDate,
+              accountId: item.account_id,
+              categoryId: item.category_id,
+              merchant: item.merchant,
+              memo: item.memo,
+              source: "recurring",
             });
           }
         }

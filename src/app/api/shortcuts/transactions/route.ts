@@ -7,6 +7,7 @@ import {
   type TransactionType,
 } from "@/app/m/new/types";
 import { maybeCreateBudgetAlerts } from "@/lib/budgets/alerts";
+import { logTransactionToNotion } from "@/lib/notion/transaction-log";
 import {
   createNotificationEvent,
   formatWonForNotification,
@@ -493,6 +494,21 @@ export async function POST(request: NextRequest) {
         accountId,
         categoryId,
         transactionDate,
+      });
+    }
+
+    if (type === "income" || type === "expense") {
+      await logTransactionToNotion(supabase, {
+        householdId,
+        userId,
+        type,
+        amount,
+        transactionDate,
+        accountId,
+        categoryId,
+        merchant: readOptionalText(payload, "merchant"),
+        memo: readOptionalText(payload, "memo"),
+        source: "shortcut",
       });
     }
 

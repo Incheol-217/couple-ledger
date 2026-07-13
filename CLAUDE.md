@@ -21,6 +21,7 @@
 - 계좌, 구독비/고정비, 대시보드, 보고서, 알림
 - 카테고리·계좌별 예산과 공동 저축 목표
 - 예산 80%/100% 초과 알림
+- 수입/지출을 Notion 데이터베이스에 자동 기록
 - 연말정산 카드 소득공제 예상 환급 계산기
 - 확인 필요한 거래와 곧 나갈 돈 캘린더
 - OpenAI 소비 조언과 iOS Shortcuts webhook
@@ -67,6 +68,8 @@ OPENAI_MODEL=gpt-4o-mini
 SHORTCUTS_WEBHOOK_SECRET=
 JOB_SECRET=
 SETUP_SECRET=
+NOTION_API_KEY=
+NOTION_TRANSACTIONS_DB_ID=
 HOUSEHOLD_NAME=우리집 공동 가계부
 HUSBAND_EMAIL=
 HUSBAND_PASSWORD=
@@ -84,6 +87,8 @@ Supabase 연결 기능을 사용하려면 URL, anon key, service role key를 모
 `JOB_SECRET`은 서버 작업 API를 직접 호출할 때 쓰는 비밀값입니다. 운영 환경에서는 반드시 설정해 주세요.
 
 `OPENAI_MODEL`은 AI 소비 조언 생성에 사용할 모델입니다. 필요하면 운영 환경에서 다른 모델로 바꿀 수 있습니다.
+
+`NOTION_API_KEY`와 `NOTION_TRANSACTIONS_DB_ID`를 넣으면 수입/지출이 저장될 때마다 Notion 데이터베이스에도 자동으로 기록됩니다. Notion 내부 integration을 만들어 대상 데이터베이스에 연결(공유)한 뒤 시크릿을 넣어주세요. 두 값이 없으면 이 기능은 조용히 꺼집니다.
 
 ## 로그인 계정 만들기
 
