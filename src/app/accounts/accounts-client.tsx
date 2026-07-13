@@ -79,8 +79,8 @@ function isCardType(type: AccountType) {
 // 지갑 카드 스택 치수(px). selected=선택 카드 높이, card=나머지 카드 높이,
 // peek=아래로 겹쳐 쌓일 때 각 카드가 드러나는 높이.
 const WALLET_DECK = {
-  mobile: { selected: 336, card: 240, peek: 46 },
-  desktop: { selected: 432, card: 320, peek: 56 },
+  mobile: { selected: 320, card: 240, peek: 46 },
+  desktop: { selected: 384, card: 320, peek: 56 },
 } as const;
 
 function walletDeckHeight(
@@ -185,23 +185,27 @@ function AccountIcon({
 
 function WalletAccountCard({
   account,
-  accounts,
+  canMoveDown,
+  canMoveUp,
   householdId,
   isAdmin,
   isPending,
   onDeactivate,
   onEdit,
+  onReorder,
   onSelect,
   selected,
   stackIndex,
 }: {
   account: AccountRow;
-  accounts: AccountRow[];
+  canMoveDown: boolean;
+  canMoveUp: boolean;
   householdId: string;
   isAdmin: boolean;
   isPending: boolean;
   onDeactivate: (formData: FormData) => void;
   onEdit: (account: AccountRow) => void;
+  onReorder: (formData: FormData) => void;
   onSelect: (accountId: string) => void;
   selected: boolean;
   stackIndex: number;
@@ -224,7 +228,7 @@ function WalletAccountCard({
       aria-pressed={selected}
       className={cn(
         "absolute inset-x-0 top-0 cursor-pointer overflow-hidden rounded-[1.65rem] border p-4 shadow-[0_22px_50px_rgba(18,18,18,0.28)] outline-none transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] [transform:translate3d(var(--card-x),var(--mobile-card-y),0)_scale(var(--card-scale))_rotate(var(--card-rotate))] focus-visible:ring-4 focus-visible:ring-primary/40 sm:rounded-[2rem] sm:p-5 sm:[transform:translate3d(var(--card-x),var(--desktop-card-y),0)_scale(var(--card-scale))_rotate(var(--card-rotate))]",
-        selected ? "h-[21rem] sm:h-[27rem]" : "h-60 sm:h-80",
+        selected ? "h-[20rem] sm:h-[24rem]" : "h-60 sm:h-80",
         selected
           ? "border-white/20 text-white"
           : "border-black/10 text-[#111214] hover:brightness-105",
@@ -244,7 +248,13 @@ function WalletAccountCard({
       } as React.CSSProperties}
       tabIndex={0}
     >
-      <div className="relative z-10 flex h-full flex-col">
+      <div
+        className={cn(
+          "relative z-10 flex h-full flex-col",
+          // 선택 카드는 내용을 위·아래로 고르게 펼쳐 여백을 대칭으로 맞춰요.
+          selected ? "justify-between" : "",
+        )}
+      >
         <div className="flex items-start justify-between gap-3 sm:gap-4">
           <div className="flex min-w-0 items-start gap-3">
             <AccountIcon
@@ -276,7 +286,7 @@ function WalletAccountCard({
           </Badge>
         </div>
 
-        <div className={selected ? "mt-6 sm:mt-8" : "mt-auto"}>
+        <div className={selected ? "mt-4" : "mt-auto"}>
           <p
             className={cn(
               "text-xs",
@@ -320,72 +330,70 @@ function WalletAccountCard({
           ) : null}
         </div>
 
-        <div
-          className={cn(
-            "mt-5 gap-2 transition-all duration-500 sm:grid sm:grid-cols-4",
-            selected
-              ? "hidden opacity-100 sm:grid"
-              : "pointer-events-none hidden max-h-0 opacity-0",
-          )}
-        >
-          <div className="rounded-[1.15rem] bg-white/14 p-3 backdrop-blur">
-            <p className={cn("text-xs", selected ? "text-white/56" : "")}>기관</p>
-            <p className="mt-1 truncate text-sm font-semibold">
-              {account.institution_name ?? "-"}
-            </p>
-          </div>
-          <div className="rounded-[1.15rem] bg-white/14 p-3 backdrop-blur">
-            <p className={cn("text-xs", selected ? "text-white/56" : "")}>
-              빠져나갈 계좌
-            </p>
-            <p className="mt-1 truncate text-sm font-semibold">
-              {account.type === "card" || account.type === "check_card"
-                ? getWithdrawalName(accounts, account.default_withdrawal_account_id)
-                : "-"}
-            </p>
-          </div>
-          <div className="rounded-[1.15rem] bg-white/14 p-3 backdrop-blur">
-            <p className={cn("text-xs", selected ? "text-white/56" : "")}>표시 순서</p>
-            <p className="mt-1 truncate text-sm font-semibold">
-              {account.display_order}
-            </p>
-          </div>
-          <div className="rounded-[1.15rem] bg-white/14 p-3 backdrop-blur">
-            <p className={cn("text-xs", selected ? "text-white/56" : "")}>기준일</p>
-            <p className="mt-1 truncate text-sm font-semibold">
-              {account.opening_balance_as_of}
-            </p>
-          </div>
-        </div>
-
         {selected && isAdmin ? (
           <div
-            className="relative z-20 mt-4 flex shrink-0 gap-2 sm:mt-5"
+            className="relative z-20 flex shrink-0 flex-col gap-2 pt-4"
             onClick={(event) => event.stopPropagation()}
           >
-            <Button
-              className="flex-1 bg-white text-secondary hover:bg-white/90"
-              onClick={() => onEdit(account)}
-              type="button"
-              variant="outline"
-            >
-              <Pencil className="size-4" aria-hidden="true" />
-              수정
-            </Button>
-            <form action={onDeactivate}>
-              <input name="household_id" type="hidden" value={householdId} />
-              <input name="account_id" type="hidden" value={account.id} />
+            {canMoveUp || canMoveDown ? (
+              <div className="flex gap-2">
+                <form action={onReorder} className="flex-1">
+                  <input name="household_id" type="hidden" value={householdId} />
+                  <input name="account_id" type="hidden" value={account.id} />
+                  <input name="direction" type="hidden" value="up" />
+                  <Button
+                    className="w-full bg-white/12 text-white hover:bg-white/20"
+                    disabled={isPending || !canMoveUp}
+                    size="sm"
+                    type="submit"
+                    variant="outline"
+                  >
+                    <ArrowUp className="size-4" aria-hidden="true" />
+                    위로
+                  </Button>
+                </form>
+                <form action={onReorder} className="flex-1">
+                  <input name="household_id" type="hidden" value={householdId} />
+                  <input name="account_id" type="hidden" value={account.id} />
+                  <input name="direction" type="hidden" value="down" />
+                  <Button
+                    className="w-full bg-white/12 text-white hover:bg-white/20"
+                    disabled={isPending || !canMoveDown}
+                    size="sm"
+                    type="submit"
+                    variant="outline"
+                  >
+                    <ArrowDown className="size-4" aria-hidden="true" />
+                    아래로
+                  </Button>
+                </form>
+              </div>
+            ) : null}
+            <div className="flex gap-2">
               <Button
-                className="bg-white/12 px-3 text-white hover:bg-white/20 sm:px-4"
-                disabled={isPending}
-                type="submit"
+                className="flex-1 bg-white text-secondary hover:bg-white/90"
+                onClick={() => onEdit(account)}
+                type="button"
                 variant="outline"
               >
-                <Archive className="size-4" aria-hidden="true" />
-                <span className="hidden sm:inline">숨기기</span>
-                <span className="sr-only sm:hidden">숨기기</span>
+                <Pencil className="size-4" aria-hidden="true" />
+                수정
               </Button>
-            </form>
+              <form action={onDeactivate}>
+                <input name="household_id" type="hidden" value={householdId} />
+                <input name="account_id" type="hidden" value={account.id} />
+                <Button
+                  className="bg-white/12 px-3 text-white hover:bg-white/20 sm:px-4"
+                  disabled={isPending}
+                  type="submit"
+                  variant="outline"
+                >
+                  <Archive className="size-4" aria-hidden="true" />
+                  <span className="hidden sm:inline">숨기기</span>
+                  <span className="sr-only sm:hidden">숨기기</span>
+                </Button>
+              </form>
+            </div>
           </div>
         ) : null}
       </div>
@@ -402,6 +410,7 @@ function WalletDeck({
   onCreate,
   onDeactivate,
   onEdit,
+  onReorder,
   onSelect,
   selectedAccountId,
 }: {
@@ -413,6 +422,7 @@ function WalletDeck({
   onCreate: () => void;
   onDeactivate: (formData: FormData) => void;
   onEdit: (account: AccountRow) => void;
+  onReorder: (formData: FormData) => void;
   onSelect: (accountId: string) => void;
   selectedAccountId: string | null;
 }) {
@@ -491,21 +501,31 @@ function WalletDeck({
             } as React.CSSProperties
           }
         >
-          {stackedAccounts.map((account, index) => (
+          {stackedAccounts.map((account, index) => {
+            const walletIndex = accounts.findIndex(
+              (candidate) => candidate.id === account.id,
+            );
+
+            return (
             <WalletAccountCard
               account={account}
-              accounts={allAccounts}
+              canMoveDown={
+                walletIndex >= 0 && walletIndex < accounts.length - 1
+              }
+              canMoveUp={walletIndex > 0}
               householdId={householdId}
               isAdmin={isAdmin}
               isPending={isPending}
               key={account.id}
               onDeactivate={onDeactivate}
               onEdit={onEdit}
+              onReorder={onReorder}
               onSelect={onSelect}
               selected={account.id === selectedAccount?.id}
               stackIndex={index - 1}
             />
-          ))}
+            );
+          })}
         </div>
 
         <aside className="rounded-[1.5rem] border border-white/10 bg-white/8 p-4 backdrop-blur">
@@ -1290,6 +1310,7 @@ export function AccountsClient({
           runSimpleAction(deactivateAccountAction, formData)
         }
         onEdit={openEdit}
+        onReorder={(formData) => runSimpleAction(moveAccountAction, formData)}
         onSelect={setSelectedWalletId}
         selectedAccountId={resolvedSelectedWalletId}
       />

@@ -404,10 +404,10 @@ describe("UX guardrails", () => {
   });
 
   it("keeps wallet account actions visible on desktop", () => {
-    assert.match(accountsClient, /sm:h-\[27rem\]/);
+    assert.match(accountsClient, /sm:h-\[24rem\]/);
     assert.match(accountsClient, /WALLET_DECK/);
     assert.match(accountsClient, /walletDeckHeight/);
-    assert.match(accountsClient, /relative z-20 mt-4 flex shrink-0/);
+    assert.match(accountsClient, /relative z-20 flex shrink-0/);
     assert.doesNotMatch(accountsClient, /rounded-t-\[1\.15rem\]/);
   });
 
