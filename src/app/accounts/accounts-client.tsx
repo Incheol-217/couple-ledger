@@ -14,11 +14,13 @@ import {
   Pencil,
   PiggyBank,
   Plus,
+  Trash2,
   Wallet,
 } from "lucide-react";
 import {
   createAccountAction,
   deactivateAccountAction,
+  deleteAccountAction,
   updateAccountVaultAction,
   moveAccountAction,
   updateAccountAction,
@@ -553,6 +555,62 @@ function WalletDeck({
         </aside>
       </div>
     </section>
+  );
+}
+
+// 관리자용 계좌 삭제 버튼. 실수 방지를 위해 두 번 눌러야 지워져요.
+function DeleteAccountButton({
+  accountId,
+  householdId,
+  onResult,
+  variant = "outline",
+}: {
+  accountId: string;
+  householdId: string;
+  onResult: (result: AccountActionResult) => void;
+  variant?: "outline" | "ghost";
+}) {
+  const [confirming, setConfirming] = useState(false);
+  const [isPending, startTransition] = useTransition();
+
+  function submit() {
+    const formData = new FormData();
+    formData.set("household_id", householdId);
+    formData.set("account_id", accountId);
+
+    startTransition(async () => {
+      const result = await deleteAccountAction(formData);
+      setConfirming(false);
+      onResult(result);
+    });
+  }
+
+  if (!confirming) {
+    return (
+      <Button
+        onClick={() => setConfirming(true)}
+        size="icon"
+        type="button"
+        variant={variant}
+      >
+        <Trash2 className="size-4" aria-hidden="true" />
+        <span className="sr-only">삭제</span>
+      </Button>
+    );
+  }
+
+  return (
+    <Button
+      className="border-destructive/40 px-2 text-destructive hover:bg-destructive/10"
+      disabled={isPending}
+      onClick={submit}
+      size="sm"
+      type="button"
+      variant="outline"
+    >
+      <Trash2 className="size-4" aria-hidden="true" />
+      정말 삭제?
+    </Button>
   );
 }
 
@@ -1194,7 +1252,7 @@ export function AccountsClient({
                 </div>
 
                 {isAdmin ? (
-                  <div className="mt-3 grid grid-cols-[auto_auto_1fr_auto] gap-2">
+                  <div className="mt-3 grid grid-cols-[auto_auto_1fr_auto_auto] gap-2">
                     <form
                       action={(formData) =>
                         runSimpleAction(moveAccountAction, formData)
@@ -1274,6 +1332,11 @@ export function AccountsClient({
                         </Button>
                       </form>
                     ) : null}
+                    <DeleteAccountButton
+                      accountId={account.id}
+                      householdId={household.id}
+                      onResult={setResult}
+                    />
                   </div>
                 ) : null}
               </div>
@@ -1437,6 +1500,12 @@ export function AccountsClient({
                             </Button>
                           </form>
                         ) : null}
+                        <DeleteAccountButton
+                          accountId={account.id}
+                          householdId={household.id}
+                          onResult={setResult}
+                          variant="ghost"
+                        />
                       </div>
                     ) : (
                       <span className="block text-right text-sm text-muted-foreground">

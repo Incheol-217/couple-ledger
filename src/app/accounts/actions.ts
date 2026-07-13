@@ -545,3 +545,69 @@ export async function updateAccountVaultAction(
     };
   }
 }
+
+export async function deleteAccountAction(
+  formData: FormData,
+): Promise<AccountActionResult> {
+  try {
+    const householdId = readText(formData, "household_id");
+    const accountId = readText(formData, "account_id");
+
+    if (!accountId) {
+      throw new Error("지울 계좌를 찾을 수 없어요.");
+    }
+
+    const { supabase, user } = await assertCurrentAdminMember(householdId);
+
+    const { data: account, error: findError } = await supabase
+      .from("accounts")
+      .select("name")
+      .eq("household_id", householdId)
+      .eq("id", accountId)
+      .maybeSingle();
+
+    if (findError || !account) {
+      throw new Error(findError?.message ?? "계좌를 찾을 수 없어요.");
+    }
+
+    const { error } = await supabase
+      .from("accounts")
+      .delete()
+      .eq("household_id", householdId)
+      .eq("id", accountId);
+
+    if (error) {
+      // 거래·반복결제가 남아 있으면 DB가 삭제를 막아요(FK restrict).
+      if (error.code === "23503") {
+        throw new Error(
+          "거래나 반복 결제 기록이 있는 계좌는 지울 수 없어요. 기록을 지키려면 '숨기기'를 사용해 주세요.",
+        );
+      }
+
+      throw new Error(error.message);
+    }
+
+    await createNotificationEvent(supabase, {
+      actorUserId: user.id,
+      body: `관리자가 '${account.name}' 계좌를 삭제했어요.`,
+      eventType: "account_deactivated",
+      householdId,
+      metadata: {
+        account_id: accountId,
+        deleted: true,
+      },
+      title: "계좌를 삭제했어요",
+    });
+
+    revalidatePath("/accounts");
+    revalidatePath("/dashboard");
+    revalidatePath("/", "layout");
+    return { ok: true, message: "계좌를 지웠어요." };
+  } catch (error) {
+    return {
+      ok: false,
+      message:
+        error instanceof Error ? error.message : "계좌를 지우지 못했어요.",
+    };
+  }
+}
