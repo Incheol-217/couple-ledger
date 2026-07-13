@@ -619,8 +619,8 @@ function VaultPanel({
         >
           <span
             className={cn(
-              "absolute top-0.5 size-5 rounded-full bg-white shadow transition-transform",
-              enabled ? "translate-x-[1.375rem]" : "translate-x-0.5",
+              "absolute left-0.5 top-0.5 size-5 rounded-full bg-white shadow transition-transform",
+              enabled ? "translate-x-5" : "translate-x-0",
             )}
           />
         </button>
