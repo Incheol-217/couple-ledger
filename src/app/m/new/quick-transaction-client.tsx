@@ -623,7 +623,7 @@ export function QuickTransactionClient({
             inputMode="numeric"
             name="amount_display"
             onChange={(event) => setAmount(formatAmountInput(event.target.value))}
-            pattern="[0-9]*"
+            pattern="[0-9,]*"
             placeholder="0"
             type="text"
             value={amount}
