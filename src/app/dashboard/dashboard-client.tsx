@@ -239,7 +239,8 @@ function makeAccountFilterOptions(accounts: AccountRow[]) {
     { label: "공동 계좌", value: "owner:shared" },
     { label: "남편 계좌", value: "owner:husband" },
     { label: "아내 계좌", value: "owner:wife" },
-    { label: "카드", value: "type:card" },
+    { label: "신용카드", value: "type:card" },
+    { label: "체크카드", value: "type:check_card" },
     { label: "현금", value: "type:cash" },
     ...accounts.map((account) => ({
       label: account.name,

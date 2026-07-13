@@ -149,6 +149,7 @@ function normalizeAccountFilter(value: string | undefined): AccountFilter {
     value === "owner:wife" ||
     value === "type:bank" ||
     value === "type:card" ||
+    value === "type:check_card" ||
     value === "type:cash" ||
     value === "type:savings" ||
     value === "type:virtual" ||

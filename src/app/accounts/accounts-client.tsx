@@ -57,6 +57,7 @@ import { cn } from "@/lib/utils";
 const typeIconMap: Record<AccountType, typeof Landmark> = {
   bank: Landmark,
   card: CreditCard,
+  check_card: CreditCard,
   cash: Wallet,
   savings: PiggyBank,
   virtual: Layers,

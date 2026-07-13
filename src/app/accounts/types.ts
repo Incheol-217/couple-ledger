@@ -1,4 +1,4 @@
-export const accountTypes = ["bank", "card", "cash", "savings", "virtual"] as const;
+export const accountTypes = ["bank", "card", "check_card", "cash", "savings", "virtual"] as const;
 export const ownerTypes = ["shared", "husband", "wife"] as const;
 
 export type AccountType = (typeof accountTypes)[number];
@@ -30,7 +30,8 @@ export type HouseholdOption = {
 
 export const accountTypeLabels: Record<AccountType, string> = {
   bank: "은행",
-  card: "카드",
+  card: "신용카드",
+  check_card: "체크카드",
   cash: "현금",
   savings: "저축",
   virtual: "가상계좌",

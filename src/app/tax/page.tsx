@@ -13,7 +13,7 @@ import {
 
 type AccountLite = {
   id: string;
-  type: "bank" | "card" | "cash" | "savings" | "virtual";
+  type: "bank" | "card" | "check_card" | "cash" | "savings" | "virtual";
   owner_type: "shared" | "husband" | "wife";
 };
 
@@ -50,13 +50,14 @@ function toNumber(value: number | string) {
   return Number.isFinite(amount) ? amount : 0;
 }
 
-// 결제수단 매핑: card→신용카드, cash→현금영수증 가정, 나머지→공제 제외(계좌이체 등)
+// 결제수단 매핑: card→신용카드 15%, check_card·cash→체크카드/현금영수증 30%,
+// 나머지→공제 제외(계좌이체 등)
 function bucketFor(accountType: AccountLite["type"]): keyof SpendingByMethod {
   if (accountType === "card") {
     return "credit";
   }
 
-  if (accountType === "cash") {
+  if (accountType === "check_card" || accountType === "cash") {
     return "checkCash";
   }
 
