@@ -17,9 +17,12 @@ function secureCompare(left: string, right: string) {
 }
 
 function isAuthorized(request: NextRequest) {
-  const secret = process.env.JOB_SECRET;
+  // Vercel Cron은 CRON_SECRET을, 직접 호출은 JOB_SECRET을 사용해요.
+  const secrets = [process.env.JOB_SECRET, process.env.CRON_SECRET].filter(
+    (value): value is string => Boolean(value),
+  );
 
-  if (!secret) {
+  if (secrets.length === 0) {
     return process.env.NODE_ENV !== "production";
   }
 
@@ -28,7 +31,49 @@ function isAuthorized(request: NextRequest) {
 
   const providedSecret = bearerToken || request.headers.get("x-job-secret")?.trim();
 
-  return Boolean(providedSecret && secureCompare(providedSecret, secret));
+  return Boolean(
+    providedSecret &&
+      secrets.some((secret) => secureCompare(providedSecret, secret)),
+  );
+}
+
+async function runJob(today?: string) {
+  const result = await createRecurringTransactions({ today });
+
+  if (result.created.length > 0 || result.updatedRecurringItems.length > 0) {
+    revalidatePath("/dashboard");
+    revalidatePath("/recurring");
+    revalidatePath("/transactions");
+  }
+
+  return NextResponse.json(result, {
+    status: result.ok ? 200 : 207,
+  });
+}
+
+// Vercel Cron이 매일 호출하는 진입점이에요.
+export async function GET(request: NextRequest) {
+  if (!isAuthorized(request)) {
+    return NextResponse.json(
+      { ok: false, message: "작업을 실행할 권한이 없어요." },
+      { status: 401 },
+    );
+  }
+
+  try {
+    return await runJob();
+  } catch (error) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          error instanceof Error
+            ? error.message
+            : "반복 거래를 만들지 못했어요.",
+      },
+      { status: 500 },
+    );
+  }
 }
 
 async function readJsonBody(request: NextRequest) {
@@ -62,17 +107,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const result = await createRecurringTransactions({ today });
-
-    if (result.created.length > 0 || result.updatedRecurringItems.length > 0) {
-      revalidatePath("/dashboard");
-      revalidatePath("/recurring");
-      revalidatePath("/transactions");
-    }
-
-    return NextResponse.json(result, {
-      status: result.ok ? 200 : 207,
-    });
+    return await runJob(today);
   } catch (error) {
     return NextResponse.json(
       {
