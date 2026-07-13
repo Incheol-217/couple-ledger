@@ -14,6 +14,7 @@ import {
   ReceiptText,
   Settings,
   Target,
+  TrendingUp,
   WalletCards,
   X,
 } from "lucide-react";
@@ -33,6 +34,7 @@ const navItems: NavItem[] = [
   { href: "/budgets", label: "예산", icon: PiggyBank, primary: true },
   { href: "/accounts", label: "계좌", icon: WalletCards, primary: true },
   { href: "/goals", label: "저축", icon: Target, primary: false },
+  { href: "/invest", label: "자산", icon: TrendingUp, primary: false },
   { href: "/reports", label: "보고서", icon: FileText, primary: false },
   { href: "/recurring", label: "고정비", icon: CalendarClock, primary: false },
   { href: "/installments", label: "할부", icon: CalendarRange, primary: false },

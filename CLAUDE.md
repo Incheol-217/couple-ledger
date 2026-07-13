@@ -20,6 +20,7 @@
 - 모바일 빠른 거래 입력과 영수증 인식 초안
 - 계좌, 구독비/고정비, 할부, 대시보드, 보고서, 알림
 - 카테고리·계좌별 예산과 공동 저축 목표
+- 저축·투자 자산 현황과 수익률
 - 예산 80%/100% 초과 알림
 - 수입/지출을 Notion 데이터베이스에 자동 기록
 - 연말정산 카드 소득공제 예상 환급 계산기
@@ -118,6 +119,7 @@ curl -X POST https://YOUR_VERCEL_DOMAIN/api/setup/login-accounts \
 - `/reports`
 - `/budgets`
 - `/goals`
+- `/invest`
 - `/tax`
 - `/accounts`
 - `/recurring`
