@@ -8,6 +8,11 @@ import {
   Plus,
 } from "lucide-react";
 import { markTransactionReviewedAction } from "./actions";
+import {
+  ManageTransaction,
+  type ManageCategoryOption,
+  type ManageOption,
+} from "./manage-transaction";
 import { PageHeader } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -105,6 +110,8 @@ export default async function TransactionsPage() {
   const accountNames = new Map<string, string>();
   const categoryNames = new Map<string, string>();
   const memberNames = new Map<string, string>();
+  let accountOptions: ManageOption[] = [];
+  let categoryOptions: ManageCategoryOption[] = [];
 
   if (context.isSignedIn && context.householdId) {
     const supabase = await createClient();
@@ -125,7 +132,7 @@ export default async function TransactionsPage() {
           .eq("household_id", context.householdId),
         supabase
           .from("categories")
-          .select("id, name")
+          .select("id, name, type")
           .eq("household_id", context.householdId),
         supabase
           .from("household_members")
@@ -154,10 +161,12 @@ export default async function TransactionsPage() {
     );
 
     transactions = (transactionsResult.data ?? []) as TransactionRow[];
-    (accountsResult.data ?? []).forEach((account) =>
+    accountOptions = (accountsResult.data ?? []) as ManageOption[];
+    categoryOptions = (categoriesResult.data ?? []) as ManageCategoryOption[];
+    accountOptions.forEach((account) =>
       accountNames.set(account.id, account.name),
     );
-    (categoriesResult.data ?? []).forEach((category) =>
+    categoryOptions.forEach((category) =>
       categoryNames.set(category.id, category.name),
     );
     memberRows.forEach((member) =>
@@ -342,6 +351,25 @@ export default async function TransactionsPage() {
                           ? memberNames.get(transaction.user_id) ?? "멤버"
                           : "자동 기록"}
                       </span>
+                      {context.isAdmin ? (
+                        <span className="ml-auto">
+                          <ManageTransaction
+                            accounts={accountOptions}
+                            categories={categoryOptions}
+                            householdId={context.householdId ?? ""}
+                            transaction={{
+                              id: transaction.id,
+                              type: transaction.type,
+                              amount: Number(transaction.amount) || 0,
+                              transaction_date: transaction.transaction_date,
+                              account_id: transaction.account_id,
+                              category_id: transaction.category_id,
+                              merchant: transaction.merchant,
+                              memo: transaction.memo,
+                            }}
+                          />
+                        </span>
+                      ) : null}
                     </div>
                   </div>
                 </article>
@@ -360,6 +388,7 @@ export default async function TransactionsPage() {
                   <TableHead>작성자</TableHead>
                   <TableHead>입력</TableHead>
                   <TableHead className="text-right">금액</TableHead>
+                  {context.isAdmin ? <TableHead className="w-16" /> : null}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -405,6 +434,25 @@ export default async function TransactionsPage() {
                     >
                       {displayAmount(transaction)}
                     </TableCell>
+                    {context.isAdmin ? (
+                      <TableCell>
+                        <ManageTransaction
+                          accounts={accountOptions}
+                          categories={categoryOptions}
+                          householdId={context.householdId ?? ""}
+                          transaction={{
+                            id: transaction.id,
+                            type: transaction.type,
+                            amount: Number(transaction.amount) || 0,
+                            transaction_date: transaction.transaction_date,
+                            account_id: transaction.account_id,
+                            category_id: transaction.category_id,
+                            merchant: transaction.merchant,
+                            memo: transaction.memo,
+                          }}
+                        />
+                      </TableCell>
+                    ) : null}
                   </TableRow>
                 ))}
               </TableBody>
