@@ -181,7 +181,7 @@ function toAccountPayload(formData: FormData) {
     openingBalance: readMoney(formData, "opening_balance"),
     openingBalanceAsOf: readDateOrToday(formData, "opening_balance_as_of"),
     defaultWithdrawalAccountId:
-      type === "card" ? rawWithdrawalAccountId : null,
+      type === "card" || type === "check_card" ? rawWithdrawalAccountId : null,
   };
 }
 

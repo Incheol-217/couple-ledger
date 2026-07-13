@@ -285,7 +285,7 @@ describe("Login and role access", () => {
     assert.match(accountActions, /\.eq\("role", "owner"\)/);
     assert.match(accountActions, /관리자 계정으로 계좌를 바꿀 수 있어요/);
     assert.match(accountActions, /opening_balance/);
-    assert.match(accountsClient, /관리자 계정으로 계좌를 추가할 수 있어요/);
+    assert.match(accountsClient, /관리자 계정으로 추가할 수 있어요/);
     assert.match(accountsClient, /처음 잔액/);
     assert.match(accountsClient, /보기만 가능해요/);
   });
@@ -405,8 +405,8 @@ describe("UX guardrails", () => {
 
   it("keeps wallet account actions visible on desktop", () => {
     assert.match(accountsClient, /sm:h-\[24rem\]/);
-    assert.match(accountsClient, /312 \+ offsetIndex \* 44/);
-    assert.match(accountsClient, /Math\.min\(720, 632/);
+    assert.match(accountsClient, /WALLET_DECK/);
+    assert.match(accountsClient, /walletDeckHeight/);
     assert.match(accountsClient, /relative z-20 mt-4 flex shrink-0/);
     assert.doesNotMatch(accountsClient, /rounded-t-\[1\.15rem\]/);
   });

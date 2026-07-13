@@ -110,12 +110,13 @@ export async function logTransactionToNotion(
       lookupRecorderLabel(supabase, input.householdId, input.userId),
     ]);
 
-    const amountLabel = `${Math.round(input.amount).toLocaleString("ko-KR")}원`;
-    const title =
-      `${input.merchant ?? categoryName ?? typeLabels[input.type]} ${amountLabel}`.trim();
+    // "내역"(제목)에는 사용처만 넣어요. 사용처가 없으면 카테고리·유형으로 대체.
+    const title = (
+      input.merchant ?? categoryName ?? typeLabels[input.type]
+    ).slice(0, 200);
 
     const properties: Record<string, unknown> = {
-      "내역": { title: [{ text: { content: title.slice(0, 200) } }] },
+      "내역": { title: [{ text: { content: title } }] },
       "날짜": { date: { start: input.transactionDate } },
       "유형": { select: { name: typeLabels[input.type] } },
       "금액": { number: Math.round(input.amount) },

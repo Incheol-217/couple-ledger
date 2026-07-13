@@ -28,7 +28,6 @@ import {
 } from "./actions";
 import {
   accountTypeLabels,
-  accountTypes,
   ownerTypeLabels,
   ownerTypes,
   type AccountRow,
@@ -68,6 +67,14 @@ const typeIconMap: Record<AccountType, typeof Landmark> = {
 };
 
 const suggestedColors = ["#16a34a", "#2563eb", "#f59e0b", "#dc2626", "#7c3aed"];
+
+// 카드 결제수단(신용/체크)과 실제 돈이 담기는 계좌를 구분해요.
+const cardTypes: AccountType[] = ["card", "check_card"];
+const walletTypes: AccountType[] = ["bank", "cash", "savings", "virtual"];
+
+function isCardType(type: AccountType) {
+  return cardTypes.includes(type);
+}
 
 // 지갑 카드 스택 치수(px). selected=선택 카드 높이, card=나머지 카드 높이,
 // peek=아래로 겹쳐 쌓일 때 각 카드가 드러나는 높이.
@@ -784,17 +791,33 @@ function VaultPanel({
 function AccountForm({
   accounts,
   householdId,
+  initialKind = "account",
   mode,
   onDone,
   selectedAccount,
 }: {
   accounts: AccountRow[];
   householdId: string;
+  initialKind?: "account" | "card";
   mode: "create" | "edit";
   onDone: (result?: AccountActionResult) => void;
   selectedAccount: AccountRow | null;
 }) {
-  const [type, setType] = useState<AccountType>(selectedAccount?.type ?? "bank");
+  const initialIsCard = selectedAccount
+    ? isCardType(selectedAccount.type)
+    : initialKind === "card";
+  const [kind, setKind] = useState<"account" | "card">(
+    initialIsCard ? "card" : "account",
+  );
+  const [type, setType] = useState<AccountType>(
+    selectedAccount?.type ?? (initialIsCard ? "card" : "bank"),
+  );
+  const typeOptions = kind === "card" ? cardTypes : walletTypes;
+
+  function changeKind(nextKind: "account" | "card") {
+    setKind(nextKind);
+    setType(nextKind === "card" ? "card" : "bank");
+  }
   const [color, setColor] = useState(selectedAccount?.color ?? suggestedColors[0]);
   const [result, setResult] = useState<AccountActionResult | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -838,9 +861,19 @@ function AccountForm({
     <div className="scroll-mt-20" ref={formRef}>
       <Card>
       <CardHeader>
-        <CardTitle>{mode === "create" ? "계좌 추가하기" : "계좌 고치기"}</CardTitle>
+        <CardTitle>
+          {mode === "create"
+            ? kind === "card"
+              ? "카드 추가하기"
+              : "계좌 추가하기"
+            : kind === "card"
+              ? "카드 고치기"
+              : "계좌 고치기"}
+        </CardTitle>
         <CardDescription>
-          지금 들어있는 돈도 함께 적어주세요.
+          {kind === "card"
+            ? "카드를 등록하고 돈이 빠져나갈 계좌를 연결해요."
+            : "지금 들어있는 돈도 함께 적어주세요."}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -854,28 +887,49 @@ function AccountForm({
             {result?.message}
           </div>
 
+          <div className="space-y-2">
+            <Label>구분</Label>
+            <div className="grid grid-cols-2 gap-2 rounded-lg border bg-muted p-1">
+              {(["account", "card"] as const).map((option) => (
+                <button
+                  className={cn(
+                    "rounded-md px-3 py-2 text-sm font-medium transition",
+                    kind === option
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                  key={option}
+                  onClick={() => changeKind(option)}
+                  type="button"
+                >
+                  {option === "card" ? "카드" : "계좌"}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="account-name">계좌 이름</Label>
+              <Label htmlFor="account-name">{kind === "card" ? "카드 이름" : "계좌 이름"}</Label>
               <Input
                 autoComplete="off"
                 defaultValue={selectedAccount?.name ?? ""}
                 id="account-name"
                 name="name"
-                placeholder="생활비 통장"
+                placeholder={kind === "card" ? "신한 체크카드" : "생활비 통장"}
                 required
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="account-type">계좌 종류</Label>
+              <Label htmlFor="account-type">{kind === "card" ? "카드 종류" : "계좌 종류"}</Label>
               <Select
                 id="account-type"
                 name="type"
                 onChange={(event) => setType(event.target.value as AccountType)}
                 value={type}
               >
-                {accountTypes.map((accountType) => (
+                {typeOptions.map((accountType) => (
                   <option key={accountType} value={accountType}>
                     {accountTypeLabels[accountType]}
                   </option>
@@ -920,33 +974,37 @@ function AccountForm({
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="opening-balance">처음 잔액</Label>
-              <Input
-                autoComplete="off"
-                defaultValue={formatAccountBalanceInput(
-                  selectedAccount?.opening_balance ?? null,
-                )}
-                id="opening-balance"
-                inputMode="numeric"
-                name="opening_balance"
-                onInput={formatAmountField}
-                placeholder="1,000,000"
-                type="text"
-              />
-            </div>
+            {kind === "card" ? null : (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="opening-balance">처음 잔액</Label>
+                  <Input
+                    autoComplete="off"
+                    defaultValue={formatAccountBalanceInput(
+                      selectedAccount?.opening_balance ?? null,
+                    )}
+                    id="opening-balance"
+                    inputMode="numeric"
+                    name="opening_balance"
+                    onInput={formatAmountField}
+                    placeholder="1,000,000"
+                    type="text"
+                  />
+                </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="opening-balance-as-of">잔액을 확인한 날</Label>
-              <Input
-                defaultValue={
-                  selectedAccount?.opening_balance_as_of ?? todayString()
-                }
-                id="opening-balance-as-of"
-                name="opening_balance_as_of"
-                type="date"
-              />
-            </div>
+                <div className="space-y-2">
+                  <Label htmlFor="opening-balance-as-of">잔액을 확인한 날</Label>
+                  <Input
+                    defaultValue={
+                      selectedAccount?.opening_balance_as_of ?? todayString()
+                    }
+                    id="opening-balance-as-of"
+                    name="opening_balance_as_of"
+                    type="date"
+                  />
+                </div>
+              </>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="account-color">색상</Label>
@@ -1042,22 +1100,30 @@ export function AccountsClient({
   );
   const [result, setResult] = useState<AccountActionResult | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [createKind, setCreateKind] = useState<"account" | "card">("account");
   const activeAccounts = accounts.filter((account) => account.is_active);
   const inactiveAccounts = accounts.filter((account) => !account.is_active);
+  const walletAccounts = activeAccounts.filter(
+    (account) => !isCardType(account.type),
+  );
+  const cardAccounts = activeAccounts.filter((account) =>
+    isCardType(account.type),
+  );
   const resolvedSelectedWalletId =
-    activeAccounts.find((account) => account.id === selectedWalletId)?.id ??
-    activeAccounts[0]?.id ??
+    walletAccounts.find((account) => account.id === selectedWalletId)?.id ??
+    walletAccounts[0]?.id ??
     null;
 
-  function openCreate() {
+  function openCreate(kind: "account" | "card" = "account") {
     if (!isAdmin) {
       setResult({
         ok: false,
-        message: "관리자 계정으로 계좌를 추가할 수 있어요.",
+        message: "관리자 계정으로 추가할 수 있어요.",
       });
       return;
     }
 
+    setCreateKind(kind);
     setSelectedAccount(null);
     setMode("create");
     setResult(null);
@@ -1154,10 +1220,25 @@ export function AccountsClient({
           </p>
         </div>
         {isAdmin ? (
-          <Button className="w-full sm:w-auto" onClick={openCreate} type="button">
-            <Plus className="size-4" aria-hidden="true" />
-            계좌 추가
-          </Button>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Button
+              className="w-full sm:w-auto"
+              onClick={() => openCreate("account")}
+              type="button"
+            >
+              <Plus className="size-4" aria-hidden="true" />
+              계좌 추가
+            </Button>
+            <Button
+              className="w-full sm:w-auto"
+              onClick={() => openCreate("card")}
+              type="button"
+              variant="outline"
+            >
+              <CreditCard className="size-4" aria-hidden="true" />
+              카드 추가
+            </Button>
+          </div>
         ) : (
           <Badge className="w-fit" variant="secondary">
             보기만 가능해요
@@ -1190,7 +1271,8 @@ export function AccountsClient({
         <AccountForm
           accounts={accounts}
           householdId={household.id}
-          key={`${mode}-${selectedAccount?.id ?? "new"}`}
+          initialKind={createKind}
+          key={`${mode}-${selectedAccount?.id ?? createKind}`}
           mode={mode}
           onDone={closeForm}
           selectedAccount={selectedAccount}
@@ -1198,12 +1280,12 @@ export function AccountsClient({
       ) : null}
 
       <WalletDeck
-        accounts={activeAccounts}
+        accounts={walletAccounts}
         allAccounts={accounts}
         householdId={household.id}
         isAdmin={isAdmin}
         isPending={isPending}
-        onCreate={openCreate}
+        onCreate={() => openCreate("account")}
         onDeactivate={(formData) =>
           runSimpleAction(deactivateAccountAction, formData)
         }
@@ -1211,6 +1293,82 @@ export function AccountsClient({
         onSelect={setSelectedWalletId}
         selectedAccountId={resolvedSelectedWalletId}
       />
+
+      {cardAccounts.length > 0 ? (
+        <section className="space-y-3">
+          <div className="flex items-center gap-2">
+            <CreditCard className="size-4 text-primary" aria-hidden="true" />
+            <h2 className="text-lg font-semibold">카드</h2>
+            <Badge variant="secondary">{cardAccounts.length}개</Badge>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {cardAccounts.map((card) => (
+              <Card className="border-l-4 border-l-primary" key={card.id}>
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="truncate font-semibold">{card.name}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {accountTypeLabels[card.type]} ·{" "}
+                        {ownerTypeLabels[card.owner_type]}
+                      </p>
+                    </div>
+                    <AccountIcon account={card} className="size-9 rounded-full" />
+                  </div>
+                  <p className="mt-3 flex items-center justify-between gap-2 rounded-md bg-muted/50 px-3 py-2 text-sm">
+                    <span className="text-muted-foreground">연결 계좌</span>
+                    <span className="truncate font-medium">
+                      {getWithdrawalName(
+                        accounts,
+                        card.default_withdrawal_account_id,
+                      )}
+                    </span>
+                  </p>
+                  {isAdmin ? (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <Button
+                        onClick={() => openEdit(card)}
+                        size="sm"
+                        type="button"
+                        variant="outline"
+                      >
+                        <Pencil className="size-4" aria-hidden="true" />
+                        수정
+                      </Button>
+                      <form
+                        action={(formData) =>
+                          runSimpleAction(deactivateAccountAction, formData)
+                        }
+                      >
+                        <input
+                          name="household_id"
+                          type="hidden"
+                          value={household.id}
+                        />
+                        <input name="account_id" type="hidden" value={card.id} />
+                        <Button
+                          disabled={isPending}
+                          size="sm"
+                          type="submit"
+                          variant="outline"
+                        >
+                          <Archive className="size-4" aria-hidden="true" />
+                          숨기기
+                        </Button>
+                      </form>
+                      <DeleteAccountButton
+                        accountId={card.id}
+                        householdId={household.id}
+                        onResult={setResult}
+                      />
+                    </div>
+                  ) : null}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <Card className="md:hidden">
         <CardHeader>
