@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   CalendarClock,
+  Calculator,
   FileText,
   LayoutDashboard,
   MoreHorizontal,
@@ -33,6 +34,7 @@ const navItems: NavItem[] = [
   { href: "/goals", label: "저축", icon: Target, primary: false },
   { href: "/reports", label: "보고서", icon: FileText, primary: false },
   { href: "/recurring", label: "고정비", icon: CalendarClock, primary: false },
+  { href: "/tax", label: "연말정산", icon: Calculator, primary: false },
   { href: "/settings", label: "설정", icon: Settings, primary: false },
 ];
 
