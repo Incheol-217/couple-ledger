@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { maybeCreateBudgetAlerts } from "@/lib/budgets/alerts";
 import {
   createNotificationEvent,
   formatWonForNotification,
@@ -263,6 +264,15 @@ export async function createQuickTransactionAction(
       },
       title: "새 거래를 기록했어요",
     });
+
+    if (type === "expense") {
+      await maybeCreateBudgetAlerts(supabase, {
+        householdId,
+        accountId: confirmedAccountId,
+        categoryId: confirmedCategoryId,
+        transactionDate,
+      });
+    }
 
     revalidatePath("/m/new");
     revalidatePath("/transactions");

@@ -6,6 +6,7 @@ import {
   transactionTypes,
   type TransactionType,
 } from "@/app/m/new/types";
+import { maybeCreateBudgetAlerts } from "@/lib/budgets/alerts";
 import {
   createNotificationEvent,
   formatWonForNotification,
@@ -485,6 +486,15 @@ export async function POST(request: NextRequest) {
       },
       title: "새 거래가 올라왔어요",
     });
+
+    if (type === "expense") {
+      await maybeCreateBudgetAlerts(supabase, {
+        householdId,
+        accountId,
+        categoryId,
+        transactionDate,
+      });
+    }
 
     revalidatePath("/dashboard");
     revalidatePath("/m/new");

@@ -76,11 +76,12 @@ export async function getNotificationFeed(): Promise<NotificationFeed> {
   const userId = context.userId;
   const supabase = await createClient();
 
+  // 본인이 만든 이벤트는 빼고, actor 없는 시스템 이벤트(예산 경고 등)는 모두에게 보여줘요.
   const { data: eventData, error: eventError } = await supabase
     .from("notification_events")
     .select("id, event_type, title, body, actor_user_id, created_at")
     .eq("household_id", householdId)
-    .neq("actor_user_id", userId)
+    .or(`actor_user_id.is.null,actor_user_id.neq.${userId}`)
     .order("created_at", { ascending: false })
     .limit(20);
 

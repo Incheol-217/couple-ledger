@@ -1,3 +1,4 @@
+import { maybeCreateBudgetAlerts } from "@/lib/budgets/alerts";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 const SUPPORTED_BILLING_CYCLES = ["monthly", "yearly", "weekly"] as const;
@@ -296,6 +297,13 @@ export async function createRecurringTransactions(
               recurringItemId: item.id,
               transactionId: created.id,
               dueDate,
+            });
+
+            await maybeCreateBudgetAlerts(supabase, {
+              householdId: item.household_id,
+              accountId: item.account_id,
+              categoryId: item.category_id,
+              transactionDate: dueDate,
             });
           }
         }

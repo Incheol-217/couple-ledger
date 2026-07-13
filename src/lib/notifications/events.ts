@@ -7,7 +7,8 @@ export type NotificationEventType =
   | "account_reordered"
   | "recurring_created"
   | "recurring_updated"
-  | "recurring_status_changed";
+  | "recurring_status_changed"
+  | "budget_alert";
 
 type NotificationInsertClient = {
   from: (table: string) => {
