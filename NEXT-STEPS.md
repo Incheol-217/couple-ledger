@@ -22,10 +22,10 @@
 
 ## 🟢 선택 (여유 될 때)
 
-- [ ] **반복거래 자동화** — `/api/jobs/create-recurring-transactions`를 Vercel Cron으로 매일 자동 실행 (지금은 수동 curl)
+- [x] **반복거래 자동화** — 2026-07-13 완료. Vercel Cron이 매일 00:05(KST) 자동 실행
 - [ ] **영수증 인식** 품질 확인 — README에 "초안"으로 표기됨, 실물 영수증으로 테스트
-- [ ] **Vercel 배포 상태 확인** — 실제 배포돼 있는지 미확인 (로컬엔 `.vercel` 링크 없음)
-- [ ] `NEXT-STEPS.md`를 git에 커밋할지 결정 (지금은 로컬 파일)
+- [x] **Vercel 배포 상태 확인** — https://couple-ledger-xi.vercel.app 운영 중, GitHub 푸시 자동 배포
+- [x] `NEXT-STEPS.md` 커밋 완료
 
 ---
 _이 체크리스트는 Claude에게 "내 할일 뭐였지?" 하고 물으면 다시 안내받을 수 있어요._
