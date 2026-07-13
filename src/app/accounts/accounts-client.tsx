@@ -79,8 +79,8 @@ function isCardType(type: AccountType) {
 // 지갑 카드 스택 치수(px). selected=선택 카드 높이, card=나머지 카드 높이,
 // peek=아래로 겹쳐 쌓일 때 각 카드가 드러나는 높이.
 const WALLET_DECK = {
-  mobile: { selected: 240, card: 240, peek: 46 },
-  desktop: { selected: 384, card: 320, peek: 56 },
+  mobile: { selected: 336, card: 240, peek: 46 },
+  desktop: { selected: 432, card: 320, peek: 56 },
 } as const;
 
 function walletDeckHeight(
@@ -223,8 +223,8 @@ function WalletAccountCard({
       aria-label={`${account.name} 계좌`}
       aria-pressed={selected}
       className={cn(
-        "absolute inset-x-0 top-0 h-60 cursor-pointer overflow-hidden rounded-[1.65rem] border p-4 shadow-[0_22px_50px_rgba(18,18,18,0.28)] outline-none transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] [transform:translate3d(var(--card-x),var(--mobile-card-y),0)_scale(var(--card-scale))_rotate(var(--card-rotate))] focus-visible:ring-4 focus-visible:ring-primary/40 sm:rounded-[2rem] sm:p-5 sm:[transform:translate3d(var(--card-x),var(--desktop-card-y),0)_scale(var(--card-scale))_rotate(var(--card-rotate))]",
-        selected ? "sm:h-[24rem]" : "sm:h-80",
+        "absolute inset-x-0 top-0 cursor-pointer overflow-hidden rounded-[1.65rem] border p-4 shadow-[0_22px_50px_rgba(18,18,18,0.28)] outline-none transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] [transform:translate3d(var(--card-x),var(--mobile-card-y),0)_scale(var(--card-scale))_rotate(var(--card-rotate))] focus-visible:ring-4 focus-visible:ring-primary/40 sm:rounded-[2rem] sm:p-5 sm:[transform:translate3d(var(--card-x),var(--desktop-card-y),0)_scale(var(--card-scale))_rotate(var(--card-rotate))]",
+        selected ? "h-[21rem] sm:h-[27rem]" : "h-60 sm:h-80",
         selected
           ? "border-white/20 text-white"
           : "border-black/10 text-[#111214] hover:brightness-105",
