@@ -65,6 +65,38 @@ function todayString() {
   return `${year}-${month}-${day}`;
 }
 
+// 할부 시작일과 오늘을 비교해 지금까지 지난 결제 회차 수를 계산해요.
+function paidInstallments(item: InstallmentRow) {
+  const total = item.total_installments ?? 0;
+
+  if (item.status === "canceled") {
+    return total; // 완납 처리된 할부
+  }
+
+  if (!item.starts_on || total <= 0) {
+    return 0;
+  }
+
+  const [sy, sm, sd] = item.starts_on.split("-").map(Number);
+  const now = new Date();
+  const ty = now.getFullYear();
+  const tm = now.getMonth() + 1;
+  const td = now.getDate();
+
+  // 아직 시작 전이면 0회.
+  if (ty < sy || (ty === sy && (tm < sm || (tm === sm && td < sd)))) {
+    return 0;
+  }
+
+  // 시작일 포함, 결제일(매월 시작일과 같은 날)이 지날 때마다 1회씩.
+  let months = (ty - sy) * 12 + (tm - sm);
+  if (td >= sd) {
+    months += 1;
+  }
+
+  return Math.max(0, Math.min(total, months));
+}
+
 // 마지막 회차 예상 월 (다음 결제일 + 남은 회차 - 1개월)
 function estimatedEndLabel(item: InstallmentRow, paid: number) {
   const total = item.total_installments ?? 0;
@@ -259,6 +291,17 @@ function InstallmentForm({
             </div>
 
             <div className="space-y-2">
+              <Label htmlFor="installment-starts-on">할부 시작일</Label>
+              <Input
+                defaultValue={item?.starts_on ?? item?.next_due_date ?? today}
+                id="installment-starts-on"
+                name="starts_on"
+                required
+                type="date"
+              />
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="installment-next-due">다음 결제일</Label>
               <Input
                 defaultValue={item?.next_due_date ?? today}
@@ -387,7 +430,6 @@ export function InstallmentsClient({
   installments,
   isConfigured,
   isSignedIn,
-  paidCounts,
 }: InstallmentPageData) {
   const [mode, setMode] = useState<"create" | "edit" | null>(null);
   const [selectedItem, setSelectedItem] = useState<InstallmentRow | null>(null);
@@ -401,17 +443,22 @@ export function InstallmentsClient({
     );
     const remainingTotal = active.reduce((sum, item) => {
       const total = item.total_installments ?? 0;
-      const paid = paidCounts[item.id] ?? 0;
+      const paid = paidInstallments(item);
       return sum + Math.max(0, total - paid) * toAmount(item.amount);
     }, 0);
+    const paidTotal = active.reduce(
+      (sum, item) => sum + paidInstallments(item) * toAmount(item.amount),
+      0,
+    );
 
     return {
       activeCount: active.length,
       doneCount: installments.filter((item) => item.status === "canceled").length,
       monthlyTotal,
+      paidTotal,
       remainingTotal,
     };
-  }, [installments, paidCounts]);
+  }, [installments]);
 
   function openCreate() {
     setSelectedItem(null);
@@ -509,16 +556,18 @@ export function InstallmentsClient({
         </Card>
         <Card>
           <CardContent className="p-4">
-            <p className="text-sm text-muted-foreground">남은 할부 총액</p>
-            <p className="mt-2 text-xl font-semibold">
-              {formatMoney(summary.remainingTotal)}
+            <p className="text-sm text-muted-foreground">지금까지 갚은 금액</p>
+            <p className="mt-2 text-xl font-semibold text-primary">
+              {formatMoney(summary.paidTotal)}
             </p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
-            <p className="text-sm text-muted-foreground">진행 중</p>
-            <p className="mt-2 text-xl font-semibold">{summary.activeCount}건</p>
+            <p className="text-sm text-muted-foreground">남은 할부 총액</p>
+            <p className="mt-2 text-xl font-semibold">
+              {formatMoney(summary.remainingTotal)}
+            </p>
           </CardContent>
         </Card>
         <Card>
@@ -559,7 +608,7 @@ export function InstallmentsClient({
         {installments.length > 0 ? (
           installments.map((item) => {
             const total = item.total_installments ?? 0;
-            const paid = Math.min(paidCounts[item.id] ?? 0, total);
+            const paid = paidInstallments(item);
             const remaining = Math.max(0, total - paid);
             const percent = total > 0 ? (paid / total) * 100 : 0;
             const done = item.status === "canceled" || remaining === 0;
@@ -608,16 +657,20 @@ export function InstallmentsClient({
                         {estimatedEndLabel(item, paid)}
                       </p>
                     </div>
-                    <p className="text-sm font-medium text-muted-foreground">
-                      남은 금액{" "}
-                      {formatMoney(remaining * toAmount(item.amount))}
-                    </p>
+                    <div className="text-right text-sm">
+                      <p className="font-semibold text-primary">
+                        지금까지 {formatMoney(paid * toAmount(item.amount))}
+                      </p>
+                      <p className="mt-0.5 text-muted-foreground">
+                        남은 {formatMoney(remaining * toAmount(item.amount))}
+                      </p>
+                    </div>
                   </div>
 
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between text-xs text-muted-foreground">
                       <span>
-                        {paid} / {total}회
+                        {paid} / {total}회 · 시작 {item.starts_on ?? "-"}
                       </span>
                       <span>{Math.round(percent)}%</span>
                     </div>

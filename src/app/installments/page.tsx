@@ -13,7 +13,6 @@ const emptyData: InstallmentPageData = {
   installments: [],
   isConfigured: false,
   isSignedIn: false,
-  paidCounts: {},
 };
 
 async function getInstallmentPageData(): Promise<InstallmentPageData> {
@@ -61,7 +60,7 @@ async function getInstallmentPageData(): Promise<InstallmentPageData> {
       supabase
         .from("recurring_items")
         .select(
-          "id, household_id, account_id, category_id, name, merchant, amount, billing_day, next_due_date, status, total_installments, memo, created_at",
+          "id, household_id, account_id, category_id, name, merchant, amount, billing_day, next_due_date, starts_on, status, total_installments, memo, created_at",
         )
         .eq("household_id", household.id)
         .eq("kind", "installment")
@@ -70,25 +69,6 @@ async function getInstallmentPageData(): Promise<InstallmentPageData> {
     ]);
 
   const installments = (installmentsResult.data ?? []) as InstallmentRow[];
-
-  // 낸 회차 수 = 이 할부로 만들어진 거래 수
-  const paidCounts: Record<string, number> = {};
-
-  if (installments.length > 0) {
-    const { data: txRows } = await supabase
-      .from("transactions")
-      .select("recurring_item_id")
-      .eq("household_id", household.id)
-      .in(
-        "recurring_item_id",
-        installments.map((item) => item.id),
-      );
-
-    for (const row of (txRows ?? []) as { recurring_item_id: string }[]) {
-      paidCounts[row.recurring_item_id] =
-        (paidCounts[row.recurring_item_id] ?? 0) + 1;
-    }
-  }
 
   return {
     accounts: (accountsResult.data ?? []) as AccountRow[],
@@ -101,7 +81,6 @@ async function getInstallmentPageData(): Promise<InstallmentPageData> {
     installments,
     isConfigured: true,
     isSignedIn: true,
-    paidCounts,
   };
 }
 

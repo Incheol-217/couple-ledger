@@ -13,6 +13,7 @@ export type InstallmentRow = {
   amount: number | string;
   billing_day: number | null;
   next_due_date: string;
+  starts_on: string | null;
   status: InstallmentStatus;
   total_installments: number | null;
   memo: string | null;
@@ -32,8 +33,6 @@ export type InstallmentPageData = {
   installments: InstallmentRow[];
   isConfigured: boolean;
   isSignedIn: boolean;
-  // recurring_item_id → 지금까지 만들어진 거래(=낸 회차) 수
-  paidCounts: Record<string, number>;
 };
 
 export const installmentStatusLabels: Record<InstallmentStatus, string> = {

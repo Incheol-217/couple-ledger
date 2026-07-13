@@ -127,6 +127,7 @@ function toPayload(formData: FormData) {
     readNumber(formData, "total_installments", 0),
   );
   const nextDueDate = readText(formData, "next_due_date");
+  const startsOn = readText(formData, "starts_on");
   const billingDay = readNumber(formData, "billing_day", 0);
 
   if (!name) {
@@ -145,6 +146,10 @@ function toPayload(formData: FormData) {
     throw new Error("다음 결제일을 선택해 주세요.");
   }
 
+  if (!startsOn) {
+    throw new Error("할부 시작일을 선택해 주세요.");
+  }
+
   return {
     accountId: readText(formData, "account_id"),
     amount,
@@ -154,6 +159,7 @@ function toPayload(formData: FormData) {
     merchant: readNullableText(formData, "merchant"),
     name,
     nextDueDate,
+    startsOn,
     totalInstallments,
   };
 }
@@ -195,6 +201,7 @@ export async function createInstallmentAction(
       billing_cycle: "monthly",
       billing_day: payload.billingDay,
       next_due_date: payload.nextDueDate,
+      starts_on: payload.startsOn,
       status: "active",
       auto_create_transaction: true,
       reminder_days_before: 3,
@@ -265,6 +272,7 @@ export async function updateInstallmentAction(
         amount: payload.amount,
         billing_day: payload.billingDay,
         next_due_date: payload.nextDueDate,
+        starts_on: payload.startsOn,
         total_installments: payload.totalInstallments,
         memo: payload.memo,
       })
