@@ -69,6 +69,27 @@ const typeIconMap: Record<AccountType, typeof Landmark> = {
 
 const suggestedColors = ["#16a34a", "#2563eb", "#f59e0b", "#dc2626", "#7c3aed"];
 
+// 지갑 카드 스택 치수(px). selected=선택 카드 높이, card=나머지 카드 높이,
+// peek=아래로 겹쳐 쌓일 때 각 카드가 드러나는 높이.
+const WALLET_DECK = {
+  mobile: { selected: 240, card: 240, peek: 46 },
+  desktop: { selected: 384, card: 320, peek: 56 },
+} as const;
+
+function walletDeckHeight(
+  count: number,
+  dims: { selected: number; card: number; peek: number },
+) {
+  const others = Math.max(count - 1, 0);
+
+  if (others === 0) {
+    return dims.selected;
+  }
+
+  // 선택 카드 아래로 (others-1)개가 peek만큼, 마지막 카드는 전체가 보여요.
+  return dims.selected + (others - 1) * dims.peek + dims.card;
+}
+
 function resultClassName(result: AccountActionResult | null) {
   if (!result) {
     return "hidden";
@@ -178,12 +199,17 @@ function WalletAccountCard({
   selected: boolean;
   stackIndex: number;
 }) {
-  const offsetIndex = Math.max(stackIndex, 0);
-  const mobileTranslateY = selected ? 0 : 70 + offsetIndex * 32;
-  const desktopTranslateY = selected ? 0 : 312 + offsetIndex * 44;
-  const translateX = selected ? 0 : Math.min(offsetIndex + 1, 4) * 5;
-  const scale = selected ? 1 : 1 - Math.min(offsetIndex + 1, 5) * 0.025;
-  const rotate = selected ? 0 : -Math.min(offsetIndex + 1, 4) * 0.45;
+  // 선택 카드는 맨 위, 나머지는 그 아래로 얇은 탭처럼 겹쳐 쌓아요.
+  const peekIndex = Math.max(stackIndex, 0);
+  const mobileTranslateY = selected
+    ? 0
+    : WALLET_DECK.mobile.selected + peekIndex * WALLET_DECK.mobile.peek;
+  const desktopTranslateY = selected
+    ? 0
+    : WALLET_DECK.desktop.selected + peekIndex * WALLET_DECK.desktop.peek;
+  const translateX = 0;
+  const scale = 1;
+  const rotate = 0;
 
   return (
     <article
@@ -206,7 +232,8 @@ function WalletAccountCard({
         "--desktop-card-y": `${desktopTranslateY}px`,
         "--mobile-card-y": `${mobileTranslateY}px`,
         background: walletCardBackground(account, selected),
-        zIndex: selected ? 40 : 30 - offsetIndex,
+        // 아래쪽(늦은 index) 카드가 위로 오게 해서 각 카드의 윗부분이 보여요.
+        zIndex: selected ? 60 : 20 + peekIndex,
       } as React.CSSProperties}
       tabIndex={0}
     >
@@ -392,16 +419,13 @@ function WalletDeck({
         ...accounts.filter((account) => account.id !== selectedAccount.id),
       ]
     : [];
-  const mobileDeckHeight = Math.max(
-    278,
-    Math.min(430, 278 + Math.max(stackedAccounts.length - 1, 0) * 32),
+  const mobileDeckHeight = walletDeckHeight(
+    stackedAccounts.length,
+    WALLET_DECK.mobile,
   );
-  const desktopStackCount = Math.max(stackedAccounts.length - 1, 0);
-  const desktopDeckHeight = Math.max(
-    384,
-    desktopStackCount === 0
-      ? 384
-      : Math.min(720, 632 + Math.max(desktopStackCount - 1, 0) * 44),
+  const desktopDeckHeight = walletDeckHeight(
+    stackedAccounts.length,
+    WALLET_DECK.desktop,
   );
 
   if (accounts.length === 0) {
@@ -450,7 +474,7 @@ function WalletDeck({
         </div>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-6">
+      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-6">
         <div
           className="relative min-h-[var(--mobile-deck-height)] sm:min-h-[var(--desktop-deck-height)]"
           style={
