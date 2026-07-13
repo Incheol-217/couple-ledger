@@ -10,6 +10,7 @@ import {
   CreditCard,
   Layers,
   Landmark,
+  Lock,
   Pencil,
   PiggyBank,
   Plus,
@@ -18,6 +19,7 @@ import {
 import {
   createAccountAction,
   deactivateAccountAction,
+  updateAccountVaultAction,
   moveAccountAction,
   updateAccountAction,
   type AccountActionResult,
@@ -266,6 +268,20 @@ function WalletAccountCard({
           >
             처음 잔액
           </p>
+          {account.vault_enabled ? (
+            <p
+              className={cn(
+                "mt-2 inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium",
+                selected
+                  ? "bg-white/16 text-white"
+                  : "bg-black/8 text-black/70",
+              )}
+            >
+              <Lock className="size-3" aria-hidden="true" />
+              {account.vault_name ?? "금고"} ·{" "}
+              {formatAccountBalance(account.vault_amount)}
+            </p>
+          ) : null}
         </div>
 
         <div
@@ -521,12 +537,164 @@ function WalletDeck({
             </div>
           </dl>
 
+          {selectedAccount ? (
+            <VaultPanel
+              account={selectedAccount}
+              householdId={householdId}
+              isAdmin={isAdmin}
+              key={`vault-${selectedAccount.id}-${selectedAccount.vault_enabled}`}
+            />
+          ) : null}
+
           <div className="mt-5 rounded-[1rem] bg-primary px-3 py-2 text-sm font-semibold text-secondary">
             지금 쓰는 계좌 {accounts.length}개
           </div>
         </aside>
       </div>
     </section>
+  );
+}
+
+function VaultPanel({
+  account,
+  householdId,
+  isAdmin,
+}: {
+  account: AccountRow;
+  householdId: string;
+  isAdmin: boolean;
+}) {
+  const [enabled, setEnabled] = useState(account.vault_enabled);
+  const [result, setResult] = useState<AccountActionResult | null>(null);
+  const [isPending, startTransition] = useTransition();
+
+  function submit(formData: FormData) {
+    startTransition(async () => {
+      const actionResult = await updateAccountVaultAction(formData);
+      setResult(actionResult);
+    });
+  }
+
+  function toggle() {
+    if (!isAdmin || isPending) {
+      return;
+    }
+
+    const next = !enabled;
+    setEnabled(next);
+
+    // 끌 때는 바로 저장하고, 켤 때는 별명·금액을 적고 저장하게 둬요.
+    if (!next) {
+      const formData = new FormData();
+      formData.set("household_id", householdId);
+      formData.set("account_id", account.id);
+      formData.set("vault_enabled", "false");
+      formData.set("vault_name", account.vault_name ?? "");
+      formData.set("vault_amount", String(Math.round(Number(account.vault_amount) || 0)));
+      submit(formData);
+    } else {
+      setResult(null);
+    }
+  }
+
+  return (
+    <div className="mt-4 rounded-[1rem] border border-white/12 bg-white/8 p-3">
+      <div className="flex items-center justify-between gap-3">
+        <p className="flex items-center gap-2 text-sm text-white/70">
+          <Lock className="size-4" aria-hidden="true" />
+          금고
+        </p>
+        <button
+          aria-checked={enabled}
+          aria-label="금고 켜고 끄기"
+          className={cn(
+            "relative h-6 w-11 shrink-0 rounded-full transition-colors",
+            enabled ? "bg-primary" : "bg-white/20",
+            !isAdmin && "cursor-not-allowed opacity-60",
+          )}
+          disabled={!isAdmin || isPending}
+          onClick={toggle}
+          role="switch"
+          type="button"
+        >
+          <span
+            className={cn(
+              "absolute top-0.5 size-5 rounded-full bg-white shadow transition-transform",
+              enabled ? "translate-x-[1.375rem]" : "translate-x-0.5",
+            )}
+          />
+        </button>
+      </div>
+
+      {result ? (
+        <p
+          className={cn(
+            "mt-2 rounded-md border px-2 py-1.5 text-xs",
+            result.ok
+              ? "border-primary/30 bg-primary/15 text-primary"
+              : "border-destructive/30 bg-destructive/15 text-destructive",
+          )}
+        >
+          {result.message}
+        </p>
+      ) : null}
+
+      {enabled ? (
+        isAdmin ? (
+          <form action={submit} className="mt-3 grid gap-2">
+            <input name="household_id" type="hidden" value={householdId} />
+            <input name="account_id" type="hidden" value={account.id} />
+            <input name="vault_enabled" type="hidden" value="true" />
+            <Input
+              aria-label="금고 별명"
+              autoComplete="off"
+              className="h-9 border-white/15 bg-white/10 text-white placeholder:text-white/40"
+              defaultValue={account.vault_name ?? ""}
+              key={`vault-name-${account.id}`}
+              name="vault_name"
+              placeholder="금고 별명 (예: 비상금)"
+            />
+            <Input
+              aria-label="금고 금액"
+              autoComplete="off"
+              className="h-9 border-white/15 bg-white/10 text-white placeholder:text-white/40"
+              defaultValue={
+                (Number(account.vault_amount) || 0) > 0
+                  ? formatAmountInput(String(Math.round(Number(account.vault_amount) || 0)))
+                  : ""
+              }
+              inputMode="numeric"
+              key={`vault-amount-${account.id}`}
+              name="vault_amount"
+              onInput={formatAmountField}
+              placeholder="금액 (예: 500,000)"
+              type="text"
+            />
+            <Button
+              className="h-9 bg-white text-secondary hover:bg-white/90"
+              disabled={isPending}
+              size="sm"
+              type="submit"
+            >
+              {isPending ? "저장하고 있어요" : "금고 저장"}
+            </Button>
+          </form>
+        ) : (
+          <dl className="mt-3 grid gap-1 text-sm">
+            <div className="flex justify-between gap-3">
+              <dt className="text-white/58">별명</dt>
+              <dd className="font-medium">{account.vault_name ?? "-"}</dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt className="text-white/58">금액</dt>
+              <dd className="font-medium">
+                {formatAccountBalance(account.vault_amount)}
+              </dd>
+            </div>
+          </dl>
+        )
+      ) : null}
+    </div>
   );
 }
 

@@ -474,3 +474,74 @@ export async function moveAccountAction(
     };
   }
 }
+
+export async function updateAccountVaultAction(
+  formData: FormData,
+): Promise<AccountActionResult> {
+  try {
+    const householdId = readText(formData, "household_id");
+    const accountId = readText(formData, "account_id");
+    const vaultEnabled = readText(formData, "vault_enabled") === "true";
+
+    if (!accountId) {
+      throw new Error("금고를 설정할 계좌를 찾을 수 없어요.");
+    }
+
+    const { supabase, user } = await assertCurrentAdminMember(householdId);
+
+    const vaultName = readText(formData, "vault_name") || null;
+    const rawAmount = readText(formData, "vault_amount");
+    const vaultAmount = rawAmount
+      ? Number(rawAmount.replaceAll(",", ""))
+      : 0;
+
+    if (!Number.isFinite(vaultAmount) || vaultAmount < 0) {
+      throw new Error("금고 금액은 0원 이상 숫자로 입력해 주세요.");
+    }
+
+    const { data: account, error } = await supabase
+      .from("accounts")
+      .update({
+        vault_enabled: vaultEnabled,
+        vault_name: vaultName,
+        vault_amount: Math.round(vaultAmount),
+      })
+      .eq("household_id", householdId)
+      .eq("id", accountId)
+      .select("name")
+      .single();
+
+    if (error || !account) {
+      throw new Error(error?.message ?? "금고를 저장하지 못했어요.");
+    }
+
+    await createNotificationEvent(supabase, {
+      actorUserId: user.id,
+      body: vaultEnabled
+        ? `'${account.name}' 계좌에 금고${vaultName ? ` '${vaultName}'` : ""}를 설정했어요.`
+        : `'${account.name}' 계좌의 금고를 껐어요.`,
+      eventType: "account_updated",
+      householdId,
+      metadata: {
+        account_id: accountId,
+        vault_amount: Math.round(vaultAmount),
+        vault_enabled: vaultEnabled,
+      },
+      title: "금고 설정이 바뀌었어요",
+    });
+
+    revalidatePath("/accounts");
+    revalidatePath("/dashboard");
+    revalidatePath("/", "layout");
+    return {
+      ok: true,
+      message: vaultEnabled ? "금고를 저장했어요." : "금고를 껐어요.",
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      message:
+        error instanceof Error ? error.message : "금고를 저장하지 못했어요.",
+    };
+  }
+}
