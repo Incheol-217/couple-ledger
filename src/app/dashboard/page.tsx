@@ -303,6 +303,22 @@ function buildAccountBalances(
     ]),
   );
 
+  // 체크카드는 연결된 통장에서 돈이 빠지는 결제수단이라, 잔액 효과를
+  // 연결 계좌로 돌려요. (연말정산 등 결제수단 구분은 원래 계좌 기준 유지)
+  function balanceAccountId(accountId: string) {
+    const account = accountsById.get(accountId);
+
+    if (
+      account?.type === "check_card" &&
+      account.default_withdrawal_account_id &&
+      accountsById.has(account.default_withdrawal_account_id)
+    ) {
+      return account.default_withdrawal_account_id;
+    }
+
+    return accountId;
+  }
+
   function appliesToAccount(accountId: string, transactionDate: string) {
     const account = accountsById.get(accountId);
     return Boolean(account && transactionDate >= account.opening_balance_as_of);
@@ -315,48 +331,39 @@ function buildAccountBalances(
       return;
     }
 
+    const sourceId = balanceAccountId(transaction.account_id);
+
     if (transaction.type === "income") {
-      if (!appliesToAccount(transaction.account_id, transaction.transaction_date)) {
+      if (!appliesToAccount(sourceId, transaction.transaction_date)) {
         return;
       }
 
-      balances.set(
-        transaction.account_id,
-        (balances.get(transaction.account_id) ?? 0) + amount,
-      );
+      balances.set(sourceId, (balances.get(sourceId) ?? 0) + amount);
       return;
     }
 
     if (transaction.type === "expense") {
-      if (!appliesToAccount(transaction.account_id, transaction.transaction_date)) {
+      if (!appliesToAccount(sourceId, transaction.transaction_date)) {
         return;
       }
 
-      balances.set(
-        transaction.account_id,
-        (balances.get(transaction.account_id) ?? 0) - amount,
-      );
+      balances.set(sourceId, (balances.get(sourceId) ?? 0) - amount);
       return;
     }
 
-    if (appliesToAccount(transaction.account_id, transaction.transaction_date)) {
-      balances.set(
-        transaction.account_id,
-        (balances.get(transaction.account_id) ?? 0) - amount,
-      );
+    if (appliesToAccount(sourceId, transaction.transaction_date)) {
+      balances.set(sourceId, (balances.get(sourceId) ?? 0) - amount);
     }
 
+    const targetId = transaction.transfer_account_id
+      ? balanceAccountId(transaction.transfer_account_id)
+      : null;
+
     if (
-      transaction.transfer_account_id &&
-      appliesToAccount(
-        transaction.transfer_account_id,
-        transaction.transaction_date,
-      )
+      targetId &&
+      appliesToAccount(targetId, transaction.transaction_date)
     ) {
-      balances.set(
-        transaction.transfer_account_id,
-        (balances.get(transaction.transfer_account_id) ?? 0) + amount,
-      );
+      balances.set(targetId, (balances.get(targetId) ?? 0) + amount);
     }
   });
 

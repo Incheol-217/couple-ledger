@@ -303,7 +303,7 @@ function WalletAccountCard({
               빠져나갈 계좌
             </p>
             <p className="mt-1 truncate text-sm font-semibold">
-              {account.type === "card"
+              {account.type === "card" || account.type === "check_card"
                 ? getWithdrawalName(accounts, account.default_withdrawal_account_id)
                 : "-"}
             </p>
@@ -525,9 +525,10 @@ function WalletDeck({
               </dd>
             </div>
             <div className="flex items-center justify-between gap-4 rounded-[1rem] bg-white/10 px-3 py-2">
-              <dt className="text-white/58">카드값 계좌</dt>
+              <dt className="text-white/58">연결 계좌</dt>
               <dd className="truncate font-medium">
-                {selectedAccount?.type === "card"
+                {selectedAccount?.type === "card" ||
+                selectedAccount?.type === "check_card"
                   ? getWithdrawalName(
                       allAccounts,
                       selectedAccount.default_withdrawal_account_id,
@@ -727,6 +728,7 @@ function AccountForm({
         (account) =>
           account.is_active &&
           account.type !== "card" &&
+          account.type !== "check_card" &&
           account.id !== selectedAccount?.id,
       ),
     [accounts, selectedAccount?.id],
@@ -895,10 +897,12 @@ function AccountForm({
             </div>
           </div>
 
-          {type === "card" ? (
+          {type === "card" || type === "check_card" ? (
             <div className="space-y-2">
               <Label htmlFor="default-withdrawal-account">
-                카드값이 빠져나갈 계좌
+                {type === "card"
+                  ? "카드값이 빠져나갈 계좌"
+                  : "연결된 통장 (체크카드 지출이 여기서 빠져요)"}
               </Label>
               <Select
                 defaultValue={selectedAccount?.default_withdrawal_account_id ?? ""}
@@ -1177,7 +1181,7 @@ export function AccountsClient({
                     </span>
                   </div>
                   <div className="flex justify-between gap-3">
-                    <span className="shrink-0 text-muted-foreground">카드값 계좌</span>
+                    <span className="shrink-0 text-muted-foreground">연결 계좌</span>
                     <span className="truncate">
                       {account.type === "card"
                         ? getWithdrawalName(
@@ -1295,7 +1299,7 @@ export function AccountsClient({
                 <TableHead>타입</TableHead>
                 <TableHead>사용자</TableHead>
                 <TableHead className="text-right">처음 잔액</TableHead>
-                <TableHead>카드값 계좌</TableHead>
+                <TableHead>연결 계좌</TableHead>
                 <TableHead>상태</TableHead>
                 <TableHead className="text-right">관리</TableHead>
               </TableRow>

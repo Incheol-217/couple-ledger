@@ -127,7 +127,7 @@ async function validateWithdrawalAccount(
   accountId: string | null,
   defaultWithdrawalAccountId: string | null,
 ) {
-  if (type !== "card") {
+  if (type !== "card" && type !== "check_card") {
     return null;
   }
 
@@ -136,7 +136,7 @@ async function validateWithdrawalAccount(
   }
 
   if (accountId && defaultWithdrawalAccountId === accountId) {
-    throw new Error("카드값이 빠지는 계좌는 이 카드와 다르게 골라주세요.");
+    throw new Error("연결 계좌는 이 카드와 다르게 골라주세요.");
   }
 
   const { data, error } = await supabase
