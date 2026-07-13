@@ -11,9 +11,8 @@
 
 ## 🟠 버그 수정
 
-- [ ] **알림 테이블 마이그레이션 적용** — `notification_events` / `notification_reads` 누락 상태
-  - Supabase SQL Editor에서 `supabase/migrations/20260707130000_create_notification_events.sql` 실행
-  - 적용 후 알림 벨/알림 기능 동작 확인
+- [x] **알림 테이블 마이그레이션 적용** — 2026-07-13 적용 완료, 알림 벨 동작 확인됨
+  - 예산 80%/100% 초과 알림도 함께 추가됨 (거래 저장 시 자동)
 
 ## 🟡 새로 만든 예산 기능 실사용
 
