@@ -9,7 +9,7 @@
 - Tailwind CSS
 - Supabase Auth, Postgres, RLS 기반 household 데이터 격리
 - 모바일 빠른 거래 입력과 영수증 인식 초안
-- 계좌, 구독비/고정비, 대시보드, 보고서, 알림
+- 계좌, 구독비/고정비, 할부, 대시보드, 보고서, 알림
 - 카테고리·계좌별 예산과 공동 저축 목표
 - 예산 80%/100% 초과 알림
 - 수입/지출을 Notion 데이터베이스에 자동 기록
@@ -112,6 +112,7 @@ curl -X POST https://YOUR_VERCEL_DOMAIN/api/setup/login-accounts \
 - `/tax`
 - `/accounts`
 - `/recurring`
+- `/installments`
 - `/settings`
 
 ## 반복 거래 직접 만들기

@@ -14,7 +14,7 @@ type RecurringItemForJob = {
   account_id: string;
   category_id: string | null;
   payer_user_id: string | null;
-  kind: "subscription" | "fixed_expense";
+  kind: "subscription" | "fixed_expense" | "installment";
   name: string;
   merchant: string | null;
   amount: number | string;
@@ -24,6 +24,7 @@ type RecurringItemForJob = {
   billing_day: number | null;
   next_due_date: string;
   memo: string | null;
+  total_installments: number | null;
 };
 
 export type CreatedRecurringTransaction = {
@@ -154,6 +155,32 @@ async function existingRecurringTransaction(
   return data?.id as string | undefined;
 }
 
+async function countItemTransactions(
+  supabase: ReturnType<typeof createAdminClient>,
+  recurringItemId: string,
+) {
+  const { count, error } = await supabase
+    .from("transactions")
+    .select("id", { count: "exact", head: true })
+    .eq("recurring_item_id", recurringItemId);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return count ?? 0;
+}
+
+async function finishInstallmentItem(
+  supabase: ReturnType<typeof createAdminClient>,
+  itemId: string,
+) {
+  await supabase
+    .from("recurring_items")
+    .update({ status: "canceled", auto_create_transaction: false })
+    .eq("id", itemId);
+}
+
 async function createTransactionForDueDate(
   supabase: ReturnType<typeof createAdminClient>,
   item: RecurringItemForJob,
@@ -236,6 +263,7 @@ export async function createRecurringTransactions(
         "billing_day",
         "next_due_date",
         "memo",
+        "total_installments",
       ].join(", "),
     )
     .eq("status", "active")
@@ -256,8 +284,31 @@ export async function createRecurringTransactions(
       let dueDate = item.next_due_date;
       let occurrenceCount = 0;
 
+      // 할부는 이미 만들어진 거래 수를 세서 남은 회차까지만 만들어요.
+      let paidCount =
+        item.kind === "installment" && item.total_installments
+          ? await countItemTransactions(supabase, item.id)
+          : null;
+
+      if (
+        paidCount !== null &&
+        item.total_installments &&
+        paidCount >= item.total_installments
+      ) {
+        await finishInstallmentItem(supabase, item.id);
+        continue;
+      }
+
       while (dueDate <= today) {
         occurrenceCount += 1;
+
+        if (
+          paidCount !== null &&
+          item.total_installments &&
+          paidCount >= item.total_installments
+        ) {
+          break;
+        }
 
         if (occurrenceCount > MAX_OCCURRENCES_PER_ITEM) {
           result.skipped.push({
@@ -300,6 +351,10 @@ export async function createRecurringTransactions(
               dueDate,
             });
 
+            if (paidCount !== null) {
+              paidCount += 1;
+            }
+
             await maybeCreateBudgetAlerts(supabase, {
               householdId: item.household_id,
               accountId: item.account_id,
@@ -325,7 +380,17 @@ export async function createRecurringTransactions(
         dueDate = nextDueDate(item, dueDate);
       }
 
-      if (dueDate !== item.next_due_date) {
+      // 마지막 회차까지 냈으면 할부를 끝냄 처리해요.
+      const installmentDone =
+        paidCount !== null &&
+        item.total_installments !== null &&
+        paidCount >= item.total_installments;
+
+      if (installmentDone) {
+        await finishInstallmentItem(supabase, item.id);
+      }
+
+      if (!installmentDone && dueDate !== item.next_due_date) {
         const { data: updatedItem, error: updateError } = await supabase
           .from("recurring_items")
           .update({ next_due_date: dueDate })

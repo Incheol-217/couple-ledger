@@ -114,6 +114,7 @@ async function getRecurringPageData(): Promise<RecurringPageData> {
           "id, household_id, account_id, category_id, payer_user_id, kind, name, merchant, amount, currency_code, billing_cycle, billing_interval, custom_interval_days, billing_day, day_of_week, next_due_date, status, auto_create_transaction, reminder_days_before, memo, created_at, updated_at",
         )
         .eq("household_id", household.id)
+        .in("kind", ["subscription", "fixed_expense"])
         .order("status", { ascending: true })
         .order("next_due_date", { ascending: true })
         .order("created_at", { ascending: true }),
