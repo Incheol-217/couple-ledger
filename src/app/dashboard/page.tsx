@@ -252,6 +252,11 @@ function plannedOccurrencesForRange(
       }
 
       while (dueDate <= end && count < MAX_PLANNED_OCCURRENCES_PER_ITEM) {
+        // 종료일이 지난 예정 지출은 곧 나갈 돈에 넣지 않아요.
+        if (item.ends_on && dueDate > item.ends_on) {
+          break;
+        }
+
         if (dueDate >= start) {
           occurrences.push({
             id: `${item.id}-${dueDate}`,
@@ -407,7 +412,7 @@ async function getDashboardData(
     supabase
       .from("recurring_items")
       .select(
-        "id, household_id, account_id, category_id, payer_user_id, kind, name, merchant, amount, currency_code, billing_cycle, billing_interval, custom_interval_days, billing_day, day_of_week, next_due_date, status, auto_create_transaction, reminder_days_before, memo, created_at, updated_at",
+        "id, household_id, account_id, category_id, payer_user_id, kind, name, merchant, amount, currency_code, billing_cycle, billing_interval, custom_interval_days, billing_day, day_of_week, next_due_date, starts_on, ends_on, status, auto_create_transaction, reminder_days_before, memo, created_at, updated_at",
       )
       .eq("household_id", household.id)
       .order("status", { ascending: true })

@@ -371,6 +371,19 @@ function RecurringForm({
             </div>
 
             <div className="space-y-2">
+              <Label htmlFor="ends-on">종료일 (선택)</Label>
+              <Input
+                defaultValue={item?.ends_on ?? ""}
+                id="ends-on"
+                name="ends_on"
+                type="date"
+              />
+              <p className="text-xs text-muted-foreground">
+                비우면 계속 나가요. 정하면 그날까지만 자동으로 기록하고 끝나요.
+              </p>
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="recurring-account">결제 계좌</Label>
               <Select
                 defaultValue={item?.account_id ?? accounts[0]?.id ?? ""}
@@ -830,6 +843,10 @@ export function RecurringClient({
                       <div className="flex justify-between gap-4">
                         <dt className="text-muted-foreground">다음 결제일</dt>
                         <dd>{item.next_due_date}</dd>
+                      </div>
+                      <div className="flex justify-between gap-4">
+                        <dt className="text-muted-foreground">언제까지</dt>
+                        <dd>{item.ends_on ? `${item.ends_on}까지` : "계속"}</dd>
                       </div>
                       <div className="flex justify-between gap-4">
                         <dt className="text-muted-foreground">결제 계좌</dt>

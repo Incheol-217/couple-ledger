@@ -26,6 +26,8 @@ export type RecurringItemRow = {
   billing_day: number | null;
   day_of_week: number | null;
   next_due_date: string;
+  starts_on: string | null;
+  ends_on: string | null;
   status: RecurringStatus;
   auto_create_transaction: boolean;
   reminder_days_before: number;

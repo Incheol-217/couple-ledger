@@ -23,6 +23,7 @@ type RecurringItemForJob = {
   billing_interval: number | null;
   billing_day: number | null;
   next_due_date: string;
+  ends_on: string | null;
   memo: string | null;
   total_installments: number | null;
 };
@@ -181,6 +182,17 @@ async function finishInstallmentItem(
     .eq("id", itemId);
 }
 
+// 종료일(ends_on)이 지난 고정비/구독을 스스로 끝냄 처리해요.
+async function stopRecurringItem(
+  supabase: ReturnType<typeof createAdminClient>,
+  itemId: string,
+) {
+  await supabase
+    .from("recurring_items")
+    .update({ status: "canceled", auto_create_transaction: false })
+    .eq("id", itemId);
+}
+
 async function createTransactionForDueDate(
   supabase: ReturnType<typeof createAdminClient>,
   item: RecurringItemForJob,
@@ -262,6 +274,7 @@ export async function createRecurringTransactions(
         "billing_interval",
         "billing_day",
         "next_due_date",
+        "ends_on",
         "memo",
         "total_installments",
       ].join(", "),
@@ -300,6 +313,11 @@ export async function createRecurringTransactions(
       }
 
       while (dueDate <= today) {
+        // 종료일이 지난 회차는 만들지 않아요.
+        if (item.ends_on && dueDate > item.ends_on) {
+          break;
+        }
+
         occurrenceCount += 1;
 
         if (
@@ -390,7 +408,17 @@ export async function createRecurringTransactions(
         await finishInstallmentItem(supabase, item.id);
       }
 
-      if (!installmentDone && dueDate !== item.next_due_date) {
+      // 다음 결제일이 종료일을 넘으면 고정비/구독을 스스로 끝내요.
+      const endedByEndDate =
+        !installmentDone &&
+        Boolean(item.ends_on) &&
+        dueDate > (item.ends_on as string);
+
+      if (endedByEndDate) {
+        await stopRecurringItem(supabase, item.id);
+      }
+
+      if (!installmentDone && !endedByEndDate && dueDate !== item.next_due_date) {
         const { data: updatedItem, error: updateError } = await supabase
           .from("recurring_items")
           .update({ next_due_date: dueDate })

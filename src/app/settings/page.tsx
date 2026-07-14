@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { signOutAction } from "@/app/login/actions";
+import type { CategoryRow } from "@/app/m/new/types";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getCurrentUserContext } from "@/lib/auth/session";
+import { createClient } from "@/lib/supabase/server";
 import { SettingsClient } from "./settings-client";
 
 export default async function SettingsPage() {
@@ -86,6 +88,23 @@ export default async function SettingsPage() {
     );
   }
 
+  const householdId = context.householdId ?? null;
+  let categories: CategoryRow[] = [];
+
+  if (householdId) {
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from("categories")
+      .select("id, household_id, name, type, icon, color, display_order, is_active")
+      .eq("household_id", householdId)
+      .in("type", ["expense", "income"])
+      .order("type", { ascending: true })
+      .order("display_order", { ascending: true })
+      .order("name", { ascending: true });
+
+    categories = (data ?? []) as CategoryRow[];
+  }
+
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
       <PageHeader
@@ -94,7 +113,7 @@ export default async function SettingsPage() {
         description="가계부에 필요한 기본값을 정해요."
       />
 
-      <SettingsClient />
+      <SettingsClient categories={categories} householdId={householdId} />
     </div>
   );
 }

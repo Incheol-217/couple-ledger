@@ -347,6 +347,17 @@ describe("UX guardrails", () => {
   const accountsPage = read("src/app/accounts/page.tsx");
   const accountsClientView = read("src/app/accounts/accounts-client.tsx");
   const recurring = read("src/app/recurring/recurring-client.tsx");
+  const recurringActionsUx = read("src/app/recurring/actions.ts");
+  const installmentsClient = read(
+    "src/app/installments/installments-client.tsx",
+  );
+  const installmentsActions = read("src/app/installments/actions.ts");
+  const installmentSchedule = read("src/lib/installments/schedule.ts");
+  const settingsActions = read("src/app/settings/actions.ts");
+  const settingsPageUx = read("src/app/settings/page.tsx");
+  const allowanceSeed = read(
+    "supabase/migrations/20260714120000_seed_allowance_category.sql",
+  );
   const moneyFormatter = read("src/lib/formatters/money.ts");
   const accountsClient = read("src/app/accounts/accounts-client.tsx");
   const reportPage = read("src/app/reports/page.tsx");
@@ -502,5 +513,35 @@ describe("UX guardrails", () => {
     assert.match(settings, /value="secrets"/);
     assert.match(settings, /text-foreground\/80/);
     assert.match(settings, /group-aria-selected:text-primary-foreground/);
+  });
+
+  it("stops recurring items on their end date", () => {
+    // 폼과 액션이 종료일을 다뤄요.
+    assert.match(recurring, /name="ends_on"/);
+    assert.match(recurringActionsUx, /ends_on: payload\.endsOn/);
+    // 반복거래 job이 종료일 이후 회차를 만들지 않고 스스로 끝내요.
+    assert.match(recurringJob, /item\.ends_on && dueDate > item\.ends_on/);
+    assert.match(recurringJob, /stopRecurringItem/);
+  });
+
+  it("derives the installment due date from the start date", () => {
+    // '다음 결제일' 직접 입력은 없애고 시작일+지출일+개월수로 계산해요.
+    assert.doesNotMatch(installmentsClient, /name="next_due_date"/);
+    assert.match(installmentsClient, /결제 시작일/);
+    assert.match(installmentsActions, /firstInstallmentDueDate/);
+    assert.match(installmentSchedule, /export function firstInstallmentDueDate/);
+    assert.match(installmentSchedule, /export function paidInstallmentCount/);
+  });
+
+  it("manages categories from settings for admins", () => {
+    assert.match(settingsActions, /export async function createCategoryAction/);
+    assert.match(settingsActions, /export async function renameCategoryAction/);
+    assert.match(settingsActions, /export async function deleteCategoryAction/);
+    assert.match(settingsActions, /\.eq\("role", "owner"\)/);
+    assert.match(settings, /CategoryManager/);
+    assert.match(settingsPageUx, /\.from\("categories"\)/);
+    // 지출 카테고리에 '용돈'을 넣는 seed 마이그레이션이 있어요.
+    assert.match(allowanceSeed, /'용돈'/);
+    assert.match(allowanceSeed, /where not exists/);
   });
 });

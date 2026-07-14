@@ -22,6 +22,11 @@ import {
   type InstallmentRow,
 } from "./types";
 import { accountTypeLabels } from "@/app/accounts/types";
+import {
+  firstInstallmentDueDate,
+  lastInstallmentDueDate,
+  paidInstallmentCount,
+} from "@/lib/installments/schedule";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -65,7 +70,7 @@ function todayString() {
   return `${year}-${month}-${day}`;
 }
 
-// 할부 시작일과 오늘을 비교해 지금까지 지난 결제 회차 수를 계산해요.
+// 결제 시작일·매달 지출일 기준으로 지금까지 지난 결제 회차 수를 계산해요.
 function paidInstallments(item: InstallmentRow) {
   const total = item.total_installments ?? 0;
 
@@ -73,31 +78,15 @@ function paidInstallments(item: InstallmentRow) {
     return total; // 완납 처리된 할부
   }
 
-  if (!item.starts_on || total <= 0) {
-    return 0;
-  }
-
-  const [sy, sm, sd] = item.starts_on.split("-").map(Number);
-  const now = new Date();
-  const ty = now.getFullYear();
-  const tm = now.getMonth() + 1;
-  const td = now.getDate();
-
-  // 아직 시작 전이면 0회.
-  if (ty < sy || (ty === sy && (tm < sm || (tm === sm && td < sd)))) {
-    return 0;
-  }
-
-  // 시작일 포함, 결제일(매월 시작일과 같은 날)이 지날 때마다 1회씩.
-  let months = (ty - sy) * 12 + (tm - sm);
-  if (td >= sd) {
-    months += 1;
-  }
-
-  return Math.max(0, Math.min(total, months));
+  return paidInstallmentCount(
+    item.starts_on,
+    item.billing_day,
+    total,
+    todayString(),
+  );
 }
 
-// 마지막 회차 예상 월 (다음 결제일 + 남은 회차 - 1개월)
+// 마지막 회차 예상 월 (결제 시작일 + 매달 지출일 + 개월수로 계산)
 function estimatedEndLabel(item: InstallmentRow, paid: number) {
   const total = item.total_installments ?? 0;
   const remaining = Math.max(0, total - paid);
@@ -106,9 +95,16 @@ function estimatedEndLabel(item: InstallmentRow, paid: number) {
     return "완납";
   }
 
-  const [year, month] = item.next_due_date.split("-").map(Number);
-  const end = new Date(Date.UTC(year, month - 1 + (remaining - 1), 1));
-  return `${end.getUTCFullYear()}.${String(end.getUTCMonth() + 1).padStart(2, "0")} 끝`;
+  if (!item.starts_on) {
+    return "-";
+  }
+
+  const [year, month] = lastInstallmentDueDate(
+    item.starts_on,
+    item.billing_day,
+    total,
+  ).split("-");
+  return `${year}.${month} 끝`;
 }
 
 function resultClassName(result: InstallmentActionResult | null) {
@@ -149,7 +145,42 @@ function InstallmentForm({
   const amountRef = useRef<HTMLInputElement>(null);
   const totalPriceRef = useRef<HTMLInputElement>(null);
   const monthsRef = useRef<HTMLInputElement>(null);
+  const startsOnRef = useRef<HTMLInputElement>(null);
+  const billingDayRef = useRef<HTMLInputElement>(null);
   const today = todayString();
+
+  // 결제 시작일·매달 지출일·개월수로 다음 결제일과 예상 종료월을 미리 보여줘요.
+  const initialStartsOn = item?.starts_on ?? today;
+  const [schedule, setSchedule] = useState(() => {
+    const total = item?.total_installments ?? 0;
+    if (!initialStartsOn || total <= 0) {
+      return { first: "", last: "" };
+    }
+    return {
+      first: firstInstallmentDueDate(initialStartsOn, item?.billing_day ?? null),
+      last: lastInstallmentDueDate(initialStartsOn, item?.billing_day ?? null, total),
+    };
+  });
+
+  function updateSchedule() {
+    const startsOn = startsOnRef.current?.value ?? "";
+    const billingDayValue = Number(billingDayRef.current?.value ?? "");
+    const billingDay =
+      Number.isFinite(billingDayValue) && billingDayValue >= 1
+        ? billingDayValue
+        : null;
+    const total = Number(monthsRef.current?.value ?? "");
+
+    if (!startsOn || !Number.isFinite(total) || total < 1) {
+      setSchedule({ first: "", last: "" });
+      return;
+    }
+
+    setSchedule({
+      first: firstInstallmentDueDate(startsOn, billingDay),
+      last: lastInstallmentDueDate(startsOn, billingDay, Math.round(total)),
+    });
+  }
 
   // 총 금액과 개월수를 넣으면 회차 금액을 자동으로 채워줘요(직접 수정 가능).
   function recalcAmount() {
@@ -262,7 +293,10 @@ function InstallmentForm({
                 max={120}
                 min={1}
                 name="total_installments"
-                onInput={recalcAmount}
+                onInput={() => {
+                  recalcAmount();
+                  updateSchedule();
+                }}
                 placeholder="24"
                 ref={monthsRef}
                 required
@@ -291,29 +325,20 @@ function InstallmentForm({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="installment-starts-on">할부 시작일</Label>
+              <Label htmlFor="installment-starts-on">결제 시작일</Label>
               <Input
                 defaultValue={item?.starts_on ?? item?.next_due_date ?? today}
                 id="installment-starts-on"
                 name="starts_on"
+                onInput={updateSchedule}
+                ref={startsOnRef}
                 required
                 type="date"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="installment-next-due">다음 결제일</Label>
-              <Input
-                defaultValue={item?.next_due_date ?? today}
-                id="installment-next-due"
-                name="next_due_date"
-                required
-                type="date"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="installment-billing-day">매달 결제일 (선택)</Label>
+              <Label htmlFor="installment-billing-day">매달 지출일 (선택)</Label>
               <Input
                 defaultValue={item?.billing_day ?? ""}
                 id="installment-billing-day"
@@ -321,7 +346,9 @@ function InstallmentForm({
                 max={31}
                 min={1}
                 name="billing_day"
-                placeholder="25"
+                onInput={updateSchedule}
+                placeholder="25 (비우면 시작일의 날짜)"
+                ref={billingDayRef}
                 type="number"
               />
             </div>
@@ -358,6 +385,18 @@ function InstallmentForm({
               </Select>
             </div>
           </div>
+
+          {schedule.first ? (
+            <div className="rounded-md border border-primary/20 bg-primary/5 px-3 py-2 text-sm text-primary">
+              다음 결제일은 <strong>{schedule.first}</strong>, 마지막 회차는{" "}
+              <strong>{schedule.last}</strong>로 예상돼요. 결제일마다 거래가 자동
+              기록돼요.
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              결제 시작일·매달 지출일·개월수를 넣으면 다음 결제일을 계산해 드려요.
+            </p>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="installment-memo">메모</Label>

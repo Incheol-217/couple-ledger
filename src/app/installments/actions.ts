@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { firstInstallmentDueDate } from "@/lib/installments/schedule";
 import { createNotificationEvent } from "@/lib/notifications/events";
 import { createClient } from "@/lib/supabase/server";
 
@@ -126,7 +127,6 @@ function toPayload(formData: FormData) {
   const totalInstallments = Math.round(
     readNumber(formData, "total_installments", 0),
   );
-  const nextDueDate = readText(formData, "next_due_date");
   const startsOn = readText(formData, "starts_on");
   const billingDay = readNumber(formData, "billing_day", 0);
 
@@ -142,18 +142,18 @@ function toPayload(formData: FormData) {
     throw new Error("할부 개월수는 1~120 사이로 입력해 주세요.");
   }
 
-  if (!nextDueDate) {
-    throw new Error("다음 결제일을 선택해 주세요.");
+  if (!startsOn) {
+    throw new Error("결제 시작일을 선택해 주세요.");
   }
 
-  if (!startsOn) {
-    throw new Error("할부 시작일을 선택해 주세요.");
-  }
+  const normalizedBillingDay = billingDay > 0 ? billingDay : null;
+  // 결제 시작일 + 매달 지출일로 첫 결제일(다음 결제일)을 계산해요.
+  const nextDueDate = firstInstallmentDueDate(startsOn, normalizedBillingDay);
 
   return {
     accountId: readText(formData, "account_id"),
     amount,
-    billingDay: billingDay > 0 ? billingDay : null,
+    billingDay: normalizedBillingDay,
     categoryId: readNullableText(formData, "category_id"),
     memo: readNullableText(formData, "memo"),
     merchant: readNullableText(formData, "merchant"),

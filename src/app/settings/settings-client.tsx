@@ -2,14 +2,22 @@
 
 import {
   Bot,
+  Check,
+  Eye,
+  EyeOff,
   KeyRound,
   LinkIcon,
+  Pencil,
+  Plus,
   Tags,
+  Trash2,
   UserRoundPlus,
   WalletCards,
+  X,
 } from "lucide-react";
 import Link from "next/link";
-import type * as React from "react";
+import { useState, useTransition, type ReactNode } from "react";
+import type { CategoryRow } from "@/app/m/new/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,12 +27,22 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
+import {
+  createCategoryAction,
+  deleteCategoryAction,
+  renameCategoryAction,
+  toggleCategoryActiveAction,
+  type CategoryActionResult,
+} from "./actions";
 
 const settingsTabs = [
   {
@@ -71,8 +89,8 @@ function SettingPanel({
   description,
   title,
 }: {
-  action?: React.ReactNode;
-  children: React.ReactNode;
+  action?: ReactNode;
+  children: ReactNode;
   description: string;
   title: string;
 }) {
@@ -102,7 +120,329 @@ function InfoList({ items }: { items: string[] }) {
   );
 }
 
-export function SettingsClient() {
+const categoryTypeLabels: Record<"expense" | "income", string> = {
+  expense: "지출",
+  income: "수입",
+};
+
+function resultClassName(result: CategoryActionResult | null) {
+  if (!result) {
+    return "hidden";
+  }
+
+  return result.ok
+    ? "border-primary/20 bg-primary/10 text-primary"
+    : "border-destructive/20 bg-destructive/10 text-destructive";
+}
+
+function CategoryRowItem({
+  category,
+  householdId,
+  onResult,
+}: {
+  category: CategoryRow;
+  householdId: string;
+  onResult: (result: CategoryActionResult) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [name, setName] = useState(category.name);
+  const [isPending, startTransition] = useTransition();
+
+  function runRename() {
+    const trimmed = name.trim();
+
+    if (!trimmed || trimmed === category.name) {
+      setEditing(false);
+      setName(category.name);
+      return;
+    }
+
+    const formData = new FormData();
+    formData.set("household_id", householdId);
+    formData.set("category_id", category.id);
+    formData.set("name", trimmed);
+
+    startTransition(async () => {
+      const result = await renameCategoryAction(formData);
+      onResult(result);
+      if (result.ok) {
+        setEditing(false);
+      }
+    });
+  }
+
+  function runToggle() {
+    const formData = new FormData();
+    formData.set("household_id", householdId);
+    formData.set("category_id", category.id);
+    formData.set("is_active", category.is_active ? "false" : "true");
+
+    startTransition(async () => {
+      onResult(await toggleCategoryActiveAction(formData));
+    });
+  }
+
+  function runDelete() {
+    const formData = new FormData();
+    formData.set("household_id", householdId);
+    formData.set("category_id", category.id);
+
+    startTransition(async () => {
+      onResult(await deleteCategoryAction(formData));
+    });
+  }
+
+  return (
+    <div
+      className={cn(
+        "flex items-center gap-2 rounded-md border bg-muted/20 px-3 py-2",
+        !category.is_active && "opacity-60",
+      )}
+    >
+      {editing ? (
+        <>
+          <Input
+            autoFocus
+            className="h-8"
+            onChange={(event) => setName(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                runRename();
+              }
+              if (event.key === "Escape") {
+                setEditing(false);
+                setName(category.name);
+              }
+            }}
+            value={name}
+          />
+          <Button
+            aria-label="이름 저장"
+            disabled={isPending}
+            onClick={runRename}
+            size="icon"
+            type="button"
+            variant="ghost"
+          >
+            <Check className="size-4" aria-hidden="true" />
+          </Button>
+          <Button
+            aria-label="취소"
+            onClick={() => {
+              setEditing(false);
+              setName(category.name);
+            }}
+            size="icon"
+            type="button"
+            variant="ghost"
+          >
+            <X className="size-4" aria-hidden="true" />
+          </Button>
+        </>
+      ) : (
+        <>
+          <span className="min-w-0 flex-1 truncate text-sm font-medium">
+            {category.name}
+          </span>
+          {!category.is_active ? (
+            <Badge variant="outline">숨김</Badge>
+          ) : null}
+          <Button
+            aria-label="이름 바꾸기"
+            disabled={isPending}
+            onClick={() => setEditing(true)}
+            size="icon"
+            type="button"
+            variant="ghost"
+          >
+            <Pencil className="size-4" aria-hidden="true" />
+          </Button>
+          <Button
+            aria-label={category.is_active ? "숨기기" : "다시 켜기"}
+            disabled={isPending}
+            onClick={runToggle}
+            size="icon"
+            type="button"
+            variant="ghost"
+          >
+            {category.is_active ? (
+              <EyeOff className="size-4" aria-hidden="true" />
+            ) : (
+              <Eye className="size-4" aria-hidden="true" />
+            )}
+          </Button>
+          {confirmingDelete ? (
+            <>
+              <Button
+                disabled={isPending}
+                onClick={runDelete}
+                size="sm"
+                type="button"
+                variant="destructive"
+              >
+                정말 지울까요?
+              </Button>
+              <Button
+                aria-label="지우기 취소"
+                onClick={() => setConfirmingDelete(false)}
+                size="icon"
+                type="button"
+                variant="ghost"
+              >
+                <X className="size-4" aria-hidden="true" />
+              </Button>
+            </>
+          ) : (
+            <Button
+              aria-label="지우기"
+              disabled={isPending}
+              onClick={() => setConfirmingDelete(true)}
+              size="icon"
+              type="button"
+              variant="ghost"
+            >
+              <Trash2 className="size-4 text-destructive" aria-hidden="true" />
+            </Button>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+function CategoryManager({
+  categories,
+  householdId,
+}: {
+  categories: CategoryRow[];
+  householdId: string | null;
+}) {
+  const [result, setResult] = useState<CategoryActionResult | null>(null);
+  const [newName, setNewName] = useState("");
+  const [newType, setNewType] = useState<"expense" | "income">("expense");
+  const [isPending, startTransition] = useTransition();
+
+  if (!householdId) {
+    return (
+      <InfoList
+        items={["가계부 멤버 연결을 마치면 카테고리를 관리할 수 있어요."]}
+      />
+    );
+  }
+
+  function runCreate() {
+    const trimmed = newName.trim();
+
+    if (!trimmed) {
+      setResult({ ok: false, message: "카테고리 이름을 입력해 주세요." });
+      return;
+    }
+
+    const formData = new FormData();
+    formData.set("household_id", householdId as string);
+    formData.set("name", trimmed);
+    formData.set("type", newType);
+
+    startTransition(async () => {
+      const actionResult = await createCategoryAction(formData);
+      setResult(actionResult);
+      if (actionResult.ok) {
+        setNewName("");
+      }
+    });
+  }
+
+  const expenseCategories = categories.filter(
+    (category) => category.type === "expense",
+  );
+  const incomeCategories = categories.filter(
+    (category) => category.type === "income",
+  );
+
+  return (
+    <div className="space-y-5">
+      <div
+        className={cn(
+          "rounded-md border px-3 py-2 text-sm",
+          resultClassName(result),
+        )}
+      >
+        {result?.message}
+      </div>
+
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <Select
+          aria-label="카테고리 종류"
+          className="sm:w-32"
+          onChange={(event) =>
+            setNewType(event.target.value as "expense" | "income")
+          }
+          value={newType}
+        >
+          <option value="expense">지출</option>
+          <option value="income">수입</option>
+        </Select>
+        <Input
+          onChange={(event) => setNewName(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              runCreate();
+            }
+          }}
+          placeholder="새 카테고리 이름 (예: 용돈)"
+          value={newName}
+        />
+        <Button disabled={isPending} onClick={runCreate} type="button">
+          <Plus className="size-4" aria-hidden="true" />
+          추가
+        </Button>
+      </div>
+
+      {(["expense", "income"] as const).map((type) => {
+        const list = type === "expense" ? expenseCategories : incomeCategories;
+
+        return (
+          <div className="space-y-2" key={type}>
+            <div className="flex items-center gap-2">
+              <h3 className="text-sm font-semibold">
+                {categoryTypeLabels[type]} 카테고리
+              </h3>
+              <Badge variant="secondary">{list.length}개</Badge>
+            </div>
+            {list.length > 0 ? (
+              <div className="grid gap-2 sm:grid-cols-2">
+                {list.map((category) => (
+                  <CategoryRowItem
+                    category={category}
+                    householdId={householdId}
+                    key={category.id}
+                    onResult={setResult}
+                  />
+                ))}
+              </div>
+            ) : (
+              <p className="rounded-md border border-dashed px-3 py-4 text-center text-sm text-muted-foreground">
+                아직 {categoryTypeLabels[type]} 카테고리가 없어요. 위에서
+                추가해 보세요.
+              </p>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+export function SettingsClient({
+  categories,
+  householdId,
+}: {
+  categories: CategoryRow[];
+  householdId: string | null;
+}) {
   return (
     <Tabs
       className="grid gap-4 lg:grid-cols-[280px_1fr]"
@@ -152,16 +492,10 @@ export function SettingsClient() {
 
       <TabsContent value="categories">
         <SettingPanel
-          description="모바일 입력과 대시보드 차트에서 함께 써요."
+          description="지출·수입 카테고리를 추가하고, 이름을 바꾸거나 숨기고 지울 수 있어요."
           title="카테고리"
         >
-          <InfoList
-            items={[
-              "모바일 입력이나 단축어로 새 카테고리를 만들 수 있어요.",
-              "같은 이름의 카테고리는 한 번만 만들어요.",
-              "카테고리 관리 화면은 다음 단계에서 추가할게요.",
-            ]}
-          />
+          <CategoryManager categories={categories} householdId={householdId} />
         </SettingPanel>
       </TabsContent>
 

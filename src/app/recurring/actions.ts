@@ -187,6 +187,7 @@ function toPayload(formData: FormData) {
   const name = readText(formData, "name");
   const amount = readNumber(formData, "amount", 0);
   const nextDueDate = readText(formData, "next_due_date");
+  const endsOn = readNullableText(formData, "ends_on");
   const billingDay = readNumber(formData, "billing_day", 0);
   const reminderDaysBefore = readNumber(formData, "reminder_days_before", 3);
 
@@ -202,6 +203,10 @@ function toPayload(formData: FormData) {
     throw new Error("다음 결제일을 선택해 주세요.");
   }
 
+  if (endsOn && endsOn < nextDueDate) {
+    throw new Error("종료일은 다음 결제일 이후로 정해 주세요.");
+  }
+
   return {
     accountId: readText(formData, "account_id"),
     amount,
@@ -209,6 +214,7 @@ function toPayload(formData: FormData) {
     billingCycle: readBillingCycle(formData),
     billingDay: billingDay > 0 ? billingDay : null,
     categoryId: readNullableText(formData, "category_id"),
+    endsOn,
     kind: readKind(formData),
     merchant: readNullableText(formData, "merchant"),
     memo: readNullableText(formData, "memo"),
@@ -256,6 +262,7 @@ export async function createRecurringItemAction(
       billing_cycle: payload.billingCycle,
       billing_day: payload.billingDay,
       next_due_date: payload.nextDueDate,
+      ends_on: payload.endsOn,
       status: payload.status,
       auto_create_transaction: payload.autoCreateTransaction,
       reminder_days_before: payload.reminderDaysBefore,
@@ -338,6 +345,7 @@ export async function updateRecurringItemAction(
         billing_cycle: payload.billingCycle,
         billing_day: payload.billingDay,
         next_due_date: payload.nextDueDate,
+        ends_on: payload.endsOn,
         status: payload.status,
         auto_create_transaction: payload.autoCreateTransaction,
         reminder_days_before: payload.reminderDaysBefore,
