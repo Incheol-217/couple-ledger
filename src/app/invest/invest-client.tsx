@@ -594,6 +594,123 @@ function RefreshPricesButton({
   );
 }
 
+function AssetCard({
+  asset,
+  householdId,
+  linkedAccountName,
+  onEdit,
+  onResult,
+}: {
+  asset: InvestmentAssetRow;
+  householdId: string;
+  linkedAccountName: string | null;
+  onEdit: (asset: InvestmentAssetRow) => void;
+  onResult: (result: InvestActionResult) => void;
+}) {
+  const principal = toAmount(asset.principal);
+  const value = toAmount(asset.current_value);
+  const gain = value - principal;
+  const rate = returnLabel(principal, value);
+  const quantity = asset.quantity != null ? toAmount(asset.quantity) : 0;
+  const hasTicker = Boolean(asset.ticker) && quantity > 0;
+  const perShare = hasTicker ? value / quantity : null;
+  const isTradeable = tickerClasses.includes(asset.asset_class);
+
+  return (
+    <Card className="border-l-4 border-l-primary">
+      <CardHeader>
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <CardTitle className="truncate">{asset.name}</CardTitle>
+            <CardDescription className="mt-2">
+              {assetClassLabels[asset.asset_class]} ·{" "}
+              {assetOwnerLabels[asset.owner_label]}
+              {linkedAccountName ? ` · ${linkedAccountName}` : ""} · 평가일{" "}
+              {asset.valued_at}
+            </CardDescription>
+          </div>
+          <Badge variant="secondary">
+            {assetClassLabels[asset.asset_class]}
+          </Badge>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex items-end justify-between gap-3">
+          <div>
+            <p className="text-2xl font-semibold">{formatMoney(value)}</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              원금 {formatMoney(principal)}
+            </p>
+          </div>
+          <p
+            className={cn(
+              "text-sm font-semibold",
+              gain > 0 && "text-primary",
+              gain < 0 && "text-destructive",
+              gain === 0 && "text-muted-foreground",
+            )}
+          >
+            {gain >= 0 ? "+" : ""}
+            {formatMoney(gain)}
+            {rate ? ` (${rate})` : ""}
+          </p>
+        </div>
+
+        {hasTicker ? (
+          <div className="flex flex-wrap items-center gap-2 rounded-md bg-muted/40 px-3 py-2 text-sm">
+            <Badge variant="outline" className="font-mono">
+              {asset.ticker}
+            </Badge>
+            <span className="text-muted-foreground">
+              {quantity}주 · 주당 {formatMoney(perShare ?? 0)} · 약 15분 지연 시세
+            </span>
+          </div>
+        ) : null}
+
+        {asset.memo ? (
+          <p className="rounded-md bg-muted/50 px-3 py-2 text-sm text-muted-foreground">
+            {asset.memo}
+          </p>
+        ) : null}
+
+        {isTradeable ? (
+          <TradePanel
+            asset={asset}
+            householdId={householdId}
+            linkedAccountName={linkedAccountName}
+            onResult={onResult}
+          />
+        ) : null}
+
+        {hasTicker || isTradeable ? null : (
+          <ValueUpdateForm
+            asset={asset}
+            householdId={householdId}
+            onResult={onResult}
+          />
+        )}
+
+        <div className="flex flex-wrap gap-2">
+          <Button
+            onClick={() => onEdit(asset)}
+            size="sm"
+            type="button"
+            variant="outline"
+          >
+            <Pencil className="size-4" aria-hidden="true" />
+            수정
+          </Button>
+          <DeleteButton
+            asset={asset}
+            householdId={householdId}
+            onResult={onResult}
+          />
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export function InvestClient({
   accounts,
   assets,
@@ -608,6 +725,42 @@ export function InvestClient({
     () => new Map(accounts.map((account) => [account.id, account.name])),
     [accounts],
   );
+  const [groupByAccount, setGroupByAccount] = useState(true);
+
+  // 자산을 연결된 계좌별로 묶어요. 계좌 순서를 따르고, 연결 안 한 자산은 맨 뒤로.
+  const groupedAssets = useMemo(() => {
+    const groups = new Map<string, InvestmentAssetRow[]>();
+
+    for (const asset of assets) {
+      const key =
+        asset.account_id && accountNameById.has(asset.account_id)
+          ? asset.account_id
+          : "__none__";
+      const list = groups.get(key) ?? [];
+      list.push(asset);
+      groups.set(key, list);
+    }
+
+    const ordered: {
+      key: string;
+      name: string;
+      assets: InvestmentAssetRow[];
+    }[] = [];
+
+    for (const account of accounts) {
+      const list = groups.get(account.id);
+      if (list) {
+        ordered.push({ key: account.id, name: account.name, assets: list });
+      }
+    }
+
+    const none = groups.get("__none__");
+    if (none) {
+      ordered.push({ key: "__none__", name: "연결 계좌 없음", assets: none });
+    }
+
+    return ordered;
+  }, [assets, accounts, accountNameById]);
   const [mode, setMode] = useState<"create" | "edit" | null>(null);
   const [selectedAsset, setSelectedAsset] = useState<InvestmentAssetRow | null>(
     null,
@@ -833,141 +986,118 @@ export function InvestClient({
         />
       ) : null}
 
-      <section className="grid gap-4 lg:grid-cols-2">
-        {assets.length > 0 ? (
-          assets.map((asset) => {
-            const principal = toAmount(asset.principal);
-            const value = toAmount(asset.current_value);
-            const gain = value - principal;
-            const rate = returnLabel(principal, value);
-            const quantity = asset.quantity != null ? toAmount(asset.quantity) : 0;
-            const hasTicker = Boolean(asset.ticker) && quantity > 0;
-            const perShare = hasTicker ? value / quantity : null;
-            const isTradeable = tickerClasses.includes(asset.asset_class);
-            const linkedAccountName =
-              asset.account_id && accountNameById.has(asset.account_id)
-                ? (accountNameById.get(asset.account_id) as string)
-                : null;
+      {assets.length === 0 ? (
+        <Card>
+          <CardContent className="flex min-h-48 flex-col items-center justify-center gap-3 p-6 text-center">
+            <TrendingUp
+              className="size-8 text-muted-foreground"
+              aria-hidden="true"
+            />
+            <div>
+              <p className="font-medium">아직 등록한 자산이 없어요</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                예적금, 주식, 연금을 등록하면 수익률과 자산 배분을 보여드려요.
+              </p>
+            </div>
+            <Button onClick={openCreate} type="button">
+              <Plus className="size-4" aria-hidden="true" />
+              자산 추가하기
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-4">
+          <div className="flex items-center justify-end gap-2">
+            <span className="text-sm text-muted-foreground">보기</span>
+            <div className="inline-flex overflow-hidden rounded-md border">
+              <button
+                className={cn(
+                  "px-3 py-1.5 text-sm",
+                  groupByAccount
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-muted/50",
+                )}
+                onClick={() => setGroupByAccount(true)}
+                type="button"
+              >
+                계좌별
+              </button>
+              <button
+                className={cn(
+                  "px-3 py-1.5 text-sm",
+                  !groupByAccount
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-muted/50",
+                )}
+                onClick={() => setGroupByAccount(false)}
+                type="button"
+              >
+                전체
+              </button>
+            </div>
+          </div>
 
-            return (
-              <Card className="border-l-4 border-l-primary" key={asset.id}>
-                <CardHeader>
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <CardTitle className="truncate">{asset.name}</CardTitle>
-                      <CardDescription className="mt-2">
-                        {assetClassLabels[asset.asset_class]} ·{" "}
-                        {assetOwnerLabels[asset.owner_label]}
-                        {asset.account_id &&
-                        accountNameById.has(asset.account_id)
-                          ? ` · ${accountNameById.get(asset.account_id)}`
-                          : ""}{" "}
-                        · 평가일 {asset.valued_at}
-                      </CardDescription>
-                    </div>
-                    <Badge variant="secondary">
-                      {assetClassLabels[asset.asset_class]}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-end justify-between gap-3">
-                    <div>
-                      <p className="text-2xl font-semibold">{formatMoney(value)}</p>
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        원금 {formatMoney(principal)}
-                      </p>
-                    </div>
-                    <p
-                      className={cn(
-                        "text-sm font-semibold",
-                        gain > 0 && "text-primary",
-                        gain < 0 && "text-destructive",
-                        gain === 0 && "text-muted-foreground",
-                      )}
-                    >
-                      {gain >= 0 ? "+" : ""}
-                      {formatMoney(gain)}
-                      {rate ? ` (${rate})` : ""}
-                    </p>
-                  </div>
+          {groupByAccount ? (
+            <div className="space-y-6">
+              {groupedAssets.map((group) => {
+                const groupValue = group.assets.reduce(
+                  (sum, asset) => sum + toAmount(asset.current_value),
+                  0,
+                );
 
-                  {hasTicker ? (
-                    <div className="flex flex-wrap items-center gap-2 rounded-md bg-muted/40 px-3 py-2 text-sm">
-                      <Badge variant="outline" className="font-mono">
-                        {asset.ticker}
-                      </Badge>
-                      <span className="text-muted-foreground">
-                        {quantity}주 · 주당 {formatMoney(perShare ?? 0)} · 약 15분
-                        지연 시세
+                return (
+                  <section className="space-y-3" key={group.key}>
+                    <div className="flex items-center justify-between gap-3 border-b pb-2">
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-base font-semibold">{group.name}</h3>
+                        <Badge variant="secondary">
+                          {group.assets.length}개
+                        </Badge>
+                      </div>
+                      <span className="text-sm font-medium">
+                        평가액 {formatMoney(groupValue)}
                       </span>
                     </div>
-                  ) : null}
-
-                  {asset.memo ? (
-                    <p className="rounded-md bg-muted/50 px-3 py-2 text-sm text-muted-foreground">
-                      {asset.memo}
-                    </p>
-                  ) : null}
-
-                  {isTradeable ? (
-                    <TradePanel
-                      asset={asset}
-                      householdId={household.id}
-                      linkedAccountName={linkedAccountName}
-                      onResult={setResult}
-                    />
-                  ) : null}
-
-                  {hasTicker || isTradeable ? null : (
-                    <ValueUpdateForm
-                      asset={asset}
-                      householdId={household.id}
-                      onResult={setResult}
-                    />
-                  )}
-
-                  <div className="flex flex-wrap gap-2">
-                    <Button
-                      onClick={() => openEdit(asset)}
-                      size="sm"
-                      type="button"
-                      variant="outline"
-                    >
-                      <Pencil className="size-4" aria-hidden="true" />
-                      수정
-                    </Button>
-                    <DeleteButton
-                      asset={asset}
-                      householdId={household.id}
-                      onResult={setResult}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })
-        ) : (
-          <Card className="lg:col-span-2">
-            <CardContent className="flex min-h-48 flex-col items-center justify-center gap-3 p-6 text-center">
-              <TrendingUp
-                className="size-8 text-muted-foreground"
-                aria-hidden="true"
-              />
-              <div>
-                <p className="font-medium">아직 등록한 자산이 없어요</p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  예적금, 주식, 연금을 등록하면 수익률과 자산 배분을 보여드려요.
-                </p>
-              </div>
-              <Button onClick={openCreate} type="button">
-                <Plus className="size-4" aria-hidden="true" />
-                자산 추가하기
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-      </section>
+                    <div className="grid gap-4 lg:grid-cols-2">
+                      {group.assets.map((asset) => (
+                        <AssetCard
+                          asset={asset}
+                          householdId={household.id}
+                          key={asset.id}
+                          linkedAccountName={
+                            asset.account_id
+                              ? (accountNameById.get(asset.account_id) ?? null)
+                              : null
+                          }
+                          onEdit={openEdit}
+                          onResult={setResult}
+                        />
+                      ))}
+                    </div>
+                  </section>
+                );
+              })}
+            </div>
+          ) : (
+            <section className="grid gap-4 lg:grid-cols-2">
+              {assets.map((asset) => (
+                <AssetCard
+                  asset={asset}
+                  householdId={household.id}
+                  key={asset.id}
+                  linkedAccountName={
+                    asset.account_id
+                      ? (accountNameById.get(asset.account_id) ?? null)
+                      : null
+                  }
+                  onEdit={openEdit}
+                  onResult={setResult}
+                />
+              ))}
+            </section>
+          )}
+        </div>
+      )}
     </div>
   );
 }

@@ -580,6 +580,12 @@ describe("UX guardrails", () => {
     assert.match(investActions, /account_id: accountId/);
   });
 
+  it("groups assets by their linked account", () => {
+    assert.match(investClient, /groupedAssets/);
+    assert.match(investClient, /groupByAccount/);
+    assert.match(investClient, /연결 계좌 없음/);
+  });
+
   it("records buy/sell trades that move the linked account", () => {
     // 매매 기록 테이블과 액션이 있어요.
     assert.match(investTradesMigration, /create table public\.investment_trades/);
