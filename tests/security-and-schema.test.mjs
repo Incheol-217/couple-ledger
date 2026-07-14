@@ -583,6 +583,9 @@ describe("UX guardrails", () => {
     assert.match(investQuotes, /query1\.finance\.yahoo\.com/);
     assert.match(investQuotes, /export async function fetchQuote/);
     assert.match(investQuotes, /export async function fetchFxRateToKrw/);
+    // 국내 6자리 코드는 .KS/.KQ를 자동으로 붙여 조회해요.
+    assert.match(investQuotes, /\.KS/);
+    assert.match(investQuotes, /\.KQ/);
     // 저장·새로고침에서 시세로 평가액을 계산해요.
     assert.match(investActions, /valuationInKrw/);
     assert.match(investActions, /export async function refreshAssetPricesAction/);

@@ -17,6 +17,16 @@ function normalizeTicker(ticker: string) {
   return ticker.trim().toUpperCase();
 }
 
+// 국내 종목은 6자리 코드에 시장 접미사가 필요해요(코스피 .KS, 코스닥 .KQ).
+// 접미사가 없으면 .KS → .KQ 순으로 시도하고, 그 외엔 입력값 그대로 써요.
+function symbolCandidates(symbol: string) {
+  if (/^\d{6}$/.test(symbol)) {
+    return [`${symbol}.KS`, `${symbol}.KQ`];
+  }
+
+  return [symbol];
+}
+
 async function fetchChartMeta(symbol: string): Promise<Record<string, unknown> | null> {
   try {
     const response = await fetch(
@@ -42,7 +52,8 @@ async function fetchChartMeta(symbol: string): Promise<Record<string, unknown> |
   }
 }
 
-// 종목 하나의 현재가와 통화를 가져와요. 실패하면 null.
+// 종목 하나의 현재가와 통화를 가져와요. 국내 6자리 코드는 .KS/.KQ를 자동으로
+// 붙여 시도해요. 실패하면 null.
 export async function fetchQuote(ticker: string): Promise<Quote | null> {
   const symbol = normalizeTicker(ticker);
 
@@ -50,22 +61,24 @@ export async function fetchQuote(ticker: string): Promise<Quote | null> {
     return null;
   }
 
-  const meta = await fetchChartMeta(symbol);
-  const price = Number(meta?.regularMarketPrice);
+  for (const candidate of symbolCandidates(symbol)) {
+    const meta = await fetchChartMeta(candidate);
+    const price = Number(meta?.regularMarketPrice);
 
-  if (!meta || !Number.isFinite(price) || price <= 0) {
-    return null;
+    if (meta && Number.isFinite(price) && price > 0) {
+      return {
+        ticker: candidate,
+        price,
+        currency: typeof meta.currency === "string" ? meta.currency : "KRW",
+        name:
+          (typeof meta.longName === "string" && meta.longName) ||
+          (typeof meta.shortName === "string" && meta.shortName) ||
+          null,
+      };
+    }
   }
 
-  return {
-    ticker: symbol,
-    price,
-    currency: typeof meta.currency === "string" ? meta.currency : "KRW",
-    name:
-      (typeof meta.longName === "string" && meta.longName) ||
-      (typeof meta.shortName === "string" && meta.shortName) ||
-      null,
-  };
+  return null;
 }
 
 // 통화 → 원화 환율. KRW면 1. 여러 종목을 갱신할 때 통화별로 한 번만 조회하도록
