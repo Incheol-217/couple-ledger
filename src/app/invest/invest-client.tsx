@@ -12,6 +12,7 @@ import {
 import {
   createAssetAction,
   deleteAssetAction,
+  refreshAssetPricesAction,
   updateAssetAction,
   updateAssetValueAction,
   type InvestActionResult,
@@ -55,6 +56,9 @@ const classAccents: Record<AssetClass, string> = {
   crypto: "bg-chart-5",
   other: "bg-muted-foreground",
 };
+
+// 종목코드로 시세를 붙일 수 있는 자산 종류예요.
+const tickerClasses: AssetClass[] = ["stock", "pension"];
 
 function toAmount(value: number | string) {
   const amount = Number(value);
@@ -101,7 +105,11 @@ function AssetForm({
   onDone: (result?: InvestActionResult) => void;
 }) {
   const [result, setResult] = useState<InvestActionResult | null>(null);
+  const [assetClass, setAssetClass] = useState<AssetClass>(
+    asset?.asset_class ?? "deposit",
+  );
   const [isPending, startTransition] = useTransition();
+  const showTicker = tickerClasses.includes(assetClass);
 
   function submit(formData: FormData) {
     startTransition(async () => {
@@ -156,13 +164,16 @@ function AssetForm({
             <div className="space-y-2">
               <Label htmlFor="asset-class">종류</Label>
               <Select
-                defaultValue={asset?.asset_class ?? "deposit"}
                 id="asset-class"
                 name="asset_class"
+                onChange={(event) =>
+                  setAssetClass(event.target.value as AssetClass)
+                }
+                value={assetClass}
               >
-                {assetClasses.map((assetClass) => (
-                  <option key={assetClass} value={assetClass}>
-                    {assetClassLabels[assetClass]}
+                {assetClasses.map((option) => (
+                  <option key={option} value={option}>
+                    {assetClassLabels[option]}
                   </option>
                 ))}
               </Select>
@@ -182,6 +193,42 @@ function AssetForm({
                 ))}
               </Select>
             </div>
+
+            {showTicker ? (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="asset-ticker">종목코드 (선택)</Label>
+                  <Input
+                    autoComplete="off"
+                    defaultValue={asset?.ticker ?? ""}
+                    id="asset-ticker"
+                    name="ticker"
+                    placeholder="005930.KS, AAPL"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="asset-quantity">보유 수량 (선택)</Label>
+                  <Input
+                    autoComplete="off"
+                    defaultValue={
+                      asset?.quantity != null ? String(toAmount(asset.quantity)) : ""
+                    }
+                    id="asset-quantity"
+                    inputMode="decimal"
+                    name="quantity"
+                    placeholder="10"
+                  />
+                </div>
+
+                <p className="text-xs text-muted-foreground md:col-span-2">
+                  종목코드와 보유 수량을 넣으면 야후 파이낸스 시세(약 15분 지연)로
+                  평가액을 자동 계산해요. 코스피는 <code>005930.KS</code>, 코스닥은{" "}
+                  <code>247540.KQ</code>, 미국은 <code>AAPL</code>처럼 넣어요.
+                  해외 종목은 원화로 환산돼요.
+                </p>
+              </>
+            ) : null}
 
             <div className="space-y-2">
               <Label htmlFor="asset-principal">투입 원금</Label>
@@ -217,7 +264,11 @@ function AssetForm({
                 inputMode="numeric"
                 name="current_value"
                 onInput={formatAmountField}
-                placeholder="비우면 원금과 같게 저장돼요"
+                placeholder={
+                  showTicker
+                    ? "종목코드가 있으면 시세로 자동 계산돼요"
+                    : "비우면 원금과 같게 저장돼요"
+                }
                 type="text"
               />
             </div>
@@ -336,6 +387,37 @@ function DeleteButton({
       >
         <Trash2 className="size-4" aria-hidden="true" />
         정말 삭제할까요?
+      </Button>
+    </form>
+  );
+}
+
+function RefreshPricesButton({
+  householdId,
+  onResult,
+}: {
+  householdId: string;
+  onResult: (result: InvestActionResult) => void;
+}) {
+  const [isPending, startTransition] = useTransition();
+
+  return (
+    <form
+      action={(formData) => {
+        startTransition(async () => {
+          onResult(await refreshAssetPricesAction(formData));
+        });
+      }}
+    >
+      <input name="household_id" type="hidden" value={householdId} />
+      <Button
+        className="w-full sm:w-auto"
+        disabled={isPending}
+        type="submit"
+        variant="outline"
+      >
+        <RefreshCcw className="size-4" aria-hidden="true" />
+        {isPending ? "시세 불러오는 중" : "시세 새로고침"}
       </Button>
     </form>
   );
@@ -551,13 +633,17 @@ export function InvestClient({
         <div>
           <p className="text-sm font-medium">{household.name}</p>
           <p className="mt-1 text-sm text-muted-foreground">
-            평가액은 직접 업데이트해요. 갱신한 날짜가 함께 기록돼요.
+            종목코드가 있는 자산은 시세로 자동 계산돼요(약 15분 지연). 나머지는
+            평가액을 직접 갱신해요.
           </p>
         </div>
-        <Button className="w-full sm:w-auto" onClick={openCreate} type="button">
-          <Plus className="size-4" aria-hidden="true" />
-          자산 추가하기
-        </Button>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <RefreshPricesButton householdId={household.id} onResult={setResult} />
+          <Button className="w-full sm:w-auto" onClick={openCreate} type="button">
+            <Plus className="size-4" aria-hidden="true" />
+            자산 추가하기
+          </Button>
+        </div>
       </div>
 
       {mode ? (
@@ -577,6 +663,9 @@ export function InvestClient({
             const value = toAmount(asset.current_value);
             const gain = value - principal;
             const rate = returnLabel(principal, value);
+            const quantity = asset.quantity != null ? toAmount(asset.quantity) : 0;
+            const hasTicker = Boolean(asset.ticker) && quantity > 0;
+            const perShare = hasTicker ? value / quantity : null;
 
             return (
               <Card className="border-l-4 border-l-primary" key={asset.id}>
@@ -617,17 +706,31 @@ export function InvestClient({
                     </p>
                   </div>
 
+                  {hasTicker ? (
+                    <div className="flex flex-wrap items-center gap-2 rounded-md bg-muted/40 px-3 py-2 text-sm">
+                      <Badge variant="outline" className="font-mono">
+                        {asset.ticker}
+                      </Badge>
+                      <span className="text-muted-foreground">
+                        {quantity}주 · 주당 {formatMoney(perShare ?? 0)} · 약 15분
+                        지연 시세
+                      </span>
+                    </div>
+                  ) : null}
+
                   {asset.memo ? (
                     <p className="rounded-md bg-muted/50 px-3 py-2 text-sm text-muted-foreground">
                       {asset.memo}
                     </p>
                   ) : null}
 
-                  <ValueUpdateForm
-                    asset={asset}
-                    householdId={household.id}
-                    onResult={setResult}
-                  />
+                  {hasTicker ? null : (
+                    <ValueUpdateForm
+                      asset={asset}
+                      householdId={household.id}
+                      onResult={setResult}
+                    />
+                  )}
 
                   <div className="flex flex-wrap gap-2">
                     <Button

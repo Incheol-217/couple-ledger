@@ -58,7 +58,7 @@ async function getInvestPageData(): Promise<InvestPageData> {
       supabase
         .from("investment_assets")
         .select(
-          "id, household_id, account_id, name, asset_class, owner_label, principal, current_value, valued_at, memo, created_at",
+          "id, household_id, account_id, name, asset_class, owner_label, principal, current_value, ticker, quantity, valued_at, memo, created_at",
         )
         .eq("household_id", household.id)
         .order("asset_class", { ascending: true })

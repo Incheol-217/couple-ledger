@@ -1,8 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { valuationInKrw } from "@/lib/invest/quotes";
 import { createClient } from "@/lib/supabase/server";
 import { assetClasses, assetOwners, type AssetClass, type AssetOwner } from "./types";
+
+// 종목 시세로 평가액을 자동 계산하는 자산 종류예요.
+const TICKER_CLASSES: AssetClass[] = ["stock", "pension"];
 
 export type InvestActionResult = {
   ok: boolean;
@@ -24,6 +28,22 @@ function readText(formData: FormData, key: string) {
 function readNullableText(formData: FormData, key: string) {
   const value = readText(formData, key);
   return value.length > 0 ? value : null;
+}
+
+function readNullableQuantity(formData: FormData, key: string) {
+  const value = readText(formData, key);
+
+  if (!value) {
+    return null;
+  }
+
+  const parsed = Number(value.replaceAll(",", ""));
+
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    throw new Error("보유 수량은 0 이상 숫자로 입력해 주세요.");
+  }
+
+  return parsed;
 }
 
 function readMoney(formData: FormData, key: string) {
@@ -98,6 +118,13 @@ function toPayload(formData: FormData) {
     ? readMoney(formData, "current_value")
     : principal;
 
+  // 종목코드·보유수량은 주식/연금에서만 써요.
+  const isTickerClass = TICKER_CLASSES.includes(assetClass);
+  const ticker = isTickerClass ? readNullableText(formData, "ticker") : null;
+  const quantity = isTickerClass
+    ? readNullableQuantity(formData, "quantity")
+    : null;
+
   return {
     assetClass,
     currentValue,
@@ -105,7 +132,33 @@ function toPayload(formData: FormData) {
     name,
     ownerLabel,
     principal,
+    quantity,
+    ticker,
   };
+}
+
+// 종목코드+보유수량이 있으면 야후 시세로 평가액을 계산해요. 실패하면
+// 사용자가 넣은 평가액(fallback)을 그대로 써요.
+async function resolveCurrentValue(payload: {
+  ticker: string | null;
+  quantity: number | null;
+  currentValue: number;
+}) {
+  if (!payload.ticker || !payload.quantity) {
+    return { currentValue: payload.currentValue, priced: false };
+  }
+
+  try {
+    const valuation = await valuationInKrw(payload.ticker, payload.quantity);
+
+    if (valuation) {
+      return { currentValue: valuation.value, priced: true };
+    }
+  } catch {
+    // 시세 조회 실패는 무시하고 수동 평가액으로 저장해요.
+  }
+
+  return { currentValue: payload.currentValue, priced: false };
 }
 
 function revalidateInvest() {
@@ -121,6 +174,7 @@ export async function createAssetAction(
     const householdId = readText(formData, "household_id");
     const { supabase, user } = await assertCurrentMember(householdId);
     const payload = toPayload(formData);
+    const resolved = await resolveCurrentValue(payload);
 
     const { error } = await supabase.from("investment_assets").insert({
       household_id: householdId,
@@ -128,7 +182,9 @@ export async function createAssetAction(
       asset_class: payload.assetClass,
       owner_label: payload.ownerLabel,
       principal: payload.principal,
-      current_value: payload.currentValue,
+      current_value: resolved.currentValue,
+      ticker: payload.ticker,
+      quantity: payload.quantity,
       valued_at: new Date().toISOString().slice(0, 10),
       memo: payload.memo,
       created_by: user.id,
@@ -139,7 +195,12 @@ export async function createAssetAction(
     }
 
     revalidateInvest();
-    return { ok: true, message: "자산을 추가했어요." };
+    return {
+      ok: true,
+      message: resolved.priced
+        ? "자산을 추가하고 시세로 평가액을 넣었어요."
+        : "자산을 추가했어요.",
+    };
   } catch (error) {
     return {
       ok: false,
@@ -161,6 +222,7 @@ export async function updateAssetAction(
 
     const { supabase } = await assertCurrentMember(householdId);
     const payload = toPayload(formData);
+    const resolved = await resolveCurrentValue(payload);
 
     const { error } = await supabase
       .from("investment_assets")
@@ -169,7 +231,10 @@ export async function updateAssetAction(
         asset_class: payload.assetClass,
         owner_label: payload.ownerLabel,
         principal: payload.principal,
-        current_value: payload.currentValue,
+        current_value: resolved.currentValue,
+        ticker: payload.ticker,
+        quantity: payload.quantity,
+        valued_at: new Date().toISOString().slice(0, 10),
         memo: payload.memo,
       })
       .eq("household_id", householdId)
@@ -180,7 +245,12 @@ export async function updateAssetAction(
     }
 
     revalidateInvest();
-    return { ok: true, message: "자산을 저장했어요." };
+    return {
+      ok: true,
+      message: resolved.priced
+        ? "자산을 저장하고 시세로 평가액을 갱신했어요."
+        : "자산을 저장했어요.",
+    };
   } catch (error) {
     return {
       ok: false,
@@ -254,6 +324,90 @@ export async function deleteAssetAction(
     return {
       ok: false,
       message: error instanceof Error ? error.message : "자산을 지우지 못했어요.",
+    };
+  }
+}
+
+type AssetForPricing = {
+  id: string;
+  ticker: string | null;
+  quantity: number | string | null;
+};
+
+// 종목코드가 있는 자산들의 평가액을 야후 시세로 한꺼번에 갱신해요.
+export async function refreshAssetPricesAction(
+  formData: FormData,
+): Promise<InvestActionResult> {
+  try {
+    const householdId = readText(formData, "household_id");
+    const { supabase } = await assertCurrentMember(householdId);
+
+    const { data, error } = await supabase
+      .from("investment_assets")
+      .select("id, ticker, quantity")
+      .eq("household_id", householdId)
+      .not("ticker", "is", null);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    const assets = (data ?? []) as AssetForPricing[];
+    const priceable = assets.filter(
+      (asset) => asset.ticker && Number(asset.quantity) > 0,
+    );
+
+    if (priceable.length === 0) {
+      return {
+        ok: true,
+        message: "시세를 붙일 종목이 없어요. 종목코드와 보유수량을 넣어주세요.",
+      };
+    }
+
+    const today = new Date().toISOString().slice(0, 10);
+    const fxCache = new Map<string, number>();
+    let updated = 0;
+    let failed = 0;
+
+    for (const asset of priceable) {
+      const valuation = await valuationInKrw(
+        asset.ticker as string,
+        Number(asset.quantity),
+        fxCache,
+      );
+
+      if (!valuation) {
+        failed += 1;
+        continue;
+      }
+
+      const { error: updateError } = await supabase
+        .from("investment_assets")
+        .update({ current_value: valuation.value, valued_at: today })
+        .eq("household_id", householdId)
+        .eq("id", asset.id);
+
+      if (updateError) {
+        failed += 1;
+      } else {
+        updated += 1;
+      }
+    }
+
+    revalidateInvest();
+
+    return {
+      ok: true,
+      message:
+        failed > 0
+          ? `${updated}개 종목 시세를 갱신했어요. ${failed}개는 종목코드를 확인해 주세요.`
+          : `${updated}개 종목 시세를 갱신했어요.`,
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      message:
+        error instanceof Error ? error.message : "시세를 갱신하지 못했어요.",
     };
   }
 }

@@ -21,6 +21,8 @@ export type InvestmentAssetRow = {
   owner_label: AssetOwner;
   principal: number | string;
   current_value: number | string;
+  ticker: string | null;
+  quantity: number | string | null;
   valued_at: string;
   memo: string | null;
   created_at: string;

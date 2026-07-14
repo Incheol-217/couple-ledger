@@ -358,6 +358,12 @@ describe("UX guardrails", () => {
   const allowanceSeed = read(
     "supabase/migrations/20260714120000_seed_allowance_category.sql",
   );
+  const investClient = read("src/app/invest/invest-client.tsx");
+  const investActions = read("src/app/invest/actions.ts");
+  const investQuotes = read("src/lib/invest/quotes.ts");
+  const investHoldingsMigration = read(
+    "supabase/migrations/20260714140000_add_investment_holdings.sql",
+  );
   const moneyFormatter = read("src/lib/formatters/money.ts");
   const accountsClient = read("src/app/accounts/accounts-client.tsx");
   const reportPage = read("src/app/reports/page.tsx");
@@ -543,5 +549,21 @@ describe("UX guardrails", () => {
     // 지출 카테고리에 '용돈'을 넣는 seed 마이그레이션이 있어요.
     assert.match(allowanceSeed, /'용돈'/);
     assert.match(allowanceSeed, /where not exists/);
+  });
+
+  it("prices stock and pension holdings from a live quote", () => {
+    // 종목코드/보유수량 컬럼과 주식·연금 종목 입력이 있어요.
+    assert.match(investHoldingsMigration, /add column if not exists ticker/);
+    assert.match(investHoldingsMigration, /add column if not exists quantity/);
+    assert.match(investClient, /name="ticker"/);
+    assert.match(investClient, /name="quantity"/);
+    assert.match(investClient, /tickerClasses/);
+    // 야후 파이낸스로 시세와 원화 환율을 가져와요.
+    assert.match(investQuotes, /query1\.finance\.yahoo\.com/);
+    assert.match(investQuotes, /export async function fetchQuote/);
+    assert.match(investQuotes, /export async function fetchFxRateToKrw/);
+    // 저장·새로고침에서 시세로 평가액을 계산해요.
+    assert.match(investActions, /valuationInKrw/);
+    assert.match(investActions, /export async function refreshAssetPricesAction/);
   });
 });
