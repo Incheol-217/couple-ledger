@@ -1,7 +1,8 @@
+import { getGoalsPageData } from "@/app/goals/data";
 import { PageHeader } from "@/components/page-header";
 import { getCurrentUserContext, hasSupabaseAuthEnv } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
-import { BudgetsClient } from "./budgets-client";
+import { PlanTabs } from "./plan-tabs";
 import type { BudgetExpenseRow, BudgetPageData, BudgetRow } from "./types";
 import type { AccountRow } from "@/app/accounts/types";
 import type { CategoryRow } from "@/app/m/new/types";
@@ -104,18 +105,28 @@ async function getBudgetsPageData(): Promise<BudgetPageData> {
   };
 }
 
-export default async function BudgetsPage() {
-  const data = await getBudgetsPageData();
+export default async function BudgetsPage({
+  searchParams,
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = (await searchParams) ?? {};
+  const initialView = params.view === "goals" ? "goals" : "budgets";
+
+  const [budgets, goals] = await Promise.all([
+    getBudgetsPageData(),
+    getGoalsPageData(),
+  ]);
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
       <PageHeader
-        eyebrow="예산"
-        title="예산 관리"
-        description="카테고리와 계좌별로 예산을 정하고, 이번 기간에 얼마나 썼는지 확인해요."
+        eyebrow="예산·목표"
+        title="예산과 저축 목표"
+        description="이번 기간 지출 예산과 함께 모을 저축 목표를 한곳에서 관리해요."
       />
 
-      <BudgetsClient {...data} />
+      <PlanTabs budgets={budgets} goals={goals} initialView={initialView} />
     </div>
   );
 }

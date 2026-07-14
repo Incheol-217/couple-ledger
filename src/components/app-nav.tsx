@@ -5,14 +5,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   CalendarClock,
-  Calculator,
   FileText,
   LayoutDashboard,
   MoreHorizontal,
   PiggyBank,
   ReceiptText,
   Settings,
-  Target,
   TrendingUp,
   WalletCards,
   X,
@@ -31,12 +29,10 @@ const navItems: NavItem[] = [
   { href: "/dashboard", label: "대시보드", icon: LayoutDashboard, primary: true },
   { href: "/transactions", label: "내역", icon: ReceiptText, primary: true },
   { href: "/accounts", label: "계좌", icon: WalletCards, primary: true },
-  { href: "/budgets", label: "예산", icon: PiggyBank, primary: true },
+  { href: "/budgets", label: "예산·목표", icon: PiggyBank, primary: true },
   { href: "/invest", label: "자산·부채", icon: TrendingUp, primary: false },
-  { href: "/goals", label: "저축", icon: Target, primary: false },
   { href: "/recurring", label: "정기지출", icon: CalendarClock, primary: false },
-  { href: "/reports", label: "보고서", icon: FileText, primary: false },
-  { href: "/tax", label: "연말정산", icon: Calculator, primary: false },
+  { href: "/reports", label: "분석", icon: FileText, primary: false },
   { href: "/settings", label: "설정", icon: Settings, primary: false },
 ];
 

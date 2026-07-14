@@ -1,7 +1,8 @@
+import { getTaxPageData } from "@/app/tax/data";
 import { PageHeader } from "@/components/page-header";
 import { getCurrentUserContext, hasSupabaseAuthEnv } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
-import { ReportsClient } from "./reports-client";
+import { AnalysisTabs } from "./analysis-tabs";
 import {
   reportPeriods,
   type ReportBudgetRow,
@@ -455,17 +456,22 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
     firstParam(params.start),
     firstParam(params.end),
   );
-  const data = await getReportData(range, today);
+  const initialView = firstParam(params.view) === "tax" ? "tax" : "reports";
+
+  const [report, tax] = await Promise.all([
+    getReportData(range, today),
+    getTaxPageData(),
+  ]);
 
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
       <PageHeader
-        eyebrow="보고서"
-        title="보고서"
-        description="수입과 지출 흐름을 PDF로 저장해요."
+        eyebrow="분석"
+        title="분석"
+        description="수입·지출 보고서와 연말정산 예상 환급을 한곳에서 봐요."
       />
 
-      <ReportsClient {...data} />
+      <AnalysisTabs initialView={initialView} report={report} tax={tax} />
     </div>
   );
 }

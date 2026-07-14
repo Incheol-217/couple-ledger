@@ -646,4 +646,22 @@ describe("UX guardrails", () => {
     assert.match(wealthTabs, /InvestClient/);
     assert.match(investClient, /순자산/);
   });
+
+  it("merges related menus into tabbed hubs", () => {
+    // 예산·저축 → 한 화면(탭), 보고서·연말정산 → 한 화면(탭)
+    const planTabs = read("src/app/budgets/plan-tabs.tsx");
+    const analysisTabs = read("src/app/reports/analysis-tabs.tsx");
+    assert.match(planTabs, /BudgetsClient/);
+    assert.match(planTabs, /GoalsClient/);
+    assert.match(analysisTabs, /ReportsClient/);
+    assert.match(analysisTabs, /TaxClient/);
+    // 옛 주소는 통합 화면으로 리다이렉트해요.
+    assert.match(read("src/app/goals/page.tsx"), /redirect\("\/budgets/);
+    assert.match(read("src/app/tax/page.tsx"), /redirect\("\/reports/);
+    assert.match(read("src/app/debts/page.tsx"), /redirect\("\/invest/);
+    assert.match(
+      read("src/app/installments/page.tsx"),
+      /redirect\("\/recurring/,
+    );
+  });
 });
