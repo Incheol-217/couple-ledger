@@ -526,7 +526,7 @@ function MetricCard({
               emphasis === "dark"
                 ? "bg-primary text-secondary"
                 : emphasis === "primary"
-                  ? "bg-primary-foreground text-secondary"
+                  ? "bg-primary-foreground text-primary"
                   : "bg-secondary text-primary",
             )}
           >
