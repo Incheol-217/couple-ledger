@@ -94,11 +94,13 @@ function resultClassName(result: InvestActionResult | null) {
 }
 
 function AssetForm({
+  accounts,
   asset,
   householdId,
   mode,
   onDone,
 }: {
+  accounts: InvestPageData["accounts"];
   asset: InvestmentAssetRow | null;
   householdId: string;
   mode: "create" | "edit";
@@ -189,6 +191,22 @@ function AssetForm({
                 {assetOwners.map((owner) => (
                   <option key={owner} value={owner}>
                     {assetOwnerLabels[owner]}
+                  </option>
+                ))}
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="asset-account">담은 계좌 (선택)</Label>
+              <Select
+                defaultValue={asset?.account_id ?? ""}
+                id="asset-account"
+                name="account_id"
+              >
+                <option value="">연결 안 함</option>
+                {accounts.map((account) => (
+                  <option key={account.id} value={account.id}>
+                    {account.name}
                   </option>
                 ))}
               </Select>
@@ -424,6 +442,7 @@ function RefreshPricesButton({
 }
 
 export function InvestClient({
+  accounts,
   assets,
   errorMessage,
   household,
@@ -432,6 +451,10 @@ export function InvestClient({
   monthIncome,
   monthSavedToSavings,
 }: InvestPageData) {
+  const accountNameById = useMemo(
+    () => new Map(accounts.map((account) => [account.id, account.name])),
+    [accounts],
+  );
   const [mode, setMode] = useState<"create" | "edit" | null>(null);
   const [selectedAsset, setSelectedAsset] = useState<InvestmentAssetRow | null>(
     null,
@@ -648,6 +671,7 @@ export function InvestClient({
 
       {mode ? (
         <AssetForm
+          accounts={accounts}
           asset={selectedAsset}
           householdId={household.id}
           key={`${mode}-${selectedAsset?.id ?? "new"}`}
@@ -675,8 +699,12 @@ export function InvestClient({
                       <CardTitle className="truncate">{asset.name}</CardTitle>
                       <CardDescription className="mt-2">
                         {assetClassLabels[asset.asset_class]} ·{" "}
-                        {assetOwnerLabels[asset.owner_label]} · 평가일{" "}
-                        {asset.valued_at}
+                        {assetOwnerLabels[asset.owner_label]}
+                        {asset.account_id &&
+                        accountNameById.has(asset.account_id)
+                          ? ` · ${accountNameById.get(asset.account_id)}`
+                          : ""}{" "}
+                        · 평가일 {asset.valued_at}
                       </CardDescription>
                     </div>
                     <Badge variant="secondary">

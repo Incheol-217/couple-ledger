@@ -2,9 +2,14 @@ import { PageHeader } from "@/components/page-header";
 import { getCurrentUserContext, hasSupabaseAuthEnv } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 import { InvestClient } from "./invest-client";
-import type { InvestPageData, InvestmentAssetRow } from "./types";
+import type {
+  AssetAccountOption,
+  InvestPageData,
+  InvestmentAssetRow,
+} from "./types";
 
 const emptyData: InvestPageData = {
+  accounts: [],
   assets: [],
   household: null,
   isConfigured: false,
@@ -53,7 +58,7 @@ async function getInvestPageData(): Promise<InvestPageData> {
   const supabase = await createClient();
   const { start, end } = monthRange();
 
-  const [assetsResult, savingsAccountsResult, monthTxResult] =
+  const [assetsResult, accountsResult, savingsAccountsResult, monthTxResult] =
     await Promise.all([
       supabase
         .from("investment_assets")
@@ -62,6 +67,13 @@ async function getInvestPageData(): Promise<InvestPageData> {
         )
         .eq("household_id", household.id)
         .order("asset_class", { ascending: true })
+        .order("created_at", { ascending: true }),
+      supabase
+        .from("accounts")
+        .select("id, name, type")
+        .eq("household_id", household.id)
+        .eq("is_active", true)
+        .order("display_order", { ascending: true })
         .order("created_at", { ascending: true }),
       supabase
         .from("accounts")
@@ -103,9 +115,11 @@ async function getInvestPageData(): Promise<InvestPageData> {
   }
 
   return {
+    accounts: (accountsResult.data ?? []) as AssetAccountOption[],
     assets: (assetsResult.data ?? []) as InvestmentAssetRow[],
     errorMessage:
       assetsResult.error?.message ??
+      accountsResult.error?.message ??
       savingsAccountsResult.error?.message ??
       monthTxResult.error?.message,
     household,

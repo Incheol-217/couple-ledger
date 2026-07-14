@@ -126,6 +126,7 @@ function toPayload(formData: FormData) {
     : null;
 
   return {
+    accountId: readNullableText(formData, "account_id"),
     assetClass,
     currentValue,
     memo: readNullableText(formData, "memo"),
@@ -135,6 +136,30 @@ function toPayload(formData: FormData) {
     quantity,
     ticker,
   };
+}
+
+// 연결하려는 계좌가 이 가계부의 활성 계좌인지 확인해요.
+async function assertAssetAccount(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  householdId: string,
+  accountId: string | null,
+) {
+  if (!accountId) {
+    return null;
+  }
+
+  const { data, error } = await supabase
+    .from("accounts")
+    .select("id, is_active")
+    .eq("household_id", householdId)
+    .eq("id", accountId)
+    .maybeSingle();
+
+  if (error || !data || !data.is_active) {
+    throw new Error("연결할 계좌를 찾을 수 없어요.");
+  }
+
+  return data.id as string;
 }
 
 // 종목코드+보유수량이 있으면 야후 시세로 평가액을 계산해요. 실패하면
@@ -174,10 +199,16 @@ export async function createAssetAction(
     const householdId = readText(formData, "household_id");
     const { supabase, user } = await assertCurrentMember(householdId);
     const payload = toPayload(formData);
+    const accountId = await assertAssetAccount(
+      supabase,
+      householdId,
+      payload.accountId,
+    );
     const resolved = await resolveCurrentValue(payload);
 
     const { error } = await supabase.from("investment_assets").insert({
       household_id: householdId,
+      account_id: accountId,
       name: payload.name,
       asset_class: payload.assetClass,
       owner_label: payload.ownerLabel,
@@ -222,11 +253,17 @@ export async function updateAssetAction(
 
     const { supabase } = await assertCurrentMember(householdId);
     const payload = toPayload(formData);
+    const accountId = await assertAssetAccount(
+      supabase,
+      householdId,
+      payload.accountId,
+    );
     const resolved = await resolveCurrentValue(payload);
 
     const { error } = await supabase
       .from("investment_assets")
       .update({
+        account_id: accountId,
         name: payload.name,
         asset_class: payload.assetClass,
         owner_label: payload.ownerLabel,

@@ -360,6 +360,7 @@ describe("UX guardrails", () => {
   );
   const investClient = read("src/app/invest/invest-client.tsx");
   const investActions = read("src/app/invest/actions.ts");
+  const investPage = read("src/app/invest/page.tsx");
   const investQuotes = read("src/lib/invest/quotes.ts");
   const investHoldingsMigration = read(
     "supabase/migrations/20260714140000_add_investment_holdings.sql",
@@ -565,5 +566,12 @@ describe("UX guardrails", () => {
     // 저장·새로고침에서 시세로 평가액을 계산해요.
     assert.match(investActions, /valuationInKrw/);
     assert.match(investActions, /export async function refreshAssetPricesAction/);
+  });
+
+  it("links an account to an asset", () => {
+    assert.match(investPage, /\.from\("accounts"\)/);
+    assert.match(investClient, /name="account_id"/);
+    assert.match(investActions, /assertAssetAccount/);
+    assert.match(investActions, /account_id: accountId/);
   });
 });

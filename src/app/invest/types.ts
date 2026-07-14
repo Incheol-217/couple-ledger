@@ -33,7 +33,15 @@ export type InvestHousehold = {
   name: string;
 };
 
+// 자산에 연결할 수 있는 계좌 목록(간단 버전)
+export type AssetAccountOption = {
+  id: string;
+  name: string;
+  type: string;
+};
+
 export type InvestPageData = {
+  accounts: AssetAccountOption[];
   assets: InvestmentAssetRow[];
   errorMessage?: string;
   household: InvestHousehold | null;
