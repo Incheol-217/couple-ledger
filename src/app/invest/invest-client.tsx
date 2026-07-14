@@ -718,6 +718,7 @@ export function InvestClient({
   household,
   isConfigured,
   isSignedIn,
+  totalDebt,
   monthIncome,
   monthSavedToSavings,
 }: InvestPageData) {
@@ -919,6 +920,28 @@ export function InvestClient({
           </CardContent>
         </Card>
       </section>
+
+      {totalDebt > 0 ? (
+        <Card>
+          <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4">
+            <div>
+              <p className="text-sm text-muted-foreground">순자산 (자산 − 부채)</p>
+              <p
+                className={cn(
+                  "mt-1 text-2xl font-semibold",
+                  summary.valueTotal - totalDebt < 0 && "text-destructive",
+                )}
+              >
+                {formatMoney(summary.valueTotal - totalDebt)}
+              </p>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              자산 {formatMoney(summary.valueTotal)} − 부채{" "}
+              {formatMoney(totalDebt)}
+            </p>
+          </CardContent>
+        </Card>
+      ) : null}
 
       {summary.byClass.length > 0 ? (
         <Card>

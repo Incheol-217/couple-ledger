@@ -14,6 +14,7 @@ const emptyData: InvestPageData = {
   household: null,
   isConfigured: false,
   isSignedIn: false,
+  totalDebt: 0,
   monthIncome: 0,
   monthSavedToSavings: 0,
 };
@@ -58,8 +59,13 @@ async function getInvestPageData(): Promise<InvestPageData> {
   const supabase = await createClient();
   const { start, end } = monthRange();
 
-  const [assetsResult, accountsResult, savingsAccountsResult, monthTxResult] =
-    await Promise.all([
+  const [
+    assetsResult,
+    accountsResult,
+    savingsAccountsResult,
+    monthTxResult,
+    liabilitiesResult,
+  ] = await Promise.all([
       supabase
         .from("investment_assets")
         .select(
@@ -87,7 +93,15 @@ async function getInvestPageData(): Promise<InvestPageData> {
         .in("type", ["income", "transfer"])
         .gte("transaction_date", start)
         .lte("transaction_date", end),
+      supabase
+        .from("liabilities")
+        .select("current_balance")
+        .eq("household_id", household.id),
     ]);
+
+  const totalDebt = (
+    (liabilitiesResult.data ?? []) as { current_balance: number | string }[]
+  ).reduce((sum, row) => sum + toNumber(row.current_balance), 0);
 
   const savingsAccountIds = new Set(
     ((savingsAccountsResult.data ?? []) as { id: string }[]).map(
@@ -121,10 +135,12 @@ async function getInvestPageData(): Promise<InvestPageData> {
       assetsResult.error?.message ??
       accountsResult.error?.message ??
       savingsAccountsResult.error?.message ??
-      monthTxResult.error?.message,
+      monthTxResult.error?.message ??
+      liabilitiesResult.error?.message,
     household,
     isConfigured: true,
     isSignedIn: true,
+    totalDebt,
     monthIncome,
     monthSavedToSavings,
   };

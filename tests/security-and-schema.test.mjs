@@ -370,6 +370,12 @@ describe("UX guardrails", () => {
   );
   const accountBalancesLib = read("src/lib/accounts/balances.ts");
   const accountsPageBalances = read("src/app/accounts/page.tsx");
+  const liabilitiesMigration = read(
+    "supabase/migrations/20260714160000_create_liabilities.sql",
+  );
+  const debtsActions = read("src/app/debts/actions.ts");
+  const debtsClient = read("src/app/debts/debts-client.tsx");
+  const debtsPage = read("src/app/debts/page.tsx");
   const moneyFormatter = read("src/lib/formatters/money.ts");
   const accountsClient = read("src/app/accounts/accounts-client.tsx");
   const reportPage = read("src/app/reports/page.tsx");
@@ -609,5 +615,25 @@ describe("UX guardrails", () => {
     assert.match(accountsPageBalances, /\.from\("investment_trades"\)/);
     // UI에 매수/매도 버튼이 있어요.
     assert.match(investClient, /TradePanel/);
+  });
+
+  it("manages debts and repayments that move the linked account", () => {
+    // 부채·상환 테이블과 액션이 있어요.
+    assert.match(liabilitiesMigration, /create table public\.liabilities/);
+    assert.match(
+      liabilitiesMigration,
+      /create table public\.liability_payments/,
+    );
+    assert.match(debtsActions, /export async function createLiabilityAction/);
+    assert.match(debtsActions, /export async function recordRepaymentAction/);
+    assert.match(debtsActions, /\.from\("liability_payments"\)/);
+    assert.match(debtsPage, /\.from\("liabilities"\)/);
+    assert.match(debtsClient, /RepayPanel/);
+    // 잔액 계산기가 상환 현금흐름을 반영해요.
+    assert.match(accountBalancesLib, /liabilityPayments/);
+    assert.match(accountsPageBalances, /\.from\("liability_payments"\)/);
+    // 네비에 부채가 있고, 자산 화면에 순자산이 나와요.
+    assert.match(appNav, /\/debts/);
+    assert.match(investClient, /순자산/);
   });
 });

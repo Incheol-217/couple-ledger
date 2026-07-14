@@ -2,6 +2,7 @@ import { PageHeader } from "@/components/page-header";
 import {
   buildAccountBalances,
   type AccountBalance,
+  type BalanceRepaymentRow,
   type BalanceTradeRow,
   type BalanceTransactionRow,
 } from "@/lib/accounts/balances";
@@ -73,6 +74,7 @@ async function getAccountsPageData() {
     { data: accounts, error: accountsError },
     { data: balanceTransactions, error: transactionsError },
     { data: investmentTrades },
+    { data: liabilityPayments },
   ] = await Promise.all([
     supabase
       .from("accounts")
@@ -94,6 +96,12 @@ async function getAccountsPageData() {
       .eq("household_id", household.id)
       .not("account_id", "is", null)
       .lte("traded_at", today),
+    supabase
+      .from("liability_payments")
+      .select("account_id, amount, paid_on")
+      .eq("household_id", household.id)
+      .not("account_id", "is", null)
+      .lte("paid_on", today),
   ]);
 
   const accountRows = (accounts ?? []) as AccountRow[];
@@ -102,6 +110,7 @@ async function getAccountsPageData() {
     (balanceTransactions ?? []) as unknown as BalanceTransactionRow[],
     today,
     (investmentTrades ?? []) as unknown as BalanceTradeRow[],
+    (liabilityPayments ?? []) as unknown as BalanceRepaymentRow[],
   );
 
   return {

@@ -47,6 +47,8 @@ export type InvestPageData = {
   household: InvestHousehold | null;
   isConfigured: boolean;
   isSignedIn: boolean;
+  // 순자산(자산-부채) 계산용 부채 남은 원금 합계
+  totalDebt: number;
   // 이번 달 저축률 계산용
   monthIncome: number;
   monthSavedToSavings: number;

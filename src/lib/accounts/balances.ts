@@ -23,6 +23,13 @@ export type BalanceTradeRow = {
   traded_at: string;
 };
 
+// 대출 원금 상환이에요. 연결계좌에서 상환액만큼 현금이 나가요.
+export type BalanceRepaymentRow = {
+  account_id: string | null;
+  amount: number | string;
+  paid_on: string;
+};
+
 // 처음 잔액에서 시작해 오늘까지의 거래를 반영한 계좌별 현재 잔액을 계산해요.
 // 이체는 나가는 계좌에서 빼고 들어오는 계좌에 더해요. 주식 매매의 현금흐름도
 // (있으면) 연결계좌에 반영해요.
@@ -31,6 +38,7 @@ export function buildAccountBalances(
   balanceTransactions: BalanceTransactionRow[],
   today: string,
   investmentTrades: BalanceTradeRow[] = [],
+  liabilityPayments: BalanceRepaymentRow[] = [],
 ): AccountBalance[] {
   const accountsById = new Map(accounts.map((account) => [account.id, account]));
   const balances = new Map<string, number>(
@@ -123,6 +131,27 @@ export function buildAccountBalances(
 
     const delta = trade.side === "sell" ? cash : -cash;
     balances.set(accountId, (balances.get(accountId) ?? 0) + delta);
+  });
+
+  // 대출 원금 상환: 연결계좌에서 상환액만큼 빠져요.
+  liabilityPayments.forEach((payment) => {
+    if (!payment.account_id) {
+      return;
+    }
+
+    const amount = Number(payment.amount);
+
+    if (!Number.isFinite(amount)) {
+      return;
+    }
+
+    const accountId = balanceAccountId(payment.account_id);
+
+    if (!appliesToAccount(accountId, payment.paid_on)) {
+      return;
+    }
+
+    balances.set(accountId, (balances.get(accountId) ?? 0) - amount);
   });
 
   return Array.from(balances.entries()).map(([accountId, balance]) => ({
