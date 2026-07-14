@@ -99,6 +99,8 @@ async function getInvestPageData(): Promise<InvestPageData> {
         .eq("household_id", household.id),
     ]);
 
+  // 부채 테이블(마이그레이션)이 아직 없어도 자산 화면은 정상 동작하도록,
+  // 조회 실패는 순자산 0으로 처리하고 화면에 에러를 띄우지 않아요.
   const totalDebt = (
     (liabilitiesResult.data ?? []) as { current_balance: number | string }[]
   ).reduce((sum, row) => sum + toNumber(row.current_balance), 0);
@@ -135,8 +137,7 @@ async function getInvestPageData(): Promise<InvestPageData> {
       assetsResult.error?.message ??
       accountsResult.error?.message ??
       savingsAccountsResult.error?.message ??
-      monthTxResult.error?.message ??
-      liabilitiesResult.error?.message,
+      monthTxResult.error?.message,
     household,
     isConfigured: true,
     isSignedIn: true,
