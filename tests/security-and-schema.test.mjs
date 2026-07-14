@@ -295,7 +295,7 @@ describe("Login and role access", () => {
     // 총 잔액은 그대로 두고 금고 금액만 조정해요.
     assert.match(accountActions, /vault_amount: nextAmount/);
     assert.match(accountsClient, /금고에 넣기/);
-    assert.match(accountsClient, /쓸 수 있는 돈/);
+    assert.match(accountsClient, /금고에 있는 돈/);
   });
 
   it("requires a destination account for transfers on the server", () => {

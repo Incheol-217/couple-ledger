@@ -616,7 +616,6 @@ function WalletDeck({
           {selectedAccount ? (
             <VaultPanel
               account={selectedAccount}
-              currentBalance={balanceById.get(selectedAccount.id) ?? null}
               householdId={householdId}
               isAdmin={isAdmin}
               key={`vault-${selectedAccount.id}-${selectedAccount.vault_enabled}`}
@@ -690,12 +689,10 @@ function DeleteAccountButton({
 
 function VaultPanel({
   account,
-  currentBalance,
   householdId,
   isAdmin,
 }: {
   account: AccountRow;
-  currentBalance: number | null;
   householdId: string;
   isAdmin: boolean;
 }) {
@@ -705,8 +702,6 @@ function VaultPanel({
   const [isPending, startTransition] = useTransition();
 
   const vaultAmount = Math.round(Number(account.vault_amount) || 0);
-  const spendable =
-    currentBalance != null ? currentBalance - vaultAmount : null;
 
   function submit(formData: FormData) {
     startTransition(async () => {
@@ -806,12 +801,6 @@ function VaultPanel({
       {enabled ? (
         <>
           <dl className="mt-3 grid gap-1 text-sm">
-            <div className="flex justify-between gap-3">
-              <dt className="text-white/58">쓸 수 있는 돈</dt>
-              <dd className="font-semibold">
-                {spendable != null ? formatAccountBalance(spendable) : "-"}
-              </dd>
-            </div>
             <div className="flex justify-between gap-3">
               <dt className="text-white/58">금고에 있는 돈</dt>
               <dd className="font-medium">{formatAccountBalance(vaultAmount)}</dd>
