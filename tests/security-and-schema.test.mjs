@@ -497,6 +497,15 @@ describe("UX guardrails", () => {
     assert.match(transactionsPage, /markTransactionReviewedAction/);
   });
 
+  it("brands the app with a logo, favicon, and manifest", () => {
+    // 헤더 로고 컴포넌트와 아이콘·매니페스트가 있어요.
+    assert.match(appShell, /<Logo/);
+    assert.match(read("src/components/logo.tsx"), /LOGO_HEART_PATH/);
+    assert.match(read("src/app/icon.tsx"), /ImageResponse/);
+    assert.match(read("src/app/apple-icon.tsx"), /ImageResponse/);
+    assert.match(read("src/app/manifest.ts"), /theme_color/);
+  });
+
   it("hardens recurring job execution and package installs", () => {
     assert.match(jobRoute, /timingSafeEqual/);
     assert.match(recurringJob, /\.eq\("next_due_date", item\.next_due_date\)/);

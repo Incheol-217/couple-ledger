@@ -2,6 +2,7 @@ import Link from "next/link";
 import { LogOut, Plus, UserRound } from "lucide-react";
 import { signOutAction } from "@/app/login/actions";
 import { AppNav } from "@/components/app-nav";
+import { Logo } from "@/components/logo";
 import { MobileExpenseAction } from "@/components/mobile-expense-action";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 import { Badge } from "@/components/ui/badge";
@@ -40,9 +41,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
             className="flex shrink-0 items-center gap-2 font-semibold whitespace-nowrap"
             href="/"
           >
-            <span className="grid size-8 place-items-center rounded-md bg-secondary text-sm text-primary">
-              B
-            </span>
+            <Logo />
             <span>공동 가계부</span>
           </Link>
           {context.isSignedIn ? (
