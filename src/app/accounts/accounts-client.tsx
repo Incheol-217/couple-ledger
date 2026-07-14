@@ -21,6 +21,7 @@ import {
   createAccountAction,
   deactivateAccountAction,
   deleteAccountAction,
+  moveToVaultAction,
   updateAccountVaultAction,
   moveAccountAction,
   updateAccountAction,
@@ -615,6 +616,7 @@ function WalletDeck({
           {selectedAccount ? (
             <VaultPanel
               account={selectedAccount}
+              currentBalance={balanceById.get(selectedAccount.id) ?? null}
               householdId={householdId}
               isAdmin={isAdmin}
               key={`vault-${selectedAccount.id}-${selectedAccount.vault_enabled}`}
@@ -688,21 +690,52 @@ function DeleteAccountButton({
 
 function VaultPanel({
   account,
+  currentBalance,
   householdId,
   isAdmin,
 }: {
   account: AccountRow;
+  currentBalance: number | null;
   householdId: string;
   isAdmin: boolean;
 }) {
   const [enabled, setEnabled] = useState(account.vault_enabled);
   const [result, setResult] = useState<AccountActionResult | null>(null);
+  const [moveAmount, setMoveAmount] = useState("");
   const [isPending, startTransition] = useTransition();
+
+  const vaultAmount = Math.round(Number(account.vault_amount) || 0);
+  const spendable =
+    currentBalance != null ? currentBalance - vaultAmount : null;
 
   function submit(formData: FormData) {
     startTransition(async () => {
       const actionResult = await updateAccountVaultAction(formData);
       setResult(actionResult);
+    });
+  }
+
+  // 금고에 넣기/빼기: 총 잔액은 그대로, 금고 금액만 조정해요.
+  function move(direction: "in" | "out") {
+    const amount = Number(moveAmount.replaceAll(",", ""));
+
+    if (!Number.isFinite(amount) || amount <= 0) {
+      setResult({ ok: false, message: "금액을 1원 이상 입력해 주세요." });
+      return;
+    }
+
+    const formData = new FormData();
+    formData.set("household_id", householdId);
+    formData.set("account_id", account.id);
+    formData.set("direction", direction);
+    formData.set("amount", String(Math.round(amount)));
+
+    startTransition(async () => {
+      const actionResult = await moveToVaultAction(formData);
+      setResult(actionResult);
+      if (actionResult.ok) {
+        setMoveAmount("");
+      }
     });
   }
 
@@ -771,8 +804,66 @@ function VaultPanel({
       ) : null}
 
       {enabled ? (
-        isAdmin ? (
-          <form action={submit} className="mt-3 grid gap-2">
+        <>
+          <dl className="mt-3 grid gap-1 text-sm">
+            <div className="flex justify-between gap-3">
+              <dt className="text-white/58">쓸 수 있는 돈</dt>
+              <dd className="font-semibold">
+                {spendable != null ? formatAccountBalance(spendable) : "-"}
+              </dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt className="text-white/58">금고에 있는 돈</dt>
+              <dd className="font-medium">{formatAccountBalance(vaultAmount)}</dd>
+            </div>
+          </dl>
+
+          {isAdmin ? (
+            <div className="mt-3 space-y-2 rounded-[0.85rem] bg-white/8 p-2">
+              <Input
+                aria-label="금고에 넣거나 뺄 금액"
+                autoComplete="off"
+                className="h-9 border-white/15 bg-white/10 text-white placeholder:text-white/40"
+                inputMode="numeric"
+                onChange={(event) =>
+                  setMoveAmount(formatAmountInput(event.target.value))
+                }
+                placeholder="금액 (예: 100,000)"
+                type="text"
+                value={moveAmount}
+              />
+              <div className="flex gap-2">
+                <Button
+                  className="h-9 flex-1 bg-primary text-secondary hover:bg-primary/90"
+                  disabled={isPending}
+                  onClick={() => move("in")}
+                  size="sm"
+                  type="button"
+                >
+                  금고에 넣기
+                </Button>
+                <Button
+                  className="h-9 flex-1 bg-white/12 text-white hover:bg-white/20"
+                  disabled={isPending}
+                  onClick={() => move("out")}
+                  size="sm"
+                  type="button"
+                  variant="outline"
+                >
+                  빼기
+                </Button>
+              </div>
+            </div>
+          ) : null}
+        </>
+      ) : null}
+
+      {enabled && isAdmin ? (
+        <details className="mt-3">
+          <summary className="cursor-pointer text-xs text-white/58">
+            금고 별명·총액 직접 고치기
+          </summary>
+          <form action={submit} className="mt-2 grid gap-2">
             <input name="household_id" type="hidden" value={householdId} />
             <input name="account_id" type="hidden" value={account.id} />
             <input name="vault_enabled" type="hidden" value="true" />
@@ -810,20 +901,7 @@ function VaultPanel({
               {isPending ? "저장하고 있어요" : "금고 저장"}
             </Button>
           </form>
-        ) : (
-          <dl className="mt-3 grid gap-1 text-sm">
-            <div className="flex justify-between gap-3">
-              <dt className="text-white/58">별명</dt>
-              <dd className="font-medium">{account.vault_name ?? "-"}</dd>
-            </div>
-            <div className="flex justify-between gap-3">
-              <dt className="text-white/58">금액</dt>
-              <dd className="font-medium">
-                {formatAccountBalance(account.vault_amount)}
-              </dd>
-            </div>
-          </dl>
-        )
+        </details>
       ) : null}
     </div>
   );

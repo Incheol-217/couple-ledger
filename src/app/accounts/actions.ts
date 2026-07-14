@@ -546,6 +546,93 @@ export async function updateAccountVaultAction(
   }
 }
 
+// 계좌 안의 돈을 금고에 넣거나(넣기) 금고에서 빼요(빼기). 총 잔액은 그대로,
+// 금고 금액만 바뀌어서 '쓸 수 있는 돈'이 조정돼요.
+export async function moveToVaultAction(
+  formData: FormData,
+): Promise<AccountActionResult> {
+  try {
+    const householdId = readText(formData, "household_id");
+    const accountId = readText(formData, "account_id");
+    const direction = readText(formData, "direction");
+    const rawAmount = readText(formData, "amount");
+    const amount = rawAmount ? Number(rawAmount.replaceAll(",", "")) : 0;
+
+    if (!accountId) {
+      throw new Error("금고를 바꿀 계좌를 찾을 수 없어요.");
+    }
+
+    if (direction !== "in" && direction !== "out") {
+      throw new Error("넣기 또는 빼기를 골라주세요.");
+    }
+
+    if (!Number.isFinite(amount) || amount <= 0) {
+      throw new Error("금액을 1원 이상 입력해 주세요.");
+    }
+
+    const { supabase, user } = await assertCurrentAdminMember(householdId);
+
+    const { data: account, error: loadError } = await supabase
+      .from("accounts")
+      .select("name, vault_amount")
+      .eq("household_id", householdId)
+      .eq("id", accountId)
+      .maybeSingle();
+
+    if (loadError || !account) {
+      throw new Error(loadError?.message ?? "계좌를 찾을 수 없어요.");
+    }
+
+    const current = Math.round(Number(account.vault_amount) || 0);
+    const rounded = Math.round(amount);
+    const nextAmount =
+      direction === "in" ? current + rounded : Math.max(0, current - rounded);
+
+    const { error } = await supabase
+      .from("accounts")
+      .update({
+        vault_amount: nextAmount,
+        // 금고에 넣으면 금고를 자동으로 켜요.
+        ...(direction === "in" ? { vault_enabled: true } : {}),
+      })
+      .eq("household_id", householdId)
+      .eq("id", accountId);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    await createNotificationEvent(supabase, {
+      actorUserId: user.id,
+      body:
+        direction === "in"
+          ? `'${account.name}' 금고에 ${rounded.toLocaleString("ko-KR")}원을 넣었어요.`
+          : `'${account.name}' 금고에서 ${rounded.toLocaleString("ko-KR")}원을 뺐어요.`,
+      eventType: "account_updated",
+      householdId,
+      metadata: { account_id: accountId, vault_amount: nextAmount },
+      title: "금고 금액이 바뀌었어요",
+    });
+
+    revalidatePath("/accounts");
+    revalidatePath("/dashboard");
+    revalidatePath("/", "layout");
+
+    return {
+      ok: true,
+      message:
+        direction === "in"
+          ? `금고에 ${rounded.toLocaleString("ko-KR")}원을 넣었어요.`
+          : `금고에서 ${rounded.toLocaleString("ko-KR")}원을 뺐어요.`,
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      message: error instanceof Error ? error.message : "금고를 바꾸지 못했어요.",
+    };
+  }
+}
+
 export async function deleteAccountAction(
   formData: FormData,
 ): Promise<AccountActionResult> {

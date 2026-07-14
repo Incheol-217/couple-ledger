@@ -290,6 +290,14 @@ describe("Login and role access", () => {
     assert.match(accountsClient, /보기만 가능해요/);
   });
 
+  it("moves money into and out of an account vault", () => {
+    assert.match(accountActions, /export async function moveToVaultAction/);
+    // 총 잔액은 그대로 두고 금고 금액만 조정해요.
+    assert.match(accountActions, /vault_amount: nextAmount/);
+    assert.match(accountsClient, /금고에 넣기/);
+    assert.match(accountsClient, /쓸 수 있는 돈/);
+  });
+
   it("requires a destination account for transfers on the server", () => {
     assert.match(quickAction, /type === "transfer" && !confirmedTransferAccountId/);
     assert.match(quickAction, /입금 계좌를 선택해 주세요/);
