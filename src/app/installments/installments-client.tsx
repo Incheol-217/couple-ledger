@@ -142,6 +142,9 @@ function InstallmentForm({
 }) {
   const [result, setResult] = useState<InstallmentActionResult | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [autoCreate, setAutoCreate] = useState(
+    item?.auto_create_transaction ?? true,
+  );
   const amountRef = useRef<HTMLInputElement>(null);
   const totalPriceRef = useRef<HTMLInputElement>(null);
   const monthsRef = useRef<HTMLInputElement>(null);
@@ -408,6 +411,23 @@ function InstallmentForm({
               rows={2}
             />
           </div>
+
+          <label className="flex items-start gap-3 rounded-lg border bg-muted/30 p-4 text-sm">
+            <input
+              checked={autoCreate}
+              className="mt-1 size-4 accent-[var(--primary)]"
+              name="auto_create_transaction"
+              onChange={(event) => setAutoCreate(event.target.checked)}
+              type="checkbox"
+            />
+            <span>
+              <span className="font-medium">결제일에 거래로 자동 저장하기</span>
+              <span className="mt-1 block text-muted-foreground">
+                켜두면 매 회차 결제일에 거래 내역이 자동으로 생기고, 연결계좌
+                잔액에도 반영돼요. 끄면 진행 상황만 추적해요.
+              </span>
+            </span>
+          </label>
 
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button onClick={() => onDone()} type="button" variant="outline">
@@ -709,7 +729,10 @@ export function InstallmentsClient({
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between text-xs text-muted-foreground">
                       <span>
-                        {paid} / {total}회 · 시작 {item.starts_on ?? "-"}
+                        {paid} / {total}회 · 시작 {item.starts_on ?? "-"} ·{" "}
+                        {item.auto_create_transaction
+                          ? "결제일 자동 저장"
+                          : "자동 저장 꺼짐"}
                       </span>
                       <span>{Math.round(percent)}%</span>
                     </div>

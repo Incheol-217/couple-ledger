@@ -545,6 +545,15 @@ describe("UX guardrails", () => {
     assert.match(installmentSchedule, /export function paidInstallmentCount/);
   });
 
+  it("lets installments opt in/out of auto transactions", () => {
+    // 할부 폼에 결제일 자동 저장 토글이 있고, 그 값을 저장해요.
+    assert.match(installmentsClient, /name="auto_create_transaction"/);
+    assert.match(
+      installmentsActions,
+      /auto_create_transaction: payload\.autoCreateTransaction/,
+    );
+  });
+
   it("manages categories from settings for admins", () => {
     assert.match(settingsActions, /export async function createCategoryAction/);
     assert.match(settingsActions, /export async function renameCategoryAction/);

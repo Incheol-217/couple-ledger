@@ -60,7 +60,7 @@ async function getInstallmentPageData(): Promise<InstallmentPageData> {
       supabase
         .from("recurring_items")
         .select(
-          "id, household_id, account_id, category_id, name, merchant, amount, billing_day, next_due_date, starts_on, status, total_installments, memo, created_at",
+          "id, household_id, account_id, category_id, name, merchant, amount, billing_day, next_due_date, starts_on, status, total_installments, auto_create_transaction, memo, created_at",
         )
         .eq("household_id", household.id)
         .eq("kind", "installment")

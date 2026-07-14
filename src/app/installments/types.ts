@@ -16,6 +16,7 @@ export type InstallmentRow = {
   starts_on: string | null;
   status: InstallmentStatus;
   total_installments: number | null;
+  auto_create_transaction: boolean;
   memo: string | null;
   created_at: string;
 };

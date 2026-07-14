@@ -153,6 +153,8 @@ function toPayload(formData: FormData) {
   return {
     accountId: readText(formData, "account_id"),
     amount,
+    autoCreateTransaction:
+      readText(formData, "auto_create_transaction") === "on",
     billingDay: normalizedBillingDay,
     categoryId: readNullableText(formData, "category_id"),
     memo: readNullableText(formData, "memo"),
@@ -203,7 +205,7 @@ export async function createInstallmentAction(
       next_due_date: payload.nextDueDate,
       starts_on: payload.startsOn,
       status: "active",
-      auto_create_transaction: true,
+      auto_create_transaction: payload.autoCreateTransaction,
       reminder_days_before: 3,
       total_installments: payload.totalInstallments,
       memo: payload.memo,
@@ -274,6 +276,7 @@ export async function updateInstallmentAction(
         next_due_date: payload.nextDueDate,
         starts_on: payload.startsOn,
         total_installments: payload.totalInstallments,
+        auto_create_transaction: payload.autoCreateTransaction,
         memo: payload.memo,
       })
       .eq("household_id", householdId)
