@@ -14,12 +14,23 @@ export type AccountBalance = {
   balance: number;
 };
 
+// 주식·ETF 매매의 현금흐름이에요. 매수는 연결계좌에서 나가고, 매도는 들어와요.
+// 지출/수입 거래(transactions)와 별개로 계좌 잔액에만 반영돼요.
+export type BalanceTradeRow = {
+  account_id: string | null;
+  side: "buy" | "sell";
+  cash_amount: number | string;
+  traded_at: string;
+};
+
 // 처음 잔액에서 시작해 오늘까지의 거래를 반영한 계좌별 현재 잔액을 계산해요.
-// 이체는 나가는 계좌에서 빼고 들어오는 계좌에 더해요.
+// 이체는 나가는 계좌에서 빼고 들어오는 계좌에 더해요. 주식 매매의 현금흐름도
+// (있으면) 연결계좌에 반영해요.
 export function buildAccountBalances(
   accounts: AccountRow[],
   balanceTransactions: BalanceTransactionRow[],
   today: string,
+  investmentTrades: BalanceTradeRow[] = [],
 ): AccountBalance[] {
   const accountsById = new Map(accounts.map((account) => [account.id, account]));
   const balances = new Map<string, number>(
@@ -90,6 +101,28 @@ export function buildAccountBalances(
     if (targetId && appliesToAccount(targetId, transaction.transaction_date)) {
       balances.set(targetId, (balances.get(targetId) ?? 0) + amount);
     }
+  });
+
+  // 주식 매매의 현금흐름: 매수는 연결계좌에서 빼고, 매도는 더해요.
+  investmentTrades.forEach((trade) => {
+    if (!trade.account_id) {
+      return;
+    }
+
+    const cash = Number(trade.cash_amount);
+
+    if (!Number.isFinite(cash)) {
+      return;
+    }
+
+    const accountId = balanceAccountId(trade.account_id);
+
+    if (!appliesToAccount(accountId, trade.traded_at)) {
+      return;
+    }
+
+    const delta = trade.side === "sell" ? cash : -cash;
+    balances.set(accountId, (balances.get(accountId) ?? 0) + delta);
   });
 
   return Array.from(balances.entries()).map(([accountId, balance]) => ({

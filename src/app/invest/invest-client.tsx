@@ -12,6 +12,7 @@ import {
 import {
   createAssetAction,
   deleteAssetAction,
+  recordTradeAction,
   refreshAssetPricesAction,
   updateAssetAction,
   updateAssetValueAction,
@@ -57,8 +58,16 @@ const classAccents: Record<AssetClass, string> = {
   other: "bg-muted-foreground",
 };
 
-// 종목코드로 시세를 붙일 수 있는 자산 종류예요.
+// 종목코드로 시세를 붙이고 매매를 기록할 수 있는 자산 종류예요.
 const tickerClasses: AssetClass[] = ["stock", "pension"];
+
+function todayString() {
+  const now = new Date();
+  const year = String(now.getFullYear());
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
 
 function toAmount(value: number | string) {
   const amount = Number(value);
@@ -410,6 +419,150 @@ function DeleteButton({
   );
 }
 
+function TradePanel({
+  asset,
+  householdId,
+  linkedAccountName,
+  onResult,
+}: {
+  asset: InvestmentAssetRow;
+  householdId: string;
+  linkedAccountName: string | null;
+  onResult: (result: InvestActionResult) => void;
+}) {
+  const [side, setSide] = useState<"buy" | "sell" | null>(null);
+  const [isPending, startTransition] = useTransition();
+
+  function submit(formData: FormData) {
+    startTransition(async () => {
+      const result = await recordTradeAction(formData);
+      onResult(result);
+      if (result.ok) {
+        setSide(null);
+      }
+    });
+  }
+
+  if (!side) {
+    return (
+      <div className="flex gap-2">
+        <Button
+          className="flex-1"
+          onClick={() => setSide("buy")}
+          size="sm"
+          type="button"
+          variant="outline"
+        >
+          매수
+        </Button>
+        <Button
+          className="flex-1"
+          onClick={() => setSide("sell")}
+          size="sm"
+          type="button"
+          variant="outline"
+        >
+          매도
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <form
+      action={submit}
+      className="space-y-3 rounded-md border bg-muted/30 p-3"
+    >
+      <input name="household_id" type="hidden" value={householdId} />
+      <input name="asset_id" type="hidden" value={asset.id} />
+      <input name="side" type="hidden" value={side} />
+
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-semibold">
+          {side === "buy" ? "매수 기록" : "매도 기록"}
+        </p>
+        <span className="text-xs text-muted-foreground">
+          {linkedAccountName
+            ? `연결계좌: ${linkedAccountName}`
+            : "연결계좌 없음 (잔액 반영 안 됨)"}
+        </span>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2">
+        <div className="space-y-1">
+          <Label className="text-xs" htmlFor={`trade-qty-${asset.id}`}>
+            수량
+          </Label>
+          <Input
+            autoComplete="off"
+            className="h-9"
+            id={`trade-qty-${asset.id}`}
+            inputMode="decimal"
+            name="quantity"
+            placeholder="3"
+            required
+          />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs" htmlFor={`trade-price-${asset.id}`}>
+            1주당 가격 (원)
+          </Label>
+          <Input
+            autoComplete="off"
+            className="h-9"
+            id={`trade-price-${asset.id}`}
+            inputMode="numeric"
+            name="price"
+            onInput={formatAmountField}
+            placeholder="70,000"
+            required
+          />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs" htmlFor={`trade-fee-${asset.id}`}>
+            수수료 (원, 선택)
+          </Label>
+          <Input
+            autoComplete="off"
+            className="h-9"
+            id={`trade-fee-${asset.id}`}
+            inputMode="numeric"
+            name="fee"
+            onInput={formatAmountField}
+            placeholder="0"
+          />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs" htmlFor={`trade-date-${asset.id}`}>
+            거래일
+          </Label>
+          <Input
+            className="h-9"
+            defaultValue={todayString()}
+            id={`trade-date-${asset.id}`}
+            name="traded_at"
+            type="date"
+          />
+        </div>
+      </div>
+
+      <div className="flex justify-end gap-2">
+        <Button
+          onClick={() => setSide(null)}
+          size="sm"
+          type="button"
+          variant="ghost"
+        >
+          취소
+        </Button>
+        <Button disabled={isPending} size="sm" type="submit">
+          {isPending ? "기록 중" : side === "buy" ? "매수 기록" : "매도 기록"}
+        </Button>
+      </div>
+    </form>
+  );
+}
+
 function RefreshPricesButton({
   householdId,
   onResult,
@@ -690,6 +843,11 @@ export function InvestClient({
             const quantity = asset.quantity != null ? toAmount(asset.quantity) : 0;
             const hasTicker = Boolean(asset.ticker) && quantity > 0;
             const perShare = hasTicker ? value / quantity : null;
+            const isTradeable = tickerClasses.includes(asset.asset_class);
+            const linkedAccountName =
+              asset.account_id && accountNameById.has(asset.account_id)
+                ? (accountNameById.get(asset.account_id) as string)
+                : null;
 
             return (
               <Card className="border-l-4 border-l-primary" key={asset.id}>
@@ -752,7 +910,16 @@ export function InvestClient({
                     </p>
                   ) : null}
 
-                  {hasTicker ? null : (
+                  {isTradeable ? (
+                    <TradePanel
+                      asset={asset}
+                      householdId={household.id}
+                      linkedAccountName={linkedAccountName}
+                      onResult={setResult}
+                    />
+                  ) : null}
+
+                  {hasTicker || isTradeable ? null : (
                     <ValueUpdateForm
                       asset={asset}
                       householdId={household.id}

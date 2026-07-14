@@ -62,6 +62,23 @@ function readMoney(formData: FormData, key: string) {
   return Math.round(parsed);
 }
 
+// 소수점을 허용하는 값(수량, 1주당 가격)이에요.
+function readDecimal(formData: FormData, key: string, label: string) {
+  const value = readText(formData, key);
+
+  if (!value) {
+    return 0;
+  }
+
+  const parsed = Number(value.replaceAll(",", ""));
+
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    throw new Error(`${label}은(는) 0 이상 숫자로 입력해 주세요.`);
+  }
+
+  return parsed;
+}
+
 async function assertCurrentMember(householdId: string) {
   if (!hasSupabaseEnv()) {
     throw new Error("Supabase 환경변수를 확인해 주세요.");
@@ -445,6 +462,175 @@ export async function refreshAssetPricesAction(
       ok: false,
       message:
         error instanceof Error ? error.message : "시세를 갱신하지 못했어요.",
+    };
+  }
+}
+
+function toNumber(value: number | string | null) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+// 매수/매도를 기록해요. 자산의 보유수량·원금(평단)을 갱신하고, 연결계좌에
+// 영향을 주는 현금흐름(매수=출금, 매도=입금)을 investment_trades에 남겨요.
+export async function recordTradeAction(
+  formData: FormData,
+): Promise<InvestActionResult> {
+  try {
+    const householdId = readText(formData, "household_id");
+    const assetId = readText(formData, "asset_id");
+    const side = readText(formData, "side");
+    const quantity = readDecimal(formData, "quantity", "수량");
+    const price = readDecimal(formData, "price", "1주당 가격");
+    const fee = readMoney(formData, "fee");
+    const tradedAt =
+      readText(formData, "traded_at") || new Date().toISOString().slice(0, 10);
+
+    if (!assetId) {
+      throw new Error("매매할 자산을 찾을 수 없어요.");
+    }
+
+    if (side !== "buy" && side !== "sell") {
+      throw new Error("매수 또는 매도를 골라주세요.");
+    }
+
+    if (quantity <= 0) {
+      throw new Error("수량을 0보다 크게 입력해 주세요.");
+    }
+
+    const { supabase, user } = await assertCurrentMember(householdId);
+
+    const { data: asset, error: assetError } = await supabase
+      .from("investment_assets")
+      .select("id, account_id, ticker, quantity, principal, current_value")
+      .eq("household_id", householdId)
+      .eq("id", assetId)
+      .maybeSingle();
+
+    if (assetError || !asset) {
+      throw new Error(assetError?.message ?? "매매할 자산을 찾을 수 없어요.");
+    }
+
+    const oldQty = toNumber(asset.quantity);
+    const oldPrincipal = toNumber(asset.principal);
+    const oldValue = toNumber(asset.current_value);
+
+    if (side === "sell" && quantity > oldQty + 1e-9) {
+      throw new Error(
+        `보유 수량(${oldQty})보다 많이 팔 수 없어요.`,
+      );
+    }
+
+    // 매수는 (수량×가격+수수료)만큼 계좌에서 나가고, 매도는 (수량×가격−수수료)
+    // 만큼 계좌로 들어와요.
+    const gross = quantity * price;
+    const cashAmount =
+      side === "buy"
+        ? Math.round(gross + fee)
+        : Math.max(0, Math.round(gross - fee));
+
+    // 평균단가(평단) 기준으로 원금을 갱신해요.
+    const avgCost = oldQty > 0 ? oldPrincipal / oldQty : 0;
+    let newQty: number;
+    let newPrincipal: number;
+    let realizedPnL = 0;
+
+    if (side === "buy") {
+      newQty = oldQty + quantity;
+      newPrincipal = oldPrincipal + gross + fee;
+    } else {
+      newQty = Math.max(0, oldQty - quantity);
+      const costRemoved = avgCost * quantity;
+      newPrincipal = Math.max(0, oldPrincipal - costRemoved);
+      realizedPnL = Math.round(gross - fee - costRemoved);
+    }
+
+    // 매매 후 평가액을 다시 구해요. 종목코드가 있으면 시세로, 없으면 수량
+    // 비율로 조정해요.
+    let newValue: number;
+
+    if (newQty <= 0) {
+      newValue = 0;
+    } else if (asset.ticker) {
+      const valuation = await valuationInKrw(asset.ticker, newQty).catch(
+        () => null,
+      );
+      newValue = valuation
+        ? valuation.value
+        : oldQty > 0
+          ? Math.round((oldValue * newQty) / oldQty)
+          : Math.round(newPrincipal);
+    } else if (oldQty > 0) {
+      newValue = Math.round((oldValue * newQty) / oldQty);
+    } else {
+      newValue = Math.round(newPrincipal);
+    }
+
+    const today = new Date().toISOString().slice(0, 10);
+
+    const { error: tradeError } = await supabase
+      .from("investment_trades")
+      .insert({
+        household_id: householdId,
+        asset_id: assetId,
+        account_id: asset.account_id,
+        side,
+        quantity,
+        price,
+        fee,
+        cash_amount: cashAmount,
+        traded_at: tradedAt,
+        created_by: user.id,
+      });
+
+    if (tradeError) {
+      throw new Error(tradeError.message);
+    }
+
+    const { error: updateError } = await supabase
+      .from("investment_assets")
+      .update({
+        quantity: newQty,
+        principal: Math.round(newPrincipal),
+        current_value: newValue,
+        valued_at: today,
+      })
+      .eq("household_id", householdId)
+      .eq("id", assetId);
+
+    if (updateError) {
+      throw new Error(updateError.message);
+    }
+
+    revalidateInvest();
+    revalidatePath("/accounts");
+
+    const moneyText = `${cashAmount.toLocaleString("ko-KR")}원`;
+
+    if (side === "buy") {
+      return {
+        ok: true,
+        message: asset.account_id
+          ? `매수 ${quantity}주를 기록했어요. 연결계좌에서 ${moneyText}이 빠졌어요.`
+          : `매수 ${quantity}주를 기록했어요. (연결계좌가 없어 잔액 반영은 안 됐어요)`,
+      };
+    }
+
+    const pnlText =
+      realizedPnL === 0
+        ? ""
+        : ` 실현손익 ${realizedPnL > 0 ? "+" : ""}${realizedPnL.toLocaleString("ko-KR")}원.`;
+
+    return {
+      ok: true,
+      message: asset.account_id
+        ? `매도 ${quantity}주를 기록했어요. 연결계좌에 ${moneyText}이 들어왔어요.${pnlText}`
+        : `매도 ${quantity}주를 기록했어요.${pnlText} (연결계좌가 없어 잔액 반영은 안 됐어요)`,
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      message: error instanceof Error ? error.message : "매매를 기록하지 못했어요.",
     };
   }
 }

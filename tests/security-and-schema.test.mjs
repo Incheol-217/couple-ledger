@@ -365,6 +365,11 @@ describe("UX guardrails", () => {
   const investHoldingsMigration = read(
     "supabase/migrations/20260714140000_add_investment_holdings.sql",
   );
+  const investTradesMigration = read(
+    "supabase/migrations/20260714150000_create_investment_trades.sql",
+  );
+  const accountBalancesLib = read("src/lib/accounts/balances.ts");
+  const accountsPageBalances = read("src/app/accounts/page.tsx");
   const moneyFormatter = read("src/lib/formatters/money.ts");
   const accountsClient = read("src/app/accounts/accounts-client.tsx");
   const reportPage = read("src/app/reports/page.tsx");
@@ -573,5 +578,21 @@ describe("UX guardrails", () => {
     assert.match(investClient, /name="account_id"/);
     assert.match(investActions, /assertAssetAccount/);
     assert.match(investActions, /account_id: accountId/);
+  });
+
+  it("records buy/sell trades that move the linked account", () => {
+    // 매매 기록 테이블과 액션이 있어요.
+    assert.match(investTradesMigration, /create table public\.investment_trades/);
+    assert.match(investTradesMigration, /side in \('buy', 'sell'\)/);
+    assert.match(investActions, /export async function recordTradeAction/);
+    assert.match(investActions, /\.from\("investment_trades"\)/);
+    // 평균단가(평단)로 원금을 갱신해요.
+    assert.match(investActions, /avgCost/);
+    // 잔액 계산기가 매매 현금흐름을 반영해요(매도=입금, 매수=출금).
+    assert.match(accountBalancesLib, /investmentTrades/);
+    assert.match(accountBalancesLib, /trade\.side === "sell"/);
+    assert.match(accountsPageBalances, /\.from\("investment_trades"\)/);
+    // UI에 매수/매도 버튼이 있어요.
+    assert.match(investClient, /TradePanel/);
   });
 });

@@ -19,6 +19,7 @@ import {
 import type { AccountRow } from "@/app/accounts/types";
 import {
   buildAccountBalances,
+  type BalanceTradeRow,
   type BalanceTransactionRow,
 } from "@/lib/accounts/balances";
 import type { CategoryRow } from "@/app/m/new/types";
@@ -370,6 +371,7 @@ async function getDashboardData(
     adviceResult,
     balanceTransactionsResult,
     existingRecurringTransactionsResult,
+    investmentTradesResult,
   ] = await Promise.all([
     supabase
       .from("accounts")
@@ -435,6 +437,12 @@ async function getDashboardData(
       .not("recurring_item_id", "is", null)
       .gte("transaction_date", plannedRangeStart)
       .lte("transaction_date", plannedRangeEnd),
+    supabase
+      .from("investment_trades")
+      .select("account_id, side, cash_amount, traded_at")
+      .eq("household_id", household.id)
+      .not("account_id", "is", null)
+      .lte("traded_at", today),
   ]);
 
   const recurringItems =
@@ -467,6 +475,7 @@ async function getDashboardData(
       accounts,
       (balanceTransactionsResult.data ?? []) as unknown as BalanceTransactionRow[],
       today,
+      (investmentTradesResult.data ?? []) as unknown as BalanceTradeRow[],
     ),
     adviceLogs: (adviceResult.data ?? []) as unknown as AiAdviceLogRow[],
     budgets: (budgetsResult.data ?? []) as unknown as DashboardBudgetRow[],
