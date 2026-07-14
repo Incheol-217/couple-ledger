@@ -72,6 +72,100 @@ async function assertCurrentAdminMember(householdId: string) {
   return { supabase, user };
 }
 
+// 표시 이름 등 본인 설정은 이 가계부의 멤버면 누구나 바꿀 수 있어요.
+async function assertCurrentMember(householdId: string) {
+  if (!householdId) {
+    throw new Error("공동 가계부를 찾을 수 없어요.");
+  }
+
+  const supabase = await createSupabaseForAction();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    throw new Error("로그인해 주세요.");
+  }
+
+  const { data, error } = await supabase
+    .from("household_members")
+    .select("id")
+    .eq("household_id", householdId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (error || !data) {
+    throw new Error("이 가계부의 멤버만 설정을 바꿀 수 있어요.");
+  }
+
+  return { supabase, user };
+}
+
+export async function updateHouseholdNameAction(
+  formData: FormData,
+): Promise<CategoryActionResult> {
+  try {
+    const householdId = readText(formData, "household_id");
+    const name = readText(formData, "name");
+    const { supabase } = await assertCurrentAdminMember(householdId);
+
+    if (!name) {
+      throw new Error("가계부 이름을 입력해 주세요.");
+    }
+
+    const { error } = await supabase
+      .from("households")
+      .update({ name })
+      .eq("id", householdId);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    revalidatePath("/", "layout");
+    return { ok: true, message: "가계부 이름을 바꿨어요." };
+  } catch (error) {
+    return {
+      ok: false,
+      message:
+        error instanceof Error ? error.message : "가계부 이름을 바꾸지 못했어요.",
+    };
+  }
+}
+
+export async function updateDisplayNameAction(
+  formData: FormData,
+): Promise<CategoryActionResult> {
+  try {
+    const householdId = readText(formData, "household_id");
+    const name = readText(formData, "name");
+    const { supabase, user } = await assertCurrentMember(householdId);
+
+    if (!name) {
+      throw new Error("표시 이름을 입력해 주세요.");
+    }
+
+    // 프로필이 없을 수도 있으니 upsert로 넣거나 갱신해요.
+    const { error } = await supabase
+      .from("profiles")
+      .upsert({ id: user.id, display_name: name }, { onConflict: "id" });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    revalidatePath("/", "layout");
+    return { ok: true, message: "표시 이름을 바꿨어요." };
+  } catch (error) {
+    return {
+      ok: false,
+      message:
+        error instanceof Error ? error.message : "표시 이름을 바꾸지 못했어요.",
+    };
+  }
+}
+
 function isUniqueViolation(message: string | undefined) {
   return Boolean(
     message &&

@@ -113,7 +113,15 @@ export default async function SettingsPage() {
         description="가계부에 필요한 기본값을 정해요."
       />
 
-      <SettingsClient categories={categories} householdId={householdId} />
+      <SettingsClient
+        categories={categories}
+        displayName={context.displayName}
+        householdId={householdId}
+        householdName={context.householdName}
+        isAdmin={context.isAdmin}
+        memberLabel={context.memberLabel}
+        userId={context.userId}
+      />
     </div>
   );
 }

@@ -567,6 +567,11 @@ describe("UX guardrails", () => {
     assert.match(settingsActions, /\.eq\("role", "owner"\)/);
     assert.match(settings, /CategoryManager/);
     assert.match(settingsPageUx, /\.from\("categories"\)/);
+    // 가계부 이름·표시 이름을 실제로 바꿀 수 있어요.
+    assert.match(settingsActions, /export async function updateHouseholdNameAction/);
+    assert.match(settingsActions, /export async function updateDisplayNameAction/);
+    assert.match(settings, /가계부 이름/);
+    assert.match(settings, /내 표시 이름/);
     // 지출 카테고리에 '용돈'을 넣는 seed 마이그레이션이 있어요.
     assert.match(allowanceSeed, /'용돈'/);
     assert.match(allowanceSeed, /where not exists/);

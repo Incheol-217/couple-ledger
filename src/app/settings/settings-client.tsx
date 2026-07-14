@@ -28,6 +28,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import {
   Tabs,
@@ -41,6 +42,8 @@ import {
   deleteCategoryAction,
   renameCategoryAction,
   toggleCategoryActiveAction,
+  updateDisplayNameAction,
+  updateHouseholdNameAction,
   type CategoryActionResult,
 } from "./actions";
 
@@ -436,12 +439,126 @@ function CategoryManager({
   );
 }
 
+function SavableTextSetting({
+  action,
+  defaultValue,
+  description,
+  disabled,
+  householdId,
+  id,
+  label,
+  placeholder,
+}: {
+  action: (formData: FormData) => Promise<CategoryActionResult>;
+  defaultValue: string;
+  description?: string;
+  disabled?: boolean;
+  householdId: string;
+  id: string;
+  label: string;
+  placeholder?: string;
+}) {
+  const [value, setValue] = useState(defaultValue);
+  const [result, setResult] = useState<CategoryActionResult | null>(null);
+  const [isPending, startTransition] = useTransition();
+
+  function submit() {
+    const trimmed = value.trim();
+
+    if (!trimmed) {
+      setResult({ ok: false, message: "값을 입력해 주세요." });
+      return;
+    }
+
+    const formData = new FormData();
+    formData.set("household_id", householdId);
+    formData.set("name", trimmed);
+
+    startTransition(async () => {
+      setResult(await action(formData));
+    });
+  }
+
+  return (
+    <div className="space-y-2">
+      <Label htmlFor={id}>{label}</Label>
+      <div className="flex gap-2">
+        <Input
+          disabled={disabled || isPending}
+          id={id}
+          onChange={(event) => setValue(event.target.value)}
+          placeholder={placeholder}
+          value={value}
+        />
+        <Button
+          disabled={disabled || isPending}
+          onClick={submit}
+          type="button"
+        >
+          저장
+        </Button>
+      </div>
+      {description ? (
+        <p className="text-xs text-muted-foreground">{description}</p>
+      ) : null}
+      {result ? (
+        <p
+          className={cn(
+            "text-xs",
+            result.ok ? "text-primary" : "text-destructive",
+          )}
+        >
+          {result.message}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+function CopyField({ label, value }: { label: string; value: string }) {
+  const [copied, setCopied] = useState(false);
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // 클립보드 접근이 막히면 조용히 무시해요.
+    }
+  }
+
+  return (
+    <div className="space-y-1">
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <div className="flex items-center gap-2">
+        <code className="min-w-0 flex-1 truncate rounded bg-muted px-2 py-1.5 font-mono text-xs">
+          {value}
+        </code>
+        <Button onClick={copy} size="sm" type="button" variant="outline">
+          {copied ? "복사됨" : "복사"}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export function SettingsClient({
   categories,
+  displayName,
   householdId,
+  householdName,
+  isAdmin,
+  memberLabel,
+  userId,
 }: {
   categories: CategoryRow[];
+  displayName: string | null;
   householdId: string | null;
+  householdName: string | null;
+  isAdmin: boolean;
+  memberLabel: "husband" | "wife" | null;
+  userId: string | null;
 }) {
   return (
     <Tabs
@@ -477,16 +594,44 @@ export function SettingsClient({
 
       <TabsContent value="members">
         <SettingPanel
-          description="초대와 권한 관리는 다음 버전에서 연결할게요."
-          title="멤버"
+          description="가계부 이름과 내 표시 이름을 정해요."
+          title="가계부 · 이름"
         >
-          <InfoList
-            items={[
-              "데이터는 가계부별로 따로 보관돼요.",
-              "멤버만 계좌, 거래, 반복 결제를 볼 수 있어요.",
-              "멤버 초대 화면은 다음에 추가할게요.",
-            ]}
-          />
+          {householdId ? (
+            <div className="space-y-5">
+              <SavableTextSetting
+                action={updateHouseholdNameAction}
+                defaultValue={householdName ?? ""}
+                description={
+                  isAdmin
+                    ? "부부 공용 가계부 이름이에요. 상단 로고 옆과 여러 화면에 보여요."
+                    : "가계부 이름은 관리자 계정에서 바꿀 수 있어요."
+                }
+                disabled={!isAdmin}
+                householdId={householdId}
+                id="household-name"
+                label="가계부 이름"
+                placeholder="우리집 공동 가계부"
+              />
+              <SavableTextSetting
+                action={updateDisplayNameAction}
+                defaultValue={displayName ?? ""}
+                description={`거래 담당자 등에 표시되는 내 이름이에요.${
+                  memberLabel
+                    ? ` (기본값: ${memberLabel === "husband" ? "남편" : "아내"})`
+                    : ""
+                }`}
+                householdId={householdId}
+                id="display-name"
+                label="내 표시 이름"
+                placeholder="이름을 입력하세요"
+              />
+            </div>
+          ) : (
+            <InfoList
+              items={["가계부 멤버 연결을 마치면 이름을 설정할 수 있어요."]}
+            />
+          )}
         </SettingPanel>
       </TabsContent>
 
@@ -532,6 +677,17 @@ export function SettingsClient({
               <Badge variant="secondary">POST</Badge>
               <Badge variant="outline">/api/shortcuts/transactions</Badge>
             </div>
+            {householdId && userId ? (
+              <div className="grid gap-3 rounded-md border bg-muted/20 p-3">
+                <p className="text-sm font-medium">단축어에 넣을 값</p>
+                <CopyField label="household_id" value={householdId} />
+                <CopyField label="user_id (내 계정)" value={userId} />
+                <p className="text-xs text-muted-foreground">
+                  이 값은 비밀번호가 아니에요. shortcut_secret만 별도로 안전하게
+                  넣어주세요.
+                </p>
+              </div>
+            ) : null}
             <InfoList
               items={[
                 "Vercel의 SHORTCUTS_WEBHOOK_SECRET과 단축어의 shortcut_secret을 같게 넣어주세요.",
