@@ -375,7 +375,8 @@ describe("UX guardrails", () => {
   );
   const debtsActions = read("src/app/debts/actions.ts");
   const debtsClient = read("src/app/debts/debts-client.tsx");
-  const debtsPage = read("src/app/debts/page.tsx");
+  const debtsData = read("src/app/debts/data.ts");
+  const wealthTabs = read("src/app/invest/wealth-tabs.tsx");
   const moneyFormatter = read("src/lib/formatters/money.ts");
   const accountsClient = read("src/app/accounts/accounts-client.tsx");
   const reportPage = read("src/app/reports/page.tsx");
@@ -635,13 +636,14 @@ describe("UX guardrails", () => {
     assert.match(debtsActions, /export async function createLiabilityAction/);
     assert.match(debtsActions, /export async function recordRepaymentAction/);
     assert.match(debtsActions, /\.from\("liability_payments"\)/);
-    assert.match(debtsPage, /\.from\("liabilities"\)/);
+    assert.match(debtsData, /\.from\("liabilities"\)/);
     assert.match(debtsClient, /RepayPanel/);
     // 잔액 계산기가 상환 현금흐름을 반영해요.
     assert.match(accountBalancesLib, /liabilityPayments/);
     assert.match(accountsPageBalances, /\.from\("liability_payments"\)/);
-    // 네비에 부채가 있고, 자산 화면에 순자산이 나와요.
-    assert.match(appNav, /\/debts/);
+    // 자산·부채가 한 화면(탭)으로 합쳐지고, 순자산이 나와요.
+    assert.match(wealthTabs, /DebtsClient/);
+    assert.match(wealthTabs, /InvestClient/);
     assert.match(investClient, /순자산/);
   });
 });

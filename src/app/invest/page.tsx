@@ -1,12 +1,13 @@
+import { getDebtsPageData } from "@/app/debts/data";
 import { PageHeader } from "@/components/page-header";
 import { getCurrentUserContext, hasSupabaseAuthEnv } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
-import { InvestClient } from "./invest-client";
 import type {
   AssetAccountOption,
   InvestPageData,
   InvestmentAssetRow,
 } from "./types";
+import { WealthTabs } from "./wealth-tabs";
 
 const emptyData: InvestPageData = {
   accounts: [],
@@ -147,18 +148,28 @@ async function getInvestPageData(): Promise<InvestPageData> {
   };
 }
 
-export default async function InvestPage() {
-  const data = await getInvestPageData();
+export default async function InvestPage({
+  searchParams,
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = (await searchParams) ?? {};
+  const initialView = params.view === "debts" ? "debts" : "assets";
+
+  const [invest, debts] = await Promise.all([
+    getInvestPageData(),
+    getDebtsPageData(),
+  ]);
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
       <PageHeader
-        eyebrow="자산"
-        title="저축·투자 자산"
-        description="예적금, 주식, 연금까지 우리 부부 자산을 한 화면에서 관리해요."
+        eyebrow="자산·부채"
+        title="자산과 부채"
+        description="예적금·주식·연금 자산과 대출·부채를 한곳에서 보고 순자산을 확인해요."
       />
 
-      <InvestClient {...data} />
+      <WealthTabs debts={debts} initialView={initialView} invest={invest} />
     </div>
   );
 }

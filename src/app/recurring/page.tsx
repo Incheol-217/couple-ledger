@@ -1,7 +1,8 @@
+import { getInstallmentPageData } from "@/app/installments/data";
 import { PageHeader } from "@/components/page-header";
 import { getCurrentUserContext, hasSupabaseAuthEnv } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
-import { RecurringClient } from "./recurring-client";
+import { RecurringTabs } from "./recurring-tabs";
 import type {
   PayerMember,
   RecurringItemRow,
@@ -154,18 +155,33 @@ async function getRecurringPageData(): Promise<RecurringPageData> {
   };
 }
 
-export default async function RecurringPage() {
-  const data = await getRecurringPageData();
+export default async function RecurringPage({
+  searchParams,
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = (await searchParams) ?? {};
+  const initialView =
+    params.view === "installments" ? "installments" : "recurring";
+
+  const [recurring, installments] = await Promise.all([
+    getRecurringPageData(),
+    getInstallmentPageData(),
+  ]);
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
       <PageHeader
-        eyebrow="고정비"
-        title="구독비와 고정비"
-        description="정기적으로 나가는 돈을 결제일 기준으로 정리해요."
+        eyebrow="정기지출"
+        title="정기지출"
+        description="구독·고정비와 할부를 결제일 기준으로 한곳에서 관리해요."
       />
 
-      <RecurringClient {...data} />
+      <RecurringTabs
+        initialView={initialView}
+        installments={installments}
+        recurring={recurring}
+      />
     </div>
   );
 }
