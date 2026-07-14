@@ -46,6 +46,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
+import type { AccountBalance } from "@/lib/accounts/balances";
 import { formatAmountInput, formatWon } from "@/lib/formatters/money";
 import {
   Table,
@@ -187,6 +188,7 @@ function WalletAccountCard({
   account,
   canMoveDown,
   canMoveUp,
+  currentBalance,
   householdId,
   isAdmin,
   isPending,
@@ -200,6 +202,7 @@ function WalletAccountCard({
   account: AccountRow;
   canMoveDown: boolean;
   canMoveUp: boolean;
+  currentBalance: number | null;
   householdId: string;
   isAdmin: boolean;
   isPending: boolean;
@@ -210,6 +213,9 @@ function WalletAccountCard({
   selected: boolean;
   stackIndex: number;
 }) {
+  // 현재 잔액을 우선 보여주고, 값이 없으면 처음 잔액으로 대체해요.
+  const displayBalance =
+    currentBalance ?? (Number(account.opening_balance) || 0);
   // 선택 카드는 맨 위, 나머지는 그 아래로 얇은 탭처럼 겹쳐 쌓아요.
   const peekIndex = Math.max(stackIndex, 0);
   const mobileTranslateY = selected
@@ -304,7 +310,7 @@ function WalletAccountCard({
               selected ? "text-white" : "text-black",
             )}
           >
-            {formatAccountBalance(account.opening_balance)}
+            {formatAccountBalance(displayBalance)}
           </p>
           <p
             className={cn(
@@ -312,7 +318,7 @@ function WalletAccountCard({
               selected ? "text-white/58" : "text-black/55",
             )}
           >
-            처음 잔액
+            현재 잔액
           </p>
           {account.vault_enabled ? (
             <p
@@ -404,6 +410,7 @@ function WalletAccountCard({
 function WalletDeck({
   accounts,
   allAccounts,
+  balanceById,
   householdId,
   isAdmin,
   isPending,
@@ -416,6 +423,7 @@ function WalletDeck({
 }: {
   accounts: AccountRow[];
   allAccounts: AccountRow[];
+  balanceById: Map<string, number>;
   householdId: string;
   isAdmin: boolean;
   isPending: boolean;
@@ -513,6 +521,7 @@ function WalletDeck({
                 walletIndex >= 0 && walletIndex < accounts.length - 1
               }
               canMoveUp={walletIndex > 0}
+              currentBalance={balanceById.get(account.id) ?? null}
               householdId={householdId}
               isAdmin={isAdmin}
               isPending={isPending}
@@ -560,6 +569,18 @@ function WalletDeck({
               <dd className="font-medium">
                 {selectedAccount
                   ? ownerTypeLabels[selectedAccount.owner_type]
+                  : "-"}
+              </dd>
+            </div>
+            <div className="flex items-center justify-between gap-4 rounded-[1rem] bg-white/16 px-3 py-2">
+              <dt className="text-white/58">현재 잔액</dt>
+              <dd className="font-semibold">
+                {selectedAccount
+                  ? formatAccountBalance(
+                      balanceById.get(selectedAccount.id) ??
+                        Number(selectedAccount.opening_balance) ??
+                        0,
+                    )
                   : "-"}
               </dd>
             </div>
@@ -1100,6 +1121,7 @@ function AccountForm({
 
 export function AccountsClient({
   accounts,
+  accountBalances,
   errorMessage,
   household,
   isAdmin,
@@ -1107,12 +1129,21 @@ export function AccountsClient({
   isSignedIn,
 }: {
   accounts: AccountRow[];
+  accountBalances: AccountBalance[];
   errorMessage?: string;
   household: HouseholdOption | null;
   isAdmin: boolean;
   isConfigured: boolean;
   isSignedIn: boolean;
 }) {
+  // 계좌별 현재 잔액(처음 잔액 + 거래·이체 반영)을 빠르게 찾을 수 있게 맵으로 만들어요.
+  const balanceById = useMemo(
+    () =>
+      new Map(
+        accountBalances.map((entry) => [entry.account_id, entry.balance]),
+      ),
+    [accountBalances],
+  );
   const [mode, setMode] = useState<"create" | "edit" | null>(null);
   const [selectedAccount, setSelectedAccount] = useState<AccountRow | null>(null);
   const [selectedWalletId, setSelectedWalletId] = useState<string | null>(
@@ -1302,6 +1333,7 @@ export function AccountsClient({
       <WalletDeck
         accounts={walletAccounts}
         allAccounts={accounts}
+        balanceById={balanceById}
         householdId={household.id}
         isAdmin={isAdmin}
         isPending={isPending}
@@ -1436,8 +1468,18 @@ export function AccountsClient({
                     </span>
                   </div>
                   <div className="flex justify-between gap-3">
+                    <span className="shrink-0 text-muted-foreground">현재 잔액</span>
+                    <span className="truncate font-semibold">
+                      {formatAccountBalance(
+                        balanceById.get(account.id) ??
+                          Number(account.opening_balance) ??
+                          0,
+                      )}
+                    </span>
+                  </div>
+                  <div className="flex justify-between gap-3">
                     <span className="shrink-0 text-muted-foreground">처음 잔액</span>
-                    <span className="truncate font-medium">
+                    <span className="truncate">
                       {formatAccountBalance(account.opening_balance)}
                     </span>
                   </div>
@@ -1564,6 +1606,7 @@ export function AccountsClient({
                 <TableHead>계좌</TableHead>
                 <TableHead>타입</TableHead>
                 <TableHead>사용자</TableHead>
+                <TableHead className="text-right">현재 잔액</TableHead>
                 <TableHead className="text-right">처음 잔액</TableHead>
                 <TableHead>연결 계좌</TableHead>
                 <TableHead>상태</TableHead>
@@ -1592,7 +1635,14 @@ export function AccountsClient({
                   </TableCell>
                   <TableCell>{accountTypeLabels[account.type]}</TableCell>
                   <TableCell>{ownerTypeLabels[account.owner_type]}</TableCell>
-                  <TableCell className="text-right font-medium">
+                  <TableCell className="text-right font-semibold">
+                    {formatAccountBalance(
+                      balanceById.get(account.id) ??
+                        Number(account.opening_balance) ??
+                        0,
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right text-muted-foreground">
                     {formatAccountBalance(account.opening_balance)}
                   </TableCell>
                   <TableCell>

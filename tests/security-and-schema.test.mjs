@@ -343,6 +343,9 @@ describe("UX guardrails", () => {
   const quickEntry = read("src/app/m/new/quick-transaction-client.tsx");
   const dashboard = read("src/app/dashboard/dashboard-client.tsx");
   const dashboardPage = read("src/app/dashboard/page.tsx");
+  const accountBalances = read("src/lib/accounts/balances.ts");
+  const accountsPage = read("src/app/accounts/page.tsx");
+  const accountsClientView = read("src/app/accounts/accounts-client.tsx");
   const recurring = read("src/app/recurring/recurring-client.tsx");
   const moneyFormatter = read("src/lib/formatters/money.ts");
   const accountsClient = read("src/app/accounts/accounts-client.tsx");
@@ -425,10 +428,24 @@ describe("UX guardrails", () => {
     assert.match(dashboard, /monthCalendarDays/);
     assert.match(dashboard, /CalendarDays/);
     assert.match(dashboard, /확인 필요한 거래/);
-    assert.match(dashboardPage, /Number\(account\.opening_balance\) \|\| 0/);
+    assert.match(accountBalances, /Number\(account\.opening_balance\) \|\| 0/);
     assert.match(dashboardPage, /buildAccountBalances\(\s*accounts,/);
-    assert.match(dashboardPage, /account\.opening_balance_as_of <= today/);
+    assert.match(accountBalances, /account\.opening_balance_as_of <= today/);
     assert.match(dashboardPage, /existingRecurringTransactionsResult/);
+  });
+
+  it("reflects transfers in the accounts page balances", () => {
+    // 이체는 나가는 계좌에서 빼고 들어오는 계좌에 더해야 해요.
+    assert.match(accountBalances, /transfer_account_id/);
+    assert.match(
+      accountBalances,
+      /balances\.set\(targetId, \(balances\.get\(targetId\) \?\? 0\) \+ amount\)/,
+    );
+    // 계좌 페이지가 거래를 불러와 현재 잔액을 계산하고 화면에 보여줘요.
+    assert.match(accountsPage, /\.from\("transactions"\)/);
+    assert.match(accountsPage, /buildAccountBalances\(/);
+    assert.match(accountsClientView, /현재 잔액/);
+    assert.match(accountsClientView, /balanceById/);
   });
 
   it("shows real household transactions on mobile and desktop", () => {

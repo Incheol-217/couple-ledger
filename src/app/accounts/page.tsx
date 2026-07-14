@@ -1,13 +1,31 @@
 import { PageHeader } from "@/components/page-header";
+import {
+  buildAccountBalances,
+  type AccountBalance,
+  type BalanceTransactionRow,
+} from "@/lib/accounts/balances";
 import { getCurrentUserContext, hasSupabaseAuthEnv } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 import { AccountsClient } from "./accounts-client";
 import type { AccountRow } from "./types";
 
+const TIME_ZONE = "Asia/Seoul";
+
+// 대시보드와 동일하게 서울 기준 오늘 날짜(YYYY-MM-DD)를 구해요.
+function seoulToday() {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+}
+
 async function getAccountsPageData() {
   if (!hasSupabaseAuthEnv()) {
     return {
       accounts: [] as AccountRow[],
+      accountBalances: [] as AccountBalance[],
       errorMessage: undefined,
       household: null,
       isConfigured: false,
@@ -22,6 +40,7 @@ async function getAccountsPageData() {
   if (!context.isSignedIn) {
     return {
       accounts: [] as AccountRow[],
+      accountBalances: [] as AccountBalance[],
       errorMessage: undefined,
       household: null,
       isConfigured: true,
@@ -38,6 +57,7 @@ async function getAccountsPageData() {
   if (!household) {
     return {
       accounts: [] as AccountRow[],
+      accountBalances: [] as AccountBalance[],
       errorMessage: undefined,
       household: null,
       isConfigured: true,
@@ -46,19 +66,39 @@ async function getAccountsPageData() {
     };
   }
 
-  const { data: accounts, error: accountsError } = await supabase
-    .from("accounts")
-    .select(
-      "id, household_id, name, type, owner_type, default_withdrawal_account_id, institution_name, masked_identifier, color, icon, opening_balance, opening_balance_as_of, vault_enabled, vault_name, vault_amount, display_order, is_active, created_at, updated_at",
-    )
-    .eq("household_id", household.id)
-    .order("is_active", { ascending: false })
-    .order("display_order", { ascending: true })
-    .order("created_at", { ascending: true });
+  const today = seoulToday();
+
+  const [
+    { data: accounts, error: accountsError },
+    { data: balanceTransactions, error: transactionsError },
+  ] = await Promise.all([
+    supabase
+      .from("accounts")
+      .select(
+        "id, household_id, name, type, owner_type, default_withdrawal_account_id, institution_name, masked_identifier, color, icon, opening_balance, opening_balance_as_of, vault_enabled, vault_name, vault_amount, display_order, is_active, created_at, updated_at",
+      )
+      .eq("household_id", household.id)
+      .order("is_active", { ascending: false })
+      .order("display_order", { ascending: true })
+      .order("created_at", { ascending: true }),
+    supabase
+      .from("transactions")
+      .select("account_id, transfer_account_id, type, amount, transaction_date")
+      .eq("household_id", household.id)
+      .lte("transaction_date", today),
+  ]);
+
+  const accountRows = (accounts ?? []) as AccountRow[];
+  const accountBalances = buildAccountBalances(
+    accountRows,
+    (balanceTransactions ?? []) as unknown as BalanceTransactionRow[],
+    today,
+  );
 
   return {
-    accounts: (accounts ?? []) as AccountRow[],
-    errorMessage: accountsError?.message,
+    accounts: accountRows,
+    accountBalances,
+    errorMessage: accountsError?.message ?? transactionsError?.message,
     household,
     isAdmin: context.isAdmin,
     isConfigured: true,
