@@ -1,8 +1,11 @@
+import { Calculator, FileText } from "lucide-react";
 import { getTaxPageData } from "@/app/tax/data";
+import { TaxClient } from "@/app/tax/tax-client";
 import { PageHeader } from "@/components/page-header";
+import { TabHub } from "@/components/tab-hub";
 import { getCurrentUserContext, hasSupabaseAuthEnv } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
-import { AnalysisTabs } from "./analysis-tabs";
+import { ReportsClient } from "./reports-client";
 import {
   reportPeriods,
   type ReportBudgetRow,
@@ -471,7 +474,23 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
         description="수입·지출 보고서와 연말정산 예상 환급을 한곳에서 봐요."
       />
 
-      <AnalysisTabs initialView={initialView} report={report} tax={tax} />
+      <TabHub
+        initialValue={initialView}
+        tabs={[
+          {
+            value: "reports",
+            icon: <FileText className="size-4" aria-hidden="true" />,
+            label: "보고서",
+            content: <ReportsClient {...report} />,
+          },
+          {
+            value: "tax",
+            icon: <Calculator className="size-4" aria-hidden="true" />,
+            label: "연말정산",
+            content: <TaxClient {...tax} />,
+          },
+        ]}
+      />
     </div>
   );
 }

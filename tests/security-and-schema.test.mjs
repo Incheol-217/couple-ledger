@@ -384,7 +384,7 @@ describe("UX guardrails", () => {
   const debtsActions = read("src/app/debts/actions.ts");
   const debtsClient = read("src/app/debts/debts-client.tsx");
   const debtsData = read("src/app/debts/data.ts");
-  const wealthTabs = read("src/app/invest/wealth-tabs.tsx");
+  const tabHub = read("src/components/tab-hub.tsx");
   const moneyFormatter = read("src/lib/formatters/money.ts");
   const accountsClient = read("src/app/accounts/accounts-client.tsx");
   const reportPage = read("src/app/reports/page.tsx");
@@ -659,19 +659,21 @@ describe("UX guardrails", () => {
     assert.match(accountBalancesLib, /liabilityPayments/);
     assert.match(accountsPageBalances, /\.from\("liability_payments"\)/);
     // 자산·부채가 한 화면(탭)으로 합쳐지고, 순자산이 나와요.
-    assert.match(wealthTabs, /DebtsClient/);
-    assert.match(wealthTabs, /InvestClient/);
+    assert.match(investPage, /DebtsClient/);
+    assert.match(investPage, /InvestClient/);
+    assert.match(investPage, /TabHub/);
+    assert.match(tabHub, /export function TabHub/);
     assert.match(investClient, /순자산/);
   });
 
   it("merges related menus into tabbed hubs", () => {
     // 예산·저축 → 한 화면(탭), 보고서·연말정산 → 한 화면(탭)
-    const planTabs = read("src/app/budgets/plan-tabs.tsx");
-    const analysisTabs = read("src/app/reports/analysis-tabs.tsx");
-    assert.match(planTabs, /BudgetsClient/);
-    assert.match(planTabs, /GoalsClient/);
-    assert.match(analysisTabs, /ReportsClient/);
-    assert.match(analysisTabs, /TaxClient/);
+    const budgetsPage = read("src/app/budgets/page.tsx");
+    const reportsPage = read("src/app/reports/page.tsx");
+    assert.match(budgetsPage, /BudgetsClient/);
+    assert.match(budgetsPage, /GoalsClient/);
+    assert.match(reportsPage, /ReportsClient/);
+    assert.match(reportsPage, /TaxClient/);
     // 옛 주소는 통합 화면으로 리다이렉트해요.
     assert.match(read("src/app/goals/page.tsx"), /redirect\("\/budgets/);
     assert.match(read("src/app/tax/page.tsx"), /redirect\("\/reports/);

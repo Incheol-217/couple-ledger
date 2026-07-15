@@ -1,8 +1,11 @@
+import { CalendarClock, CalendarRange } from "lucide-react";
+import { InstallmentsClient } from "@/app/installments/installments-client";
 import { getInstallmentPageData } from "@/app/installments/data";
 import { PageHeader } from "@/components/page-header";
+import { TabHub } from "@/components/tab-hub";
 import { getCurrentUserContext, hasSupabaseAuthEnv } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
-import { RecurringTabs } from "./recurring-tabs";
+import { RecurringClient } from "./recurring-client";
 import type {
   PayerMember,
   RecurringItemRow,
@@ -177,10 +180,22 @@ export default async function RecurringPage({
         description="구독·고정비와 할부를 결제일 기준으로 한곳에서 관리해요."
       />
 
-      <RecurringTabs
-        initialView={initialView}
-        installments={installments}
-        recurring={recurring}
+      <TabHub
+        initialValue={initialView}
+        tabs={[
+          {
+            value: "recurring",
+            icon: <CalendarClock className="size-4" aria-hidden="true" />,
+            label: "구독·고정비",
+            content: <RecurringClient {...recurring} />,
+          },
+          {
+            value: "installments",
+            icon: <CalendarRange className="size-4" aria-hidden="true" />,
+            label: "할부",
+            content: <InstallmentsClient {...installments} />,
+          },
+        ]}
       />
     </div>
   );

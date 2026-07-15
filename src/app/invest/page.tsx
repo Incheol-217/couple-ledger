@@ -1,13 +1,16 @@
+import { Landmark, TrendingUp } from "lucide-react";
+import { DebtsClient } from "@/app/debts/debts-client";
 import { getDebtsPageData } from "@/app/debts/data";
 import { PageHeader } from "@/components/page-header";
+import { TabHub } from "@/components/tab-hub";
 import { getCurrentUserContext, hasSupabaseAuthEnv } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
+import { InvestClient } from "./invest-client";
 import type {
   AssetAccountOption,
   InvestPageData,
   InvestmentAssetRow,
 } from "./types";
-import { WealthTabs } from "./wealth-tabs";
 
 const emptyData: InvestPageData = {
   accounts: [],
@@ -169,7 +172,23 @@ export default async function InvestPage({
         description="예적금·주식·연금 자산과 대출·부채를 한곳에서 보고 순자산을 확인해요."
       />
 
-      <WealthTabs debts={debts} initialView={initialView} invest={invest} />
+      <TabHub
+        initialValue={initialView}
+        tabs={[
+          {
+            value: "assets",
+            icon: <TrendingUp className="size-4" aria-hidden="true" />,
+            label: "자산",
+            content: <InvestClient {...invest} />,
+          },
+          {
+            value: "debts",
+            icon: <Landmark className="size-4" aria-hidden="true" />,
+            label: "부채",
+            content: <DebtsClient {...debts} />,
+          },
+        ]}
+      />
     </div>
   );
 }

@@ -1,8 +1,11 @@
+import { PiggyBank, Target } from "lucide-react";
+import { GoalsClient } from "@/app/goals/goals-client";
 import { getGoalsPageData } from "@/app/goals/data";
 import { PageHeader } from "@/components/page-header";
+import { TabHub } from "@/components/tab-hub";
 import { getCurrentUserContext, hasSupabaseAuthEnv } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
-import { PlanTabs } from "./plan-tabs";
+import { BudgetsClient } from "./budgets-client";
 import type { BudgetExpenseRow, BudgetPageData, BudgetRow } from "./types";
 import type { AccountRow } from "@/app/accounts/types";
 import type { CategoryRow } from "@/app/m/new/types";
@@ -126,7 +129,23 @@ export default async function BudgetsPage({
         description="이번 기간 지출 예산과 함께 모을 저축 목표를 한곳에서 관리해요."
       />
 
-      <PlanTabs budgets={budgets} goals={goals} initialView={initialView} />
+      <TabHub
+        initialValue={initialView}
+        tabs={[
+          {
+            value: "budgets",
+            icon: <PiggyBank className="size-4" aria-hidden="true" />,
+            label: "예산",
+            content: <BudgetsClient {...budgets} />,
+          },
+          {
+            value: "goals",
+            icon: <Target className="size-4" aria-hidden="true" />,
+            label: "저축 목표",
+            content: <GoalsClient {...goals} />,
+          },
+        ]}
+      />
     </div>
   );
 }
