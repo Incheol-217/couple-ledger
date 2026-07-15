@@ -325,60 +325,65 @@ export default async function TransactionsPage({
         </section>
       ) : (
         <>
-          <section className="flex flex-col gap-3 rounded-lg border bg-card p-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
-            <div className="inline-flex overflow-hidden rounded-md border">
-              {PERIODS.map((option) => (
-                <Button
-                  asChild
-                  className={cn(
-                    "rounded-none",
-                    period === option &&
-                      "bg-primary text-primary-foreground hover:bg-primary/90",
-                  )}
-                  key={option}
-                  size="sm"
-                  variant="ghost"
-                >
-                  <Link href={`/transactions?period=${option}&date=${anchor}`}>
-                    {periodLabels[option]}
+          <section className="rounded-lg border bg-card p-3 shadow-sm">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex w-full overflow-hidden rounded-md border sm:w-auto">
+                {PERIODS.map((option) => (
+                  <Button
+                    asChild
+                    className={cn(
+                      "flex-1 rounded-none sm:flex-none",
+                      period === option
+                        ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                        : "hover:bg-muted/60",
+                    )}
+                    key={option}
+                    size="sm"
+                    variant="ghost"
+                  >
+                    <Link href={`/transactions?period=${option}&date=${anchor}`}>
+                      {periodLabels[option]}
+                    </Link>
+                  </Button>
+                ))}
+              </div>
+
+              <div className="flex items-center justify-center gap-1">
+                <Button asChild size="icon" variant="ghost">
+                  <Link
+                    aria-label="이전 기간"
+                    href={`/transactions?period=${period}&date=${prevAnchor}`}
+                  >
+                    <ChevronLeft className="size-4" aria-hidden="true" />
                   </Link>
                 </Button>
-              ))}
-            </div>
-            <div className="flex items-center justify-center gap-2">
-              <Button asChild size="icon" variant="outline">
-                <Link
-                  aria-label="이전 기간"
-                  href={`/transactions?period=${period}&date=${prevAnchor}`}
-                >
-                  <ChevronLeft className="size-4" aria-hidden="true" />
-                </Link>
-              </Button>
-              <span className="min-w-32 text-center text-sm font-semibold">
-                {periodHeading}
-              </span>
-              <Button asChild size="icon" variant="outline">
-                <Link
-                  aria-label="다음 기간"
-                  href={`/transactions?period=${period}&date=${nextAnchor}`}
-                >
-                  <ChevronRight className="size-4" aria-hidden="true" />
-                </Link>
-              </Button>
-            </div>
-            <div className="flex items-center justify-end gap-3 text-sm">
-              <span className="text-muted-foreground">
-                수입{" "}
-                <span className="font-semibold text-primary">
-                  +{formatWon(periodIncome)}
+                <span className="min-w-28 text-center text-sm font-semibold tabular-nums">
+                  {periodHeading}
                 </span>
-              </span>
-              <span className="text-muted-foreground">
-                지출{" "}
-                <span className="font-semibold text-destructive">
-                  -{formatWon(periodExpense)}
+                <Button asChild size="icon" variant="ghost">
+                  <Link
+                    aria-label="다음 기간"
+                    href={`/transactions?period=${period}&date=${nextAnchor}`}
+                  >
+                    <ChevronRight className="size-4" aria-hidden="true" />
+                  </Link>
+                </Button>
+              </div>
+
+              <div className="flex items-center justify-between gap-4 text-sm sm:justify-end">
+                <span className="text-muted-foreground">
+                  수입{" "}
+                  <span className="font-semibold tabular-nums text-primary">
+                    +{formatWon(periodIncome)}
+                  </span>
                 </span>
-              </span>
+                <span className="text-muted-foreground">
+                  지출{" "}
+                  <span className="font-semibold tabular-nums text-destructive">
+                    -{formatWon(periodExpense)}
+                  </span>
+                </span>
+              </div>
             </div>
           </section>
 
