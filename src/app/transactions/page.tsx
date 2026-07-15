@@ -139,7 +139,7 @@ function addMonths(date: Date, months: number) {
   return next;
 }
 
-// 선택한 기간(일/주/월)의 시작·끝 날짜를 구해요. 주는 월요일 시작.
+// 선택한 기간(일/주/월)의 시작·끝 날짜를 구해요. 주는 일요일 시작.
 function periodRange(period: Period, anchor: string) {
   const a = parseYmd(anchor);
 
@@ -148,8 +148,8 @@ function periodRange(period: Period, anchor: string) {
   }
 
   if (period === "week") {
-    const weekday = a.getUTCDay();
-    const start = addDays(a, weekday === 0 ? -6 : 1 - weekday);
+    // getUTCDay: 0=일 … 6=토. 일요일까지 되돌아가 한 주(일~토)를 잡아요.
+    const start = addDays(a, -a.getUTCDay());
     return { start: toYmd(start), end: toYmd(addDays(start, 6)) };
   }
 
