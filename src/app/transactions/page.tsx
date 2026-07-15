@@ -5,6 +5,8 @@ import {
   ArrowLeftRight,
   ArrowUpRight,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
   Plus,
 } from "lucide-react";
 import { markTransactionReviewedAction } from "./actions";
@@ -103,7 +105,95 @@ function memberFallback(
   return "멤버";
 }
 
-export default async function TransactionsPage() {
+const PERIODS = ["day", "week", "month"] as const;
+type Period = (typeof PERIODS)[number];
+const periodLabels: Record<Period, string> = { day: "일", week: "주", month: "월" };
+
+function todayKST() {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+}
+
+function parseYmd(value: string) {
+  const [y, m, d] = value.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d));
+}
+
+function toYmd(date: Date) {
+  return date.toISOString().slice(0, 10);
+}
+
+function addDays(date: Date, days: number) {
+  const next = new Date(date);
+  next.setUTCDate(next.getUTCDate() + days);
+  return next;
+}
+
+function addMonths(date: Date, months: number) {
+  const next = new Date(date);
+  next.setUTCMonth(next.getUTCMonth() + months);
+  return next;
+}
+
+// 선택한 기간(일/주/월)의 시작·끝 날짜를 구해요. 주는 월요일 시작.
+function periodRange(period: Period, anchor: string) {
+  const a = parseYmd(anchor);
+
+  if (period === "day") {
+    return { start: anchor, end: anchor };
+  }
+
+  if (period === "week") {
+    const weekday = a.getUTCDay();
+    const start = addDays(a, weekday === 0 ? -6 : 1 - weekday);
+    return { start: toYmd(start), end: toYmd(addDays(start, 6)) };
+  }
+
+  const start = new Date(Date.UTC(a.getUTCFullYear(), a.getUTCMonth(), 1));
+  const end = new Date(Date.UTC(a.getUTCFullYear(), a.getUTCMonth() + 1, 0));
+  return { start: toYmd(start), end: toYmd(end) };
+}
+
+function shiftAnchor(period: Period, anchor: string, dir: 1 | -1) {
+  const a = parseYmd(anchor);
+  if (period === "day") return toYmd(addDays(a, dir));
+  if (period === "week") return toYmd(addDays(a, dir * 7));
+  return toYmd(addMonths(a, dir));
+}
+
+function periodTitle(period: Period, range: { start: string; end: string }) {
+  const [sy, sm, sd] = range.start.split("-").map(Number);
+  if (period === "day") return `${sy}. ${sm}. ${sd}`;
+  if (period === "week") {
+    const [, em, ed] = range.end.split("-").map(Number);
+    return `${sm}.${sd} ~ ${em}.${ed}`;
+  }
+  return `${sy}년 ${sm}월`;
+}
+
+function firstParam(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+export default async function TransactionsPage({
+  searchParams,
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = (await searchParams) ?? {};
+  const periodParam = firstParam(params.period);
+  const period: Period = PERIODS.includes(periodParam as Period)
+    ? (periodParam as Period)
+    : "month";
+  const dateParam = firstParam(params.date);
+  const anchor =
+    dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam) ? dateParam : todayKST();
+  const range = periodRange(period, anchor);
+
   const context = await getCurrentUserContext();
   let transactions: TransactionRow[] = [];
   let errorMessage: string | null = null;
@@ -123,9 +213,11 @@ export default async function TransactionsPage() {
             "id, account_id, category_id, type, source, amount, transaction_date, merchant, memo, user_id, review_status, review_reason, reviewed_by, reviewed_at, created_at",
           )
           .eq("household_id", context.householdId)
+          .gte("transaction_date", range.start)
+          .lte("transaction_date", range.end)
           .order("transaction_date", { ascending: false })
           .order("created_at", { ascending: false })
-          .limit(200),
+          .limit(500),
         supabase
           .from("accounts")
           .select("id, name")
@@ -186,6 +278,15 @@ export default async function TransactionsPage() {
   const reviewNeededTransactions = transactions.filter(
     (transaction) => transaction.review_status === "needs_review",
   );
+  const periodIncome = transactions
+    .filter((transaction) => transaction.type === "income")
+    .reduce((sum, transaction) => sum + (Number(transaction.amount) || 0), 0);
+  const periodExpense = transactions
+    .filter((transaction) => transaction.type === "expense")
+    .reduce((sum, transaction) => sum + (Number(transaction.amount) || 0), 0);
+  const prevAnchor = shiftAnchor(period, anchor, -1);
+  const nextAnchor = shiftAnchor(period, anchor, 1);
+  const periodHeading = periodTitle(period, range);
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
@@ -222,20 +323,76 @@ export default async function TransactionsPage() {
         <section className="rounded-lg border border-destructive/25 bg-destructive/10 p-4 text-sm text-destructive">
           거래 내역을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.
         </section>
-      ) : transactions.length === 0 ? (
-        <section className="grid min-h-56 place-items-center rounded-lg border border-dashed bg-card px-6 text-center">
-          <div>
-            <p className="font-semibold">첫 거래를 기다리고 있어요</p>
-            <p className="mt-2 text-sm text-muted-foreground">
-              거래를 쓰면 날짜순으로 여기에 모여요.
-            </p>
-            <Button asChild className="mt-4">
-              <Link href="/m/new">첫 거래 쓰기</Link>
-            </Button>
-          </div>
-        </section>
       ) : (
         <>
+          <section className="flex flex-col gap-3 rounded-lg border bg-card p-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+            <div className="inline-flex overflow-hidden rounded-md border">
+              {PERIODS.map((option) => (
+                <Button
+                  asChild
+                  className={cn(
+                    "rounded-none",
+                    period === option &&
+                      "bg-primary text-primary-foreground hover:bg-primary/90",
+                  )}
+                  key={option}
+                  size="sm"
+                  variant="ghost"
+                >
+                  <Link href={`/transactions?period=${option}&date=${anchor}`}>
+                    {periodLabels[option]}
+                  </Link>
+                </Button>
+              ))}
+            </div>
+            <div className="flex items-center justify-center gap-2">
+              <Button asChild size="icon" variant="outline">
+                <Link
+                  aria-label="이전 기간"
+                  href={`/transactions?period=${period}&date=${prevAnchor}`}
+                >
+                  <ChevronLeft className="size-4" aria-hidden="true" />
+                </Link>
+              </Button>
+              <span className="min-w-32 text-center text-sm font-semibold">
+                {periodHeading}
+              </span>
+              <Button asChild size="icon" variant="outline">
+                <Link
+                  aria-label="다음 기간"
+                  href={`/transactions?period=${period}&date=${nextAnchor}`}
+                >
+                  <ChevronRight className="size-4" aria-hidden="true" />
+                </Link>
+              </Button>
+            </div>
+            <div className="flex items-center justify-end gap-3 text-sm">
+              <span className="text-muted-foreground">
+                수입{" "}
+                <span className="font-semibold text-primary">
+                  +{formatWon(periodIncome)}
+                </span>
+              </span>
+              <span className="text-muted-foreground">
+                지출{" "}
+                <span className="font-semibold text-destructive">
+                  -{formatWon(periodExpense)}
+                </span>
+              </span>
+            </div>
+          </section>
+
+          {transactions.length === 0 ? (
+            <section className="grid min-h-56 place-items-center rounded-lg border border-dashed bg-card px-6 text-center">
+              <div>
+                <p className="font-semibold">이 기간엔 거래가 없어요</p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  위에서 일/주/월을 바꾸거나 이전·다음으로 이동해 보세요.
+                </p>
+              </div>
+            </section>
+          ) : (
+            <>
           {reviewNeededTransactions.length > 0 ? (
             <section className="rounded-lg border border-primary/30 bg-primary/10 p-4 shadow-sm">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -459,8 +616,10 @@ export default async function TransactionsPage() {
             </Table>
           </section>
           <p className="text-xs text-muted-foreground">
-            최근 거래 {transactions.length.toLocaleString("ko-KR")}건을 보여드려요.
+            이 기간 거래 {transactions.length.toLocaleString("ko-KR")}건이에요.
           </p>
+            </>
+          )}
         </>
       )}
     </div>

@@ -499,6 +499,17 @@ describe("UX guardrails", () => {
     assert.match(transactionsPage, /markTransactionReviewedAction/);
   });
 
+  it("lets transactions be viewed by day, week, and month", () => {
+    assert.match(transactionsPage, /const PERIODS = \["day", "week", "month"\]/);
+    assert.match(transactionsPage, /function periodRange/);
+    // 선택 기간으로 거래를 걸러서 조회해요.
+    assert.match(transactionsPage, /\.gte\("transaction_date", range\.start\)/);
+    assert.match(transactionsPage, /\.lte\("transaction_date", range\.end\)/);
+    // 기간 이동과 합계가 있어요.
+    assert.match(transactionsPage, /shiftAnchor/);
+    assert.match(transactionsPage, /periodIncome/);
+  });
+
   it("brands the app with a logo, favicon, and manifest", () => {
     // 헤더 로고 컴포넌트와 아이콘·매니페스트가 있어요.
     assert.match(appShell, /<Logo/);
