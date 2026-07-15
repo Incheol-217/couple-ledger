@@ -154,8 +154,13 @@ export function buildAccountBalances(
     balances.set(accountId, (balances.get(accountId) ?? 0) - amount);
   });
 
-  return Array.from(balances.entries()).map(([accountId, balance]) => ({
-    account_id: accountId,
-    balance,
-  }));
+  // 금고에 넣은 돈은 그 계좌에서 옮겨 따로 둔 돈이라, 계좌의 현재 잔액에서 빼요.
+  return Array.from(balances.entries()).map(([accountId, balance]) => {
+    const account = accountsById.get(accountId);
+    const vault = account?.vault_enabled
+      ? Number(account.vault_amount) || 0
+      : 0;
+
+    return { account_id: accountId, balance: balance - vault };
+  });
 }

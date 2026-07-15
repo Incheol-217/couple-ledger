@@ -296,6 +296,8 @@ describe("Login and role access", () => {
     assert.match(accountActions, /vault_amount: nextAmount/);
     assert.match(accountsClient, /금고에 넣기/);
     assert.match(accountsClient, /금고에 있는 돈/);
+    // 금고에 넣은 돈은 계좌 현재 잔액에서 빠져요.
+    assert.match(read("src/lib/accounts/balances.ts"), /balance - vault/);
   });
 
   it("requires a destination account for transfers on the server", () => {
