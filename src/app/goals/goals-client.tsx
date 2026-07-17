@@ -571,7 +571,7 @@ export function GoalsClient({
                     >
                       {remaining > 0
                         ? `${formatMoney(remaining)} 남음`
-                        : "목표 달성 🎉"}
+                        : "목표 달성"}
                     </p>
                   </div>
 

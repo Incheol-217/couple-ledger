@@ -553,7 +553,7 @@ function TradePanel({
           type="button"
           variant="ghost"
         >
-          취소
+          닫기
         </Button>
         <Button disabled={isPending} size="sm" type="submit">
           {isPending ? "기록 중" : side === "buy" ? "매수 기록" : "매도 기록"}

@@ -232,7 +232,7 @@ function CategoryRowItem({
             <Check className="size-4" aria-hidden="true" />
           </Button>
           <Button
-            aria-label="취소"
+            aria-label="닫기"
             onClick={() => {
               setEditing(false);
               setName(category.name);

@@ -682,7 +682,7 @@ function DeleteAccountButton({
       variant="outline"
     >
       <Trash2 className="size-4" aria-hidden="true" />
-      정말 삭제?
+      정말 삭제할까요?
     </Button>
   );
 }

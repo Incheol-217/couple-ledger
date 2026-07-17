@@ -392,7 +392,7 @@ function RepayPanel({
           type="button"
           variant="ghost"
         >
-          취소
+          닫기
         </Button>
         <Button disabled={isPending} size="sm" type="submit">
           {isPending ? "기록 중" : "상환 기록"}
