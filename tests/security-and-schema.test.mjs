@@ -510,6 +510,18 @@ describe("UX guardrails", () => {
     assert.match(transactionsPage, /periodIncome/);
   });
 
+  it("swipes a transaction to edit/delete, open to all members", () => {
+    const swipeCard = read("src/app/transactions/transaction-swipe-card.tsx");
+    const txActions = read("src/app/transactions/actions.ts");
+    assert.match(swipeCard, /onTouchMove/);
+    assert.match(swipeCard, /TransactionEditDialog/);
+    assert.match(swipeCard, /deleteTransactionAction/);
+    assert.match(transactionsPage, /TransactionSwipeCard/);
+    // 관리자뿐 아니라 멤버면 수정·삭제할 수 있어요.
+    assert.match(txActions, /async function assertCurrentMember/);
+    assert.doesNotMatch(txActions, /assertCurrentAdmin\b/);
+  });
+
   it("brands the app with a logo, favicon, and manifest", () => {
     // 헤더 로고 컴포넌트와 아이콘·매니페스트가 있어요.
     assert.match(appShell, /<Logo/);

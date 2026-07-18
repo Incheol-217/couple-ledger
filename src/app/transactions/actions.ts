@@ -114,7 +114,8 @@ export type TransactionManageResult = {
   message: string;
 };
 
-async function assertCurrentAdmin(householdId: string) {
+// 거래 수정·삭제는 이 가계부의 멤버면 누구나 할 수 있어요.
+async function assertCurrentMember(householdId: string) {
   if (!hasSupabaseEnv()) {
     throw new Error("Supabase 환경변수를 확인해 주세요.");
   }
@@ -138,11 +139,10 @@ async function assertCurrentAdmin(householdId: string) {
     .select("id")
     .eq("household_id", householdId)
     .eq("user_id", user.id)
-    .eq("role", "owner")
     .maybeSingle();
 
   if (error || !data) {
-    throw new Error("관리자 계정으로 거래를 바꿀 수 있어요.");
+    throw new Error("이 가계부의 거래만 바꿀 수 있어요.");
   }
 
   return { supabase, user };
@@ -166,7 +166,7 @@ export async function updateTransactionAction(
       throw new Error("수정할 거래를 찾을 수 없어요.");
     }
 
-    const { supabase } = await assertCurrentAdmin(householdId);
+    const { supabase } = await assertCurrentMember(householdId);
 
     const rawAmount = readText(formData, "amount");
     const amount = Number(rawAmount.replaceAll(",", ""));
@@ -266,7 +266,7 @@ export async function deleteTransactionAction(
       throw new Error("지울 거래를 찾을 수 없어요.");
     }
 
-    const { supabase } = await assertCurrentAdmin(householdId);
+    const { supabase } = await assertCurrentMember(householdId);
     const { error } = await supabase
       .from("transactions")
       .delete()

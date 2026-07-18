@@ -1,9 +1,6 @@
 import Link from "next/link";
 import {
   AlertTriangle,
-  ArrowDownLeft,
-  ArrowLeftRight,
-  ArrowUpRight,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
@@ -15,6 +12,7 @@ import {
   type ManageCategoryOption,
   type ManageOption,
 } from "./manage-transaction";
+import { TransactionSwipeCard } from "./transaction-swipe-card";
 import { PageHeader } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -80,18 +78,6 @@ function displayAmount(transaction: TransactionRow) {
   }
 
   return formatWon(amount);
-}
-
-function typeIcon(type: TransactionRow["type"]) {
-  if (type === "income") {
-    return ArrowDownLeft;
-  }
-
-  if (type === "transfer") {
-    return ArrowLeftRight;
-  }
-
-  return ArrowUpRight;
 }
 
 function memberFallback(
@@ -466,77 +452,40 @@ export default async function TransactionsPage({
           ) : null}
 
           <section className="grid gap-2 md:hidden">
-            {transactions.map((transaction) => {
-              const Icon = typeIcon(transaction.type);
-
-              return (
-                <article
-                  className="flex items-center gap-3 rounded-lg border bg-card p-3 shadow-sm"
-                  key={transaction.id}
-                >
-                  <span className="grid size-10 shrink-0 place-items-center rounded-md bg-secondary text-primary">
-                    <Icon className="size-5" aria-hidden="true" />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold">
-                          {transaction.merchant ||
-                            categoryNames.get(transaction.category_id ?? "") ||
-                            typeLabels[transaction.type]}
-                        </p>
-                        <p className="mt-1 truncate text-xs text-muted-foreground">
-                          {displayDate(transaction.transaction_date)} · {accountNames.get(transaction.account_id) ?? "계좌"}
-                        </p>
-                      </div>
-                      <p
-                        className={cn(
-                          "shrink-0 text-sm font-bold tabular-nums",
-                          transaction.type === "expense" && "text-destructive",
-                          transaction.type === "income" && "text-primary",
-                        )}
-                      >
-                        {displayAmount(transaction)}
-                      </p>
-                    </div>
-                    <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                      <Badge variant="secondary">
-                        {sourceLabels[transaction.source] ?? "기타"}
-                      </Badge>
-                      {transaction.review_status === "needs_review" ? (
-                        <Badge variant="outline">확인 필요</Badge>
-                      ) : transaction.review_status === "reviewed" ? (
-                        <Badge variant="outline">확인 완료</Badge>
-                      ) : null}
-                      <span className="text-xs text-muted-foreground">
-                        {transaction.user_id
-                          ? memberNames.get(transaction.user_id) ?? "멤버"
-                          : "자동 기록"}
-                      </span>
-                      {context.isAdmin ? (
-                        <span className="ml-auto">
-                          <ManageTransaction
-                            accounts={accountOptions}
-                            categories={categoryOptions}
-                            householdId={context.householdId ?? ""}
-                            transaction={{
-                              id: transaction.id,
-                              type: transaction.type,
-                              amount: Number(transaction.amount) || 0,
-                              transaction_date: transaction.transaction_date,
-                              account_id: transaction.account_id,
-                              category_id: transaction.category_id,
-                              merchant: transaction.merchant,
-                              memo: transaction.memo,
-                            }}
-                          />
-                        </span>
-                      ) : null}
-                    </div>
-                  </div>
-                </article>
-              );
-            })}
+            <p className="px-1 text-xs text-muted-foreground">
+              왼쪽으로 밀면 수정·삭제할 수 있어요.
+            </p>
+            {transactions.map((transaction) => (
+              <TransactionSwipeCard
+                accounts={accountOptions}
+                categories={categoryOptions}
+                data={{
+                  transaction: {
+                    id: transaction.id,
+                    type: transaction.type,
+                    amount: Number(transaction.amount) || 0,
+                    transaction_date: transaction.transaction_date,
+                    account_id: transaction.account_id,
+                    category_id: transaction.category_id,
+                    merchant: transaction.merchant,
+                    memo: transaction.memo,
+                  },
+                  title:
+                    transaction.merchant ||
+                    categoryNames.get(transaction.category_id ?? "") ||
+                    typeLabels[transaction.type],
+                  subtitle: `${displayDate(transaction.transaction_date)} · ${accountNames.get(transaction.account_id) ?? "계좌"}`,
+                  amountText: displayAmount(transaction),
+                  sourceLabel: sourceLabels[transaction.source] ?? "기타",
+                  reviewStatus: transaction.review_status,
+                  memberLabel: transaction.user_id
+                    ? (memberNames.get(transaction.user_id) ?? "멤버")
+                    : "자동 기록",
+                }}
+                householdId={context.householdId ?? ""}
+                key={transaction.id}
+              />
+            ))}
           </section>
 
           <section className="hidden overflow-hidden rounded-lg border bg-card shadow-sm md:block">
@@ -550,7 +499,7 @@ export default async function TransactionsPage({
                   <TableHead>작성자</TableHead>
                   <TableHead>입력</TableHead>
                   <TableHead className="text-right">금액</TableHead>
-                  {context.isAdmin ? <TableHead className="w-16" /> : null}
+                  <TableHead className="w-16" />
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -596,25 +545,23 @@ export default async function TransactionsPage({
                     >
                       {displayAmount(transaction)}
                     </TableCell>
-                    {context.isAdmin ? (
-                      <TableCell>
-                        <ManageTransaction
-                          accounts={accountOptions}
-                          categories={categoryOptions}
-                          householdId={context.householdId ?? ""}
-                          transaction={{
-                            id: transaction.id,
-                            type: transaction.type,
-                            amount: Number(transaction.amount) || 0,
-                            transaction_date: transaction.transaction_date,
-                            account_id: transaction.account_id,
-                            category_id: transaction.category_id,
-                            merchant: transaction.merchant,
-                            memo: transaction.memo,
-                          }}
-                        />
-                      </TableCell>
-                    ) : null}
+                    <TableCell>
+                      <ManageTransaction
+                        accounts={accountOptions}
+                        categories={categoryOptions}
+                        householdId={context.householdId ?? ""}
+                        transaction={{
+                          id: transaction.id,
+                          type: transaction.type,
+                          amount: Number(transaction.amount) || 0,
+                          transaction_date: transaction.transaction_date,
+                          account_id: transaction.account_id,
+                          category_id: transaction.category_id,
+                          merchant: transaction.merchant,
+                          memo: transaction.memo,
+                        }}
+                      />
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
